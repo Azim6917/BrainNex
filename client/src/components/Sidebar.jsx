@@ -40,8 +40,29 @@ export default function Sidebar() {
       className="fixed left-0 top-0 h-screen w-60 flex flex-col bg-brand-bg2 border-r border-brand-border z-50 overflow-hidden"
     >
       {/* Logo */}
-      <div className="flex items-center px-5 py-4 border-b border-brand-border flex-shrink-0">
-        <BrainNexLogo size="md" />
+      <div className="flex items-center gap-4 px-5 py-4 border-b border-brand-border flex-shrink-0">
+        {/* <BrainNexLogo size="md" /> */}
+        <img src="/public/images/BrainNex_logo.png" alt="BrainNexLogo" className='w-10' />
+        {/* <span className={`font-syne font-black ${textSizes[size]} tracking-tight`}> */}
+        <span className='text-3xl font-semibold'>
+          <span style={{
+            background: 'linear-gradient(90deg, #00e5ff 0%, #4f9ef8 40%, #a78bfa 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            Brain
+          </span>
+          <span style={{
+            background: 'linear-gradient(90deg, #4f9ef8 0%, #a78bfa 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            Nex
+          </span>
+          </span>
+        {/* </span> */}
       </div>
 
       {/* User card */}
