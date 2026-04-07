@@ -132,8 +132,8 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-6 lg:px-16 bg-brand-bg/80 backdrop-blur-xl border-b border-brand-border">
         <Link to="/" className="flex items-center gap-2.5 font-syne font-bold text-xl">
-          <div className="w-8 h-8 bg-cyan rounded-lg flex items-center justify-center">
-            <span className="text-brand-bg font-bold text-sm">B</span>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+            <img src="/public/images/BrainNex_logo.png" alt="" />
           </div>
           BrainNex
         </Link>
@@ -400,8 +400,9 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-brand-border py-10 px-6 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 font-syne font-bold text-lg">
-          <div className="w-7 h-7 bg-cyan rounded-lg flex items-center justify-center">
-            <span className="text-brand-bg font-bold text-xs">B</span>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center">
+            {/* <span className="text-brand-bg font-bold text-xs"></span> */}
+            <img src="/public/images/BrainNex_logo.png" alt="" />
           </div>
           BrainNex
         </div>
