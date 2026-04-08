@@ -2,29 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, MessageSquare, FileQuestion,
-  Map, Users, Trophy, LogOut, Zap, Flame, Settings, Menu, X, Target
+  LayoutDashboard, MessageSquare, FileQuestion, Map,
+  Users, Trophy, LogOut, Zap, Flame, Settings, Menu, X,
+  Target, BookMarked, ChevronLeft
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
 import BrainNexLogo from './BrainNexLogo';
+import { playClick } from '../utils/soundEffects';
 
-const nav = [
-  { to: '/app/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/app/tutor',         icon: MessageSquare,   label: 'AI Tutor', badge: 'LIVE' },
-  { to: '/app/quiz',          icon: FileQuestion,    label: 'Quiz' },
-  { to: '/app/learning-path', icon: Map,             label: 'Learning Path' },
-  { to: '/app/study-rooms',   icon: Users,           label: 'Study Rooms' },
-  { to: '/app/goals',         icon: Target,          label: 'Study Goals' },
-  { to: '/app/achievements',  icon: Trophy,          label: 'Achievements' },
+const NAV = [
+  { to:'/app/dashboard',      icon:LayoutDashboard, label:'Dashboard'       },
+  { to:'/app/tutor',          icon:MessageSquare,   label:'AI Tutor',        badge:'LIVE' },
+  { to:'/app/study-sessions', icon:BookMarked,      label:'Study Sessions'  },
+  { to:'/app/quiz',           icon:FileQuestion,    label:'Quiz'            },
+  { to:'/app/learning-path',  icon:Map,             label:'Learning Path'   },
+  { to:'/app/study-rooms',    icon:Users,           label:'Study Rooms'     },
+  { to:'/app/goals',          icon:Target,          label:'Study Goals'     },
+  { to:'/app/achievements',   icon:Trophy,          label:'Achievements'    },
 ];
 
-function SidebarContent({ onClose }) {
+function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
   const { logout, user } = useAuth();
   const { profile }      = useUserData();
   const navigate         = useNavigate();
 
   const handleLogout = async () => {
+    playClick();
     await logout();
     navigate('/');
   };
@@ -35,13 +39,23 @@ function SidebarContent({ onClose }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo + close button */}
+      {/* Logo + collapse toggle */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-brand-border flex-shrink-0">
         <BrainNexLogo size="md" />
+        {/* Desktop collapse toggle */}
+        {setIsCollapsed && (
+          <button
+            onClick={() => { playClick(); setIsCollapsed(c => !c); }}
+            className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.06] transition-all"
+          >
+            <ChevronLeft size={15} className={`transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+        {/* Mobile close */}
         {onClose && (
           <button onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-white/[0.06] text-white/40 hover:text-white transition-colors">
-            <X size={18} />
+            className="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white">
+            <X size={17} />
           </button>
         )}
       </div>
@@ -49,48 +63,51 @@ function SidebarContent({ onClose }) {
       {/* User card */}
       <div className="px-4 py-3 border-b border-brand-border flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          {profile?.photoURL ? (
-            <img src={profile.photoURL} alt="avatar"
-              className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-brand-border2" />
+          {(profile?.photoURL || localStorage.getItem(`brainnex-photo-${user?.uid}`)) ? (
+            <img
+              src={profile?.photoURL || localStorage.getItem(`brainnex-photo-${user?.uid}`)}
+              alt="avatar"
+              className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-brand-border2"
+              onError={e => { e.target.style.display='none'; }}
+            />
           ) : (
             <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-brand-bg"
-              style={{ background: 'linear-gradient(135deg, #00e5ff, #a78bfa)' }}>
-              {(user?.displayName || 'S')[0].toUpperCase()}
+              style={{ background:'linear-gradient(135deg,#00e5ff,#a78bfa)' }}>
+              {(user?.displayName||'S')[0].toUpperCase()}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate">{user?.displayName || 'Student'}</p>
+            <p className="text-xs font-semibold text-white truncate">{user?.displayName||'Student'}</p>
             <p className="text-[10px] text-white/40">Level {level}</p>
           </div>
           <div className="flex items-center gap-1 text-xs text-neon-amber font-semibold flex-shrink-0">
-            <Flame size={12} />{profile?.streak || 0}
+            <Flame size={12} />{profile?.streak||0}
           </div>
         </div>
         {/* XP bar */}
         <div className="mt-2">
           <div className="flex justify-between text-[10px] text-white/30 mb-1">
-            <span>{xpInLevel} XP</span><span>500 XP to next level</span>
+            <span>{xpInLevel} XP</span>
+            <span>Lv.{level+1} at {level*500} XP</span>
           </div>
           <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
             <motion.div className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #00e5ff, #a78bfa)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${xpPct}%` }}
-              transition={{ duration: 1, delay: 0.3 }} />
+              style={{ background:'linear-gradient(90deg,#00e5ff,#a78bfa)' }}
+              initial={{ width:0 }} animate={{ width:`${xpPct}%` }} transition={{ duration:1, delay:0.3 }} />
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
-        {nav.map(({ to, icon: Icon, label, badge }) => (
-          <NavLink key={to} to={to} onClick={onClose}>
+        {NAV.map(({ to, icon:Icon, label, badge }) => (
+          <NavLink key={to} to={to} onClick={() => { playClick(); onClose?.(); }}>
             {({ isActive }) => (
               <div className={`sidebar-item ${isActive ? 'active' : ''}`}>
-                <Icon size={17} />
-                <span>{label}</span>
+                <Icon size={17} className="flex-shrink-0" />
+                <span className="truncate">{label}</span>
                 {badge && (
-                  <span className="ml-auto text-[9px] font-bold bg-cyan text-brand-bg px-1.5 py-0.5 rounded-full">
+                  <span className="ml-auto text-[9px] font-bold bg-cyan text-brand-bg px-1.5 py-0.5 rounded-full flex-shrink-0">
                     {badge}
                   </span>
                 )}
@@ -102,14 +119,14 @@ function SidebarContent({ onClose }) {
 
       {/* Bottom */}
       <div className="px-3 py-3 border-t border-brand-border flex-shrink-0 space-y-1">
-        <div className="flex items-center justify-between text-xs text-white/30 px-3 py-1">
+        <div className="flex items-center justify-between text-xs text-white/25 px-3 py-1">
           <div className="flex items-center gap-1.5">
-            <Zap size={12} className="text-neon-amber" />
-            <span>{(profile?.xp || 0).toLocaleString()} XP</span>
+            <Zap size={11} className="text-neon-amber" />
+            <span>{(profile?.xp||0).toLocaleString()} XP</span>
           </div>
-          <span className="text-white/20">Lv. {level}</span>
+          <span>Lv.{level}</span>
         </div>
-        <NavLink to="/app/settings" onClick={onClose}>
+        <NavLink to="/app/settings" onClick={() => { playClick(); onClose?.(); }}>
           {({ isActive }) => (
             <div className={`sidebar-item ${isActive ? 'active' : ''}`}>
               <Settings size={17} /><span>Settings</span>
@@ -126,44 +143,71 @@ function SidebarContent({ onClose }) {
 }
 
 export default function Sidebar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(true);
   const location = useLocation();
 
-  // Close mobile sidebar on route change
+  // Close mobile on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
 
   return (
     <>
-      {/* ── HAMBURGER (mobile only) ── */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl bg-brand-bg2 border border-brand-border flex items-center justify-center text-white/60 hover:text-white shadow-lg"
-      >
-        <Menu size={20} />
-      </button>
+      {/* ── HAMBURGER — visible on mobile always, visible on desktop when sidebar collapsed ── */}
+      <AnimatePresence>
+        {(!desktopOpen || !mobileOpen) && (
+          <motion.button
+            initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.8 }}
+            onClick={() => { playClick(); mobileOpen ? setMobileOpen(false) : desktopOpen ? setDesktopOpen(false) : setDesktopOpen(true); }}
+            className={`fixed top-3 z-50 w-10 h-10 rounded-xl bg-brand-bg2 border border-brand-border flex items-center justify-center text-white/60 hover:text-white shadow-lg transition-all
+              ${desktopOpen ? 'left-3 lg:hidden' : 'left-3'}`}
+          >
+            <Menu size={19} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-      {/* ── DESKTOP SIDEBAR (fixed) ── */}
-      <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 bg-brand-bg2 border-r border-brand-border z-50">
-        <SidebarContent onClose={null} />
-      </aside>
+      {/* Mobile hamburger when closed */}
+      {!mobileOpen && (
+        <button
+          onClick={() => { playClick(); setMobileOpen(true); }}
+          className="lg:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl bg-brand-bg2 border border-brand-border flex items-center justify-center text-white/60 hover:text-white shadow-lg"
+        >
+          <Menu size={19} />
+        </button>
+      )}
 
-      {/* ── MOBILE OVERLAY ── */}
+      {/* ── DESKTOP SIDEBAR ── */}
+      <AnimatePresence>
+        {desktopOpen && (
+          <motion.aside
+            initial={{ x:-240, opacity:0 }} animate={{ x:0, opacity:1 }} exit={{ x:-240, opacity:0 }}
+            transition={{ type:'spring', damping:28, stiffness:300 }}
+            className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 bg-brand-bg2 border-r border-brand-border z-50"
+          >
+            <SidebarContent
+              onClose={null}
+              isCollapsed={!desktopOpen}
+              setIsCollapsed={(fn) => setDesktopOpen(open => !fn(!open))}
+            />
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* ── MOBILE DRAWER ── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
               className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
               onClick={() => setMobileOpen(false)}
             />
-            {/* Drawer */}
             <motion.div
-              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              initial={{ x:'-100%' }} animate={{ x:0 }} exit={{ x:'-100%' }}
+              transition={{ type:'spring', damping:28, stiffness:300 }}
               className="lg:hidden fixed left-0 top-0 h-screen w-72 bg-brand-bg2 border-r border-brand-border z-50 flex flex-col shadow-2xl"
             >
-              <SidebarContent onClose={() => setMobileOpen(false)} />
+              <SidebarContent onClose={() => setMobileOpen(false)} isCollapsed={false} setIsCollapsed={null} />
             </motion.div>
           </>
         )}
