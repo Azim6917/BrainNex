@@ -38,3 +38,17 @@ export const updateDifficulty = (difficulty) => api.post('/progress/update-diffi
 export const fetchSubjectProgress = ()      => api.get('/progress/subject-progress');
 
 export default api;
+
+
+// ─── New AI endpoints ─────────────────────────────────────────────────────────
+export const generateStudySession = (subject, topic, level) =>
+  api.post('/ai/study-session', { subject, topic, level });
+
+export const generateFlashcards = (subject, topic, wrongQuestions) =>
+  api.post('/ai/flashcards', { subject, topic, wrongQuestions });
+
+export const explainAnswer = (question, correctAnswer, subject) =>
+  api.post('/ai/explain-answer', { question, correctAnswer, subject });
+
+export const getWeeklyReport = (quizHistory, streak, totalXP) =>
+  api.post('/ai/weekly-report', { quizHistory, streak, totalXP });
