@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "BrainNex AI Education Platform - Backend",
   "main": "index.js",
+
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
+
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
     "cors": "^2.8.5",
@@ -16,7 +18,12 @@
     "socket.io": "^4.7.5",
     "uuid": "^9.0.1"
   },
+
   "devDependencies": {
     "nodemon": "^3.1.0"
+  },
+
+  "engines": {
+    "node": ">=18"
   }
 }

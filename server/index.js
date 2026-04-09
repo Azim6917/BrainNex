@@ -141,7 +141,7 @@ const server = http.createServer(app);
 
 // ─── CORS FIX (IMPORTANT FOR VERCEL + RENDER) ──────────────────────────
 const allowedOrigin =
-  process.env.CLIENT_URL || 'http://localhost:5173';
+  process.env.CLIENT_URL || 'https://brain-nex-ten.vercel.app/';
 
 app.use(cors({
   origin: "*", // 🔥 allow all (safe for now)
