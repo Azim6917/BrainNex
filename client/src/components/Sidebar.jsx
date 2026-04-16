@@ -4,101 +4,112 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, FileQuestion, Map,
   Users, Trophy, LogOut, Zap, Flame, Settings, Menu, X,
-  Target, BookMarked, ChevronLeft
+  Target, BookMarked, Moon, Sun, ChevronLeft, Smile
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
-import BrainNexLogo from './BrainNexLogo';
-import { playClick } from '../utils/soundEffects';
+import { useTheme }    from '../context/ThemeContext';
+import BrainNexLogo    from './BrainNexLogo';
+import { playClick }   from '../utils/soundEffects';
 
 const NAV = [
-  { to:'/app/dashboard',      icon:LayoutDashboard, label:'Dashboard'       },
-  { to:'/app/tutor',          icon:MessageSquare,   label:'AI Tutor',        badge:'LIVE' },
-  { to:'/app/study-sessions', icon:BookMarked,      label:'Study Sessions'  },
-  { to:'/app/quiz',           icon:FileQuestion,    label:'Quiz'            },
-  { to:'/app/learning-path',  icon:Map,             label:'Learning Path'   },
-  { to:'/app/study-rooms',    icon:Users,           label:'Study Rooms'     },
-  { to:'/app/goals',          icon:Target,          label:'Study Goals'     },
-  { to:'/app/achievements',   icon:Trophy,          label:'Achievements'    },
+  { to:'/app/dashboard',      icon:LayoutDashboard, label:'Dashboard'      },
+  { to:'/app/tutor',          icon:MessageSquare,   label:'AI Tutor',       badge:'LIVE' },
+  { to:'/app/study-sessions', icon:BookMarked,      label:'Study Sessions' },
+  { to:'/app/quiz',           icon:FileQuestion,    label:'Quiz'           },
+  { to:'/app/learning-path',  icon:Map,             label:'Learning Path'  },
+  { to:'/app/study-rooms',    icon:Users,           label:'Study Rooms'    },
+  { to:'/app/goals',          icon:Target,          label:'Study Goals'    },
+  { to:'/app/achievements',   icon:Trophy,          label:'Achievements'   },
 ];
 
-function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
+function XPBar({ xp, level }) {
+  const xpInLevel = xp % 500;
+  const pct       = Math.round((xpInLevel / 500) * 100);
+  return (
+    <div className="mt-2">
+      <div className="flex justify-between mb-1" style={{ fontSize: 10, color:'var(--txt3)' }}>
+        <span>{xpInLevel} XP</span>
+        <span>Lv.{level + 1} → {level * 500}</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background:'var(--border2)' }}>
+        <motion.div className="h-full rounded-full"
+          style={{ background:'linear-gradient(90deg,var(--cyan),var(--violet))' }}
+          initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration:1, delay:0.4 }} />
+      </div>
+    </div>
+  );
+}
+
+function SidebarInner({ onClose }) {
   const { logout, user } = useAuth();
   const { profile }      = useUserData();
+  const { theme, toggleTheme, kidMode } = useTheme();
   const navigate         = useNavigate();
 
-  const handleLogout = async () => {
-    playClick();
-    await logout();
-    navigate('/');
-  };
+  const handleLogout = async () => { playClick(); await logout(); navigate('/'); };
 
-  const level     = profile?.level || 1;
-  const xpInLevel = (profile?.xp || 0) % 500;
-  const xpPct     = Math.round((xpInLevel / 500) * 100);
+  const photoSrc = profile?.photoURL || localStorage.getItem(`brainnex-photo-${user?.uid}`);
+  const initials = (user?.displayName || 'S')[0].toUpperCase();
+  const level    = profile?.level || 1;
+  const xp       = profile?.xp    || 0;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Logo + collapse toggle */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-brand-border flex-shrink-0">
+    <div className="flex flex-col h-full" style={{ background:'var(--bg2)' }}>
+
+      {/* ── Logo row ── */}
+      <div className="flex items-center justify-between px-4 py-4 border-b" style={{ borderColor:'var(--border)' }}>
         <BrainNexLogo size="md" />
-        {/* Desktop collapse toggle */}
-        {setIsCollapsed && (
-          <button
-            onClick={() => { playClick(); setIsCollapsed(c => !c); }}
-            className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.06] transition-all"
-          >
-            <ChevronLeft size={15} className={`transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+        <div className="flex items-center gap-1.5">
+          {/* Theme toggle */}
+          <button onClick={() => { playClick(); toggleTheme(); }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+            style={{ background:'var(--card)', color:'var(--txt2)' }}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-        )}
-        {/* Mobile close */}
-        {onClose && (
-          <button onClick={onClose}
-            className="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white">
-            <X size={17} />
-          </button>
-        )}
+          {/* Mobile close */}
+          {onClose && (
+            <button onClick={onClose}
+              className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background:'var(--card)', color:'var(--txt2)' }}>
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* User card */}
-      <div className="px-4 py-3 border-b border-brand-border flex-shrink-0">
+      {/* ── User card ── */}
+      <div className="px-4 py-3 border-b" style={{ borderColor:'var(--border)' }}>
         <div className="flex items-center gap-2.5">
-          {(profile?.photoURL || localStorage.getItem(`brainnex-photo-${user?.uid}`)) ? (
-            <img
-              src={profile?.photoURL || localStorage.getItem(`brainnex-photo-${user?.uid}`)}
-              alt="avatar"
-              className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-brand-border2"
-              onError={e => { e.target.style.display='none'; }}
-            />
+          {photoSrc ? (
+            <img src={photoSrc} alt="avatar"
+              className="w-9 h-9 rounded-full object-cover flex-shrink-0 border"
+              style={{ borderColor:'var(--border2)' }}
+              onError={e => { e.target.style.display='none'; }} />
           ) : (
-            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-brand-bg"
-              style={{ background:'linear-gradient(135deg,#00e5ff,#a78bfa)' }}>
-              {(user?.displayName||'S')[0].toUpperCase()}
+            <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
+              style={{ background:'linear-gradient(135deg,var(--cyan),var(--violet))' }}>
+              {initials}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate">{user?.displayName||'Student'}</p>
-            <p className="text-[10px] text-white/40">Level {level}</p>
+            <p className="text-sm font-semibold truncate" style={{ color:'var(--txt)' }}>
+              {user?.displayName || 'Student'}
+              {kidMode && <span className="ml-1 text-[10px]">🌟</span>}
+            </p>
+            <p className="text-xs" style={{ color:'var(--txt3)' }}>
+              {profile?.grade ? `${profile.grade}` : `Level ${level}`}
+            </p>
           </div>
-          <div className="flex items-center gap-1 text-xs text-neon-amber font-semibold flex-shrink-0">
-            <Flame size={12} />{profile?.streak||0}
-          </div>
-        </div>
-        {/* XP bar */}
-        <div className="mt-2">
-          <div className="flex justify-between text-[10px] text-white/30 mb-1">
-            <span>{xpInLevel} XP</span>
-            <span>Lv.{level+1} at {level*500} XP</span>
-          </div>
-          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-            <motion.div className="h-full rounded-full"
-              style={{ background:'linear-gradient(90deg,#00e5ff,#a78bfa)' }}
-              initial={{ width:0 }} animate={{ width:`${xpPct}%` }} transition={{ duration:1, delay:0.3 }} />
+          <div className="flex items-center gap-1 text-xs font-bold flex-shrink-0" style={{ color:'var(--amber)' }}>
+            <Flame size={12} />{profile?.streak || 0}
           </div>
         </div>
+        <XPBar xp={xp} level={level} />
       </div>
 
-      {/* Nav */}
+      {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto min-h-0">
         {NAV.map(({ to, icon:Icon, label, badge }) => (
           <NavLink key={to} to={to} onClick={() => { playClick(); onClose?.(); }}>
@@ -107,7 +118,8 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
                 <Icon size={17} className="flex-shrink-0" />
                 <span className="truncate">{label}</span>
                 {badge && (
-                  <span className="ml-auto text-[9px] font-bold bg-cyan text-brand-bg px-1.5 py-0.5 rounded-full flex-shrink-0">
+                  <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background:'var(--cyan)', color:'#fff' }}>
                     {badge}
                   </span>
                 )}
@@ -117,12 +129,12 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
         ))}
       </nav>
 
-      {/* Bottom */}
-      <div className="px-3 py-3 border-t border-brand-border flex-shrink-0 space-y-1">
-        <div className="flex items-center justify-between text-xs text-white/25 px-3 py-1">
+      {/* ── Bottom ── */}
+      <div className="px-3 py-3 space-y-1 border-t" style={{ borderColor:'var(--border)' }}>
+        <div className="flex items-center justify-between px-3 py-1 text-xs" style={{ color:'var(--txt3)' }}>
           <div className="flex items-center gap-1.5">
-            <Zap size={11} className="text-neon-amber" />
-            <span>{(profile?.xp||0).toLocaleString()} XP</span>
+            <Zap size={11} style={{ color:'var(--amber)' }} />
+            <span>{xp.toLocaleString()} XP</span>
           </div>
           <span>Lv.{level}</span>
         </div>
@@ -134,8 +146,11 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
           )}
         </NavLink>
         <button onClick={handleLogout}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/[0.06] transition-all">
-          <LogOut size={16} />Sign Out
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm transition-all"
+          style={{ color:'var(--txt3)' }}
+          onMouseEnter={e => e.currentTarget.style.color='var(--txt)'}
+          onMouseLeave={e => e.currentTarget.style.color='var(--txt3)'}>
+          <LogOut size={16} /> Sign Out
         </button>
       </div>
     </div>
@@ -143,71 +158,72 @@ function SidebarContent({ onClose, isCollapsed, setIsCollapsed }) {
 }
 
 export default function Sidebar() {
-  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(true);
   const location = useLocation();
 
-  // Close mobile on route change
   useEffect(() => { setMobileOpen(false); }, [location]);
 
   return (
     <>
-      {/* ── HAMBURGER — visible on mobile always, visible on desktop when sidebar collapsed ── */}
+      {/* Hamburger — always visible (desktop: top-left when collapsed; mobile: always) */}
       <AnimatePresence>
-        {(!desktopOpen || !mobileOpen) && (
+        {!desktopOpen && (
           <motion.button
+            key="desk-ham"
             initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.8 }}
-            onClick={() => { playClick(); mobileOpen ? setMobileOpen(false) : desktopOpen ? setDesktopOpen(false) : setDesktopOpen(true); }}
-            className={`fixed top-3 z-50 w-10 h-10 rounded-xl bg-brand-bg2 border border-brand-border flex items-center justify-center text-white/60 hover:text-white shadow-lg transition-all
-              ${desktopOpen ? 'left-3 lg:hidden' : 'left-3'}`}
-          >
-            <Menu size={19} />
+            onClick={() => { playClick(); setDesktopOpen(true); }}
+            className="hidden lg:flex fixed top-3 left-3 z-50 w-10 h-10 rounded-xl items-center justify-center shadow-lg border"
+            style={{ background:'var(--bg2)', borderColor:'var(--border)', color:'var(--txt2)' }}>
+            <Menu size={18} />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Mobile hamburger when closed */}
+      {/* Mobile hamburger */}
       {!mobileOpen && (
-        <button
-          onClick={() => { playClick(); setMobileOpen(true); }}
-          className="lg:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl bg-brand-bg2 border border-brand-border flex items-center justify-center text-white/60 hover:text-white shadow-lg"
-        >
-          <Menu size={19} />
+        <button onClick={() => { playClick(); setMobileOpen(true); }}
+          className="lg:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border"
+          style={{ background:'var(--bg2)', borderColor:'var(--border)', color:'var(--txt2)' }}>
+          <Menu size={18} />
         </button>
       )}
 
-      {/* ── DESKTOP SIDEBAR ── */}
+      {/* ── Desktop sidebar ── */}
       <AnimatePresence>
         {desktopOpen && (
           <motion.aside
-            initial={{ x:-240, opacity:0 }} animate={{ x:0, opacity:1 }} exit={{ x:-240, opacity:0 }}
-            transition={{ type:'spring', damping:28, stiffness:300 }}
-            className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 bg-brand-bg2 border-r border-brand-border z-50"
-          >
-            <SidebarContent
-              onClose={null}
-              isCollapsed={!desktopOpen}
-              setIsCollapsed={(fn) => setDesktopOpen(open => !fn(!open))}
-            />
+            key="desktop-sidebar"
+            initial={{ x:-240 }} animate={{ x:0 }} exit={{ x:-240 }}
+            transition={{ type:'spring', damping:28, stiffness:260 }}
+            className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 z-50 border-r"
+            style={{ borderColor:'var(--border)' }}>
+            {/* Collapse button */}
+            <button onClick={() => { playClick(); setDesktopOpen(false); }}
+              className="absolute -right-3 top-6 w-6 h-6 rounded-full flex items-center justify-center border shadow-sm z-10"
+              style={{ background:'var(--bg2)', borderColor:'var(--border)', color:'var(--txt3)' }}>
+              <ChevronLeft size={13} />
+            </button>
+            <SidebarInner onClose={null} />
           </motion.aside>
         )}
       </AnimatePresence>
 
-      {/* ── MOBILE DRAWER ── */}
+      {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            <motion.div
+            <motion.div key="overlay"
               initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.div
+              className="lg:hidden fixed inset-0 z-40"
+              style={{ background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)' }}
+              onClick={() => setMobileOpen(false)} />
+            <motion.div key="drawer"
               initial={{ x:'-100%' }} animate={{ x:0 }} exit={{ x:'-100%' }}
-              transition={{ type:'spring', damping:28, stiffness:300 }}
-              className="lg:hidden fixed left-0 top-0 h-screen w-72 bg-brand-bg2 border-r border-brand-border z-50 flex flex-col shadow-2xl"
-            >
-              <SidebarContent onClose={() => setMobileOpen(false)} isCollapsed={false} setIsCollapsed={null} />
+              transition={{ type:'spring', damping:28, stiffness:280 }}
+              className="lg:hidden fixed left-0 top-0 h-screen w-72 z-50 flex flex-col shadow-2xl border-r"
+              style={{ borderColor:'var(--border)' }}>
+              <SidebarInner onClose={() => setMobileOpen(false)} />
             </motion.div>
           </>
         )}

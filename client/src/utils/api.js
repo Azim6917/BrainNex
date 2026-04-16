@@ -1,11 +1,8 @@
 import axios from 'axios';
 import { auth } from './firebase';
 
-// const api = axios.create({ baseURL: '/api' });
+const api = axios.create({ baseURL: '/api' });
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL + 'api'
-});
 // Attach Firebase auth token to every request
 api.interceptors.request.use(async (config) => {
   const user = auth.currentUser;
@@ -17,11 +14,11 @@ api.interceptors.request.use(async (config) => {
 });
 
 // ─── AI API ───────────────────────────────────────────────────────────────────
-export const chatWithAI = (messages, subject, studentLevel) =>
-  api.post('/ai/chat', { messages, subject, studentLevel });
+export const chatWithAI = (messages, subject, studentLevel, grade) =>
+    api.post("/ai/chat", { messages, subject, studentLevel, grade });
 
-export const generateQuiz = (subject, topic, difficulty, numQuestions = 5) =>
-  api.post('/ai/generate-quiz', { subject, topic, difficulty, numQuestions });
+export const generateQuiz = (subject, topic, difficulty, numQuestions = 5, grade) =>
+    api.post("/ai/generate-quiz", { subject, topic, difficulty, numQuestions, grade });
 
 export const detectWeakTopics = (quizHistory) =>
   api.post('/ai/detect-weak-topics', { quizHistory });
@@ -44,14 +41,14 @@ export default api;
 
 
 // ─── New AI endpoints ─────────────────────────────────────────────────────────
-export const generateStudySession = (subject, topic, level) =>
-  api.post('/ai/study-session', { subject, topic, level });
+export const generateStudySession = (subject, topic, level, grade) =>
+    api.post("/ai/study-session", { subject, topic, level, grade });
 
-export const generateFlashcards = (subject, topic, wrongQuestions) =>
-  api.post('/ai/flashcards', { subject, topic, wrongQuestions });
+export const generateFlashcards = (subject, topic, wrongQuestions, grade) =>
+    api.post("/ai/flashcards", { subject, topic, wrongQuestions, grade });
 
-export const explainAnswer = (question, correctAnswer, subject) =>
-  api.post('/ai/explain-answer', { question, correctAnswer, subject });
+export const explainAnswer = (question, correctAnswer, subject, grade) =>
+  api.post('/ai/explain-answer', { question, correctAnswer, subject, grade });
 
 export const getWeeklyReport = (quizHistory, streak, totalXP) =>
   api.post('/ai/weekly-report', { quizHistory, streak, totalXP });

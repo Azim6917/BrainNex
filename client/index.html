@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -8,7 +8,18 @@
     <meta name="description" content="BrainNex: Your personal AI tutor. Chat, quiz, track progress, and learn smarter with adaptive AI technology." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <script>
+      // Apply saved theme before React loads to prevent flash
+      (function() {
+        var t = localStorage.getItem('bn-theme') || 'dark';
+        document.documentElement.classList.toggle('light', t === 'light');
+        document.documentElement.classList.toggle('dark',  t !== 'light');
+        if (localStorage.getItem('bn-kid-mode') === 'true') {
+          document.documentElement.classList.add('kid-mode');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -17,6 +17,7 @@ const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Scienc
 
 /* ─── PHASE: Setup ─────────────────────────────────────────────────────────── */
 function SessionSetup({ onStart }) {
+  const { profile } = useUserData();
   const [subject, setSubject] = useState(SUBJECTS[0]);
   const [topic,   setTopic]   = useState('');
   const [level,   setLevel]   = useState('intermediate');
@@ -26,9 +27,9 @@ function SessionSetup({ onStart }) {
     if (!topic.trim()) { toast.error('Enter a topic to study'); return; }
     setLoading(true);
     try {
-      const res = await generateStudySession(subject, topic, level);
+      const res = await generateStudySession(subject, topic, level, profile?.grade);
       playClick();
-      onStart(res.data);
+      onStart({ ...res.data, grade: profile?.grade });
     } catch (err) {
       if (!err.response) {
         toast.error('Backend server not running — start it with: npm run dev in /server');
@@ -326,7 +327,7 @@ function EndQuiz({ session, onComplete }) {
   const [deepExp,  setDeepExp]  = useState('');
 
   useEffect(() => {
-    generateQuiz(session.subject, session.topic, session.level, 5)
+    generateQuiz(session.subject, session.topic, session.level, 5, session.grade)
       .then(r => { setQuiz(r.data); setLoading(false); })
       .catch(() => { toast.error('Quiz generation failed'); setLoading(false); });
   }, []);
@@ -357,7 +358,7 @@ function EndQuiz({ session, onComplete }) {
   const handleExplain = async () => {
     setExplaining(true);
     try {
-      const res = await explainAnswer(q.question, q.options[q.correctIndex], session.subject);
+      const res = await explainAnswer(q.question, q.options[q.correctIndex], session.subject, session.grade);
       setDeepExp(res.data.explanation);
     } catch { setDeepExp('Explanation unavailable. Make sure the backend server is running.'); }
     finally { setExplaining(false); }
@@ -489,7 +490,7 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
         .map(q => q.question);
       if (wrongQs.length > 0) {
         setFcLoading(true);
-        generateFlashcards(session.subject, session.topic, wrongQs)
+        generateFlashcards(session.subject, session.topic, wrongQs, session.grade)
           .then(r => { setFlashcards(r.data.flashcards || []); setFcLoading(false); })
           .catch(() => setFcLoading(false));
       }
@@ -608,6 +609,7 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
 
 /* ─── MAIN PAGE ────────────────────────────────────────────────────────────── */
 export default function StudySessionPage() {
+  const { profile } = useUserData();
   const [phase,   setPhase]   = useState('setup');   // setup | lesson | quiz | results
   const [session, setSession] = useState(null);
   const [quizRes, setQuizRes] = useState(null);
@@ -645,7 +647,7 @@ export default function StudySessionPage() {
       </div>
 
       {phase === 'setup' && (
-        <SessionSetup onStart={(s) => { setSession(s); setPhase('lesson'); }} />
+        <SessionSetup onStart={(s) => { setSession({...s, grade:profile?.grade}); setPhase('lesson'); }} />
       )}
       {phase === 'lesson' && session && (
         <LessonCards session={session} onComplete={() => setPhase('quiz')} />
