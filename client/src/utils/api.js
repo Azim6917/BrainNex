@@ -1,7 +1,12 @@
 import axios from 'axios';
 import { auth } from './firebase';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+const envUrl = import.meta.env.VITE_API_URL;
+const resolvedBaseUrl = envUrl 
+  ? (envUrl.replace(/\/$/, '').endsWith('/api') ? envUrl.replace(/\/$/, '') : envUrl.replace(/\/$/, '') + '/api')
+  : '/api';
+
+const api = axios.create({ baseURL: resolvedBaseUrl });
 
 // Attach Firebase auth token to every request
 api.interceptors.request.use(async (config) => {
