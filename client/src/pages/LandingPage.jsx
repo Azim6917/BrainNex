@@ -1,304 +1,265 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
-import { MessageSquare, FileQuestion, BarChart3, Map, Users, Trophy, Zap, ArrowRight, Star, BookMarked, CheckCircle } from 'lucide-react';
+import { MessageSquare, FileQuestion, BarChart3, Map, Users, Trophy, ArrowRight, Star, CheckCircle, Zap } from 'lucide-react';
+import BrainNexLogo from '../components/BrainNexLogo';
 
-function Counter({ target, suffix='', duration=2000 }) {
-  const [val, setVal] = useState(0);
-  const ref    = useRef(null);
-  const inView = useInView(ref, { once:true });
-  useEffect(() => {
-    if (!inView) return;
-    let v=0; const step = target/(duration/16);
-    const t = setInterval(() => { v=Math.min(v+step,target); setVal(Math.floor(v)); if(v>=target) clearInterval(t); }, 16);
-    return () => clearInterval(t);
-  }, [inView, target, duration]);
-  return <span ref={ref}>{val>=1000 ? (val/1000).toFixed(0)+'K' : val}{suffix}</span>;
-}
+// Dummy universities for marquee
+const universities = ['Stanford', 'MIT', 'Harvard', 'Oxford', 'Cambridge', 'Princeton', 'Yale', 'Columbia', 'Berkeley', 'UCLA'];
 
 const features = [
-  { icon:MessageSquare, color:'#00e5ff', tag:'Core',         title:'AI Chat Tutor',         desc:'Ask anything, anytime. Nex explains concepts clearly and adapts to your level in real time.' },
-  { icon:BookMarked,    color:'#a78bfa', tag:'Study Flow',   title:'Structured Study Sessions', desc:'AI teaches you topic-by-topic with lesson cards, comprehension checks, then an end quiz.' },
-  { icon:FileQuestion,  color:'#ffb830', tag:'AI Powered',   title:'Smart Quiz Generator',  desc:'Generate custom quizzes on any topic instantly with instant feedback and AI explanations.' },
-  { icon:BarChart3,     color:'#34d399', tag:'Analytics',    title:'Progress Dashboard',    desc:'Track XP, streaks, quiz scores and subject mastery with beautiful visual analytics.' },
-  { icon:Map,           color:'#00e5ff', tag:'Personalized', title:'Adaptive Learning Paths',desc:'AI-generated visual roadmaps — mastered, in-progress, and what to tackle next.' },
-  { icon:Users,         color:'#ffb830', tag:'Collaborative',title:'Live Study Rooms',      desc:'Real-time study sessions with peers. Group quizzes, shared resources, and live chat.' },
-  { icon:Trophy,        color:'#a78bfa', tag:'Gamification', title:'XP, Badges & Streaks',  desc:'Stay motivated with daily streaks, XP points, achievement badges, and leaderboards.' },
+  { icon:MessageSquare, color:'linear-gradient(135deg, #7C3AED, #4F46E5)', title:'AI Chat Tutor', desc:'Real-time adaptive explanations.' },
+  { icon:Zap,           color:'linear-gradient(135deg, #0EA5E9, #06B6D4)', title:'Study Flow',   desc:'Structured cards & checkpoints.' },
+  { icon:FileQuestion,  color:'linear-gradient(135deg, #EC4899, #E11D48)', title:'Smart Quizzes',desc:'Instantly generated on any topic.' },
+  { icon:BarChart3,     color:'linear-gradient(135deg, #F59E0B, #D97706)', title:'Analytics',    desc:'Track mastery and progress visually.' },
+  { icon:Map,           color:'linear-gradient(135deg, #10B981, #059669)', title:'Adaptive Path',desc:'AI-generated learning roadmaps.' },
 ];
 
 const HOW_STEPS = [
   {
-    num:'01', icon:'🎯', title:'Sign up & onboard',
-    desc:'Create your free account. Our 3-step wizard asks your grade, subjects, and study goal to personalize everything from day one.',
-    detail: ['Pick your subjects', 'Set your study goal', 'Choose your level'],
+    num:'1', icon:'🎯', title:'Set Your Goal',
+    desc:'Tell BrainNex what you want to learn. Our AI tailors a curriculum just for you based on your grade and objectives.',
   },
   {
-    num:'02', icon:'📖', title:'Start a Study Session',
-    desc:'Pick any topic and our AI generates a full structured lesson — 5 teaching cards with formulas, examples, and key points to master.',
-    detail: ['AI-generated lesson cards', 'Mid-session checkpoints', 'Formulas & real examples'],
+    num:'2', icon:'📖', title:'Learn interactively',
+    desc:'Study with AI-generated bite-sized cards. When you\'re stuck, simply chat with your personal AI tutor for deeper explanations.',
   },
   {
-    num:'03', icon:'📝', title:'Take the end quiz',
-    desc:'After your lesson, get automatically generated quiz questions specifically about what you just learned. Get instant AI explanations.',
-    detail: ['Topic-specific questions', 'Instant AI feedback', 'Auto flashcards for misses'],
-  },
-  {
-    num:'04', icon:'📊', title:'Track & level up',
-    desc:'Watch your dashboard fill up with stats, badges, and streaks. The AI detects weak topics and reminds you when to revisit them.',
-    detail: ['XP & badge rewards', 'Streak calendar', 'Weak topic reminders'],
+    num:'3', icon:'📝', title:'Test & Master',
+    desc:'Take personalized quizzes that adapt to your weaknesses. Earn XP, maintain your streak, and level up your knowledge.',
   },
 ];
 
-const testimonials = [
-  { name:'Priya R.',  role:'Class 12 · Mumbai',       text:'The Study Sessions are incredible. AI explains, then quizzes me — I went from 65% to 91% in Physics in 5 weeks.', stars:5, grad:'from-cyan-400 to-violet-500' },
-  { name:'Aarav S.',  role:'B.Tech · Delhi',           text:'The adaptive difficulty and weekly AI report are game-changers. My GPA improved significantly this semester.', stars:5, grad:'from-amber-400 to-green-400' },
-  { name:'Meera K.',  role:'Class 10 · Pune',          text:"31-day streak! The gamification keeps me coming back every single day. It genuinely feels fun, not like studying.", stars:5, grad:'from-violet-400 to-amber-400' },
-];
-
-const subjects = [
-  {emoji:'🧮',name:'Mathematics'},{emoji:'⚗️',name:'Chemistry'},{emoji:'⚡',name:'Physics'},
-  {emoji:'🔬',name:'Biology'},{emoji:'💻',name:'Computer Science'},{emoji:'📚',name:'Literature'},
-  {emoji:'🌍',name:'Geography'},{emoji:'📜',name:'History'},{emoji:'💰',name:'Economics'},
-  {emoji:'🧠',name:'Psychology'},{emoji:'🔤',name:'Languages'},{emoji:'🎨',name:'Art & Design'},
+const TESTIMONIALS = [
+  { name: 'Sarah J.', role: 'High School Senior', text: 'BrainNex helped me boost my math scores by a full letter grade. The AI explanations make perfect sense!', rating: 5 },
+  { name: 'Michael T.', role: 'College Freshman', text: 'The smart quizzes and adaptive learning paths feel like having a personal tutor available 24/7.', rating: 5 },
+  { name: 'Emily R.', role: 'Middle School Student', text: 'I love earning XP and leveling up. Studying feels like a game now instead of a chore!', rating: 5 }
 ];
 
 export default function LandingPage() {
-  const canvasRef = useRef(null);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const c = canvas.getContext('2d');
-    const resize = () => { canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const pts = Array.from({length:60}, () => ({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4, r:Math.random()*1.5+.5, a:Math.random()*.5+.1 }));
-    let raf;
-    const draw = () => {
-      c.clearRect(0,0,canvas.width,canvas.height);
-      pts.forEach((p,i) => {
-        p.x=(p.x+p.vx+canvas.width)%canvas.width; p.y=(p.y+p.vy+canvas.height)%canvas.height;
-        c.beginPath(); c.arc(p.x,p.y,p.r,0,Math.PI*2); c.fillStyle=`rgba(0,229,255,${p.a})`; c.fill();
-        pts.slice(i+1).forEach(p2 => { const d=Math.hypot(p.x-p2.x,p.y-p2.y); if(d<110){ c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(p2.x,p2.y); c.strokeStyle=`rgba(0,229,255,${.07*(1-d/110)})`; c.lineWidth=.5; c.stroke(); } });
-      });
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
-  useEffect(() => {
-    const els = document.querySelectorAll('.reveal');
-    const obs = new IntersectionObserver(e => e.forEach(x => x.isIntersecting && x.target.classList.add('visible')), { threshold:.1 });
-    els.forEach(el => obs.observe(el));
-    return () => obs.disconnect();
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-brand-bg text-white overflow-x-hidden">
+    <div className="min-h-screen bg-brand-bg text-white overflow-x-hidden font-inter selection:bg-primary selection:text-white">
 
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-6 lg:px-16 bg-brand-bg/85 backdrop-blur-xl border-b border-brand-border">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/images/BrainNex_logo.png" alt="BrainNex" className="w-7 h-7 object-contain" />
-          <span className="font-syne font-black text-xl" style={{ background:'linear-gradient(90deg,#00e5ff,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>BrainNex</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8">
-          {[['#features','Features'],['#how-it-works','How It Works'],['#subjects','Subjects']].map(([href,label]) => (
-            <a key={href} href={href} className="nav-link text-sm">{label}</a>
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <Link to="/login"    className="btn-outline text-sm py-2 px-5">Login</Link>
-          <Link to="/register" className="btn-cyan    text-sm py-2 px-5">Get Started</Link>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-brand-bg/80 backdrop-blur-xl border-b border-white/10 shadow-sm' : 'py-5 bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
+          <BrainNexLogo size="md" />
+          <div className="hidden md:flex items-center gap-8 font-medium text-sm text-txt2">
+            <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
+            <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/login" className="text-sm font-medium text-txt hover:text-primary-light transition-colors px-4 py-2">Log in</Link>
+            <Link to="/register" className="btn-primary text-sm py-2 px-5 shadow-glow-primary">Get Started</Link>
+          </div>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-16 px-6 overflow-hidden">
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
-        <div className="absolute inset-0 grid-bg pointer-events-none" />
-        <div className="absolute w-[500px] h-[500px] rounded-full bg-cyan/10 blur-[100px] -top-20 -left-20 animate-float pointer-events-none" />
-        <div className="absolute w-[400px] h-[400px] rounded-full bg-violet-500/10 blur-[100px] -bottom-10 -right-10 pointer-events-none" style={{ animationDelay:'2s' }} />
-
-        <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8 }}
-          className="relative z-10 text-center max-w-4xl">
-          <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.1 }}
-            className="inline-flex items-center gap-2 bg-cyan/10 border border-cyan/30 rounded-full px-4 py-1.5 text-xs font-semibold text-cyan uppercase tracking-widest mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-blink" />Powered by Claude AI
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 lg:px-8 hero-bg">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Content */}
+          <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6 }} className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 mb-6 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-semibold text-txt2 tracking-wide uppercase">BrainNex 2.0 is live</span>
+            </div>
+            <h1 className="page-title text-5xl sm:text-6xl lg:text-7xl mb-6">
+              Learn faster.<br/>
+              Score higher.<br/>
+              <span className="gradient-text">Study smarter.</span>
+            </h1>
+            <p className="text-lg text-txt2 max-w-xl mb-10 leading-relaxed">
+              Your personal AI tutor that generates interactive lessons, adaptive quizzes, and visual study paths to help you master any subject.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+              <Link to="/register" className="btn-primary text-base">Start Learning Free</Link>
+              <a href="#how-it-works" className="btn-ghost text-base">See how it works</a>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-txt2">
+              <div className="flex -space-x-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className={`w-8 h-8 rounded-full border-2 border-space-dark bg-gradient-to-br from-primary to-cyan flex items-center justify-center text-xs font-bold text-white shadow-sm z-[${4-i}]`}>
+                    {String.fromCharCode(64+i)}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col">
+                <div className="flex text-amber-accent mb-0.5"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
+                <span><strong className="text-white">4.9/5</strong> from 10k+ students</span>
+              </div>
+            </div>
           </motion.div>
 
-          <h1 className="font-syne font-black text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-6">
-            Learn Smarter<br />with <span className="gradient-text">AI Guidance</span>
-          </h1>
-          <p className="text-lg md:text-xl text-white/50 max-w-xl mx-auto leading-relaxed mb-10">
-            BrainNex is your personal AI tutor — structured lessons, adaptive quizzes, progress tracking, and a learning system that adapts to you.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
-              <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                className="btn-cyan flex items-center gap-2 text-base px-8 py-4">
-                Start Learning Free <ArrowRight size={18} />
-              </motion.button>
-            </Link>
-            <a href="#how-it-works">
-              <button className="btn-outline text-base px-8 py-4">See How It Works</button>
-            </a>
-          </div>
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}
-          className="relative z-10 mt-14 grid grid-cols-3 gap-px bg-brand-border rounded-2xl overflow-hidden max-w-lg w-full">
-          {[{val:50000,suf:'',label:'Students'},{val:2400,suf:'K+',label:'Quizzes Generated'},{val:73,suf:'%',label:'Avg. Score Boost'}].map(({val,suf,label}) => (
-            <div key={label} className="bg-brand-bg2 py-5 text-center">
-              <div className="font-syne font-black text-3xl text-cyan"><Counter target={val} suffix={suf} /></div>
-              <div className="text-xs text-white/30 mt-1">{label}</div>
+          {/* Right: Mockup */}
+          <motion.div initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.2 }} className="relative z-10 hidden lg:block">
+            <div className="relative rounded-2xl border border-white/10 bg-brand-bg2 shadow-[0_0_80px_rgba(124,58,237,0.15)] overflow-hidden transform perspective-1000 rotate-y-[-5deg] rotate-x-[2deg]">
+              {/* App Window Header */}
+              <div className="h-10 bg-black/40 border-b border-white/5 flex items-center px-4 gap-2 backdrop-blur-md">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                <div className="flex-1" />
+                <div className="h-5 w-32 bg-white/5 rounded text-center text-[10px] font-bold text-txt-muted flex items-center justify-center tracking-widest uppercase">BrainNex.app</div>
+                <div className="flex-1" />
+              </div>
+              
+              {/* App Window Body (CSS Mockup) */}
+              <div className="h-[400px] bg-brand-bg flex p-4 gap-4 relative overflow-hidden">
+                {/* Sidebar mock */}
+                <div className="w-16 flex flex-col gap-3 items-center pt-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-cyan mb-4" />
+                  {[1,2,3,4].map(i => <div key={i} className="w-10 h-10 rounded-xl bg-white/5" />)}
+                </div>
+                {/* Content mock */}
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="h-20 rounded-xl bg-gradient-to-r from-primary/20 to-cyan/10 border border-primary/20 p-4 flex flex-col justify-center shadow-inner">
+                    <div className="text-white font-bold text-sm">Welcome back, Student! 👋</div>
+                    <div className="text-txt-sec text-[10px] mt-1 font-medium">You have 2 upcoming study goals this week.</div>
+                  </div>
+                  <div className="flex gap-4 flex-1">
+                    <div className="flex-1 bg-white/5 rounded-xl border border-white/5 p-4 flex flex-col gap-2 shadow-sm">
+                      <div className="text-white text-xs font-bold mb-1">Recent Study Sessions</div>
+                      {[ 
+                        { title: 'Algebra Fundamentals', type: 'Math', pct: '85%' }, 
+                        { title: 'Cellular Biology', type: 'Science', pct: '92%' }, 
+                        { title: 'World War II', type: 'History', pct: '64%' } 
+                      ].map((item, i) => (
+                        <div key={i} className="w-full bg-black/20 border border-white/5 rounded-lg p-2.5 flex items-center justify-between shadow-sm">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 rounded flex-shrink-0 bg-primary/20 text-primary border border-primary/30 flex items-center justify-center text-[10px] font-bold shadow-sm">{item.type.charAt(0)}</div>
+                            <span className="text-[10px] text-white font-bold truncate max-w-[80px]">{item.title}</span>
+                          </div>
+                          <span className="text-[10px] text-cyan font-black">{item.pct}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="w-[35%] bg-white/5 rounded-xl border border-white/5 p-4 flex flex-col items-center text-center justify-center gap-3 shadow-sm">
+                      <div className="w-16 h-16 rounded-full border-4 border-primary border-t-cyan flex items-center justify-center text-white font-black text-sm shadow-glow-primary">Lv. 5</div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Scholar</div>
+                        <div className="text-[9px] text-txt-sec font-bold mt-1 uppercase tracking-widest">1,250 XP</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Subtle overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
+              </div>
+              
+              {/* Floating elements to make it dynamic */}
+              <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -left-6 top-24 glass-card bg-brand-card p-3 flex items-center gap-3 shadow-lg border border-white/10">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-500"><CheckCircle size={16}/></div>
+                <div><p className="text-xs font-bold text-white">Quiz Passed!</p><p className="text-[10px] text-txt-sec">+50 XP Earned</p></div>
+              </motion.div>
+              <motion.div animate={{ y: [10, -10, 10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="absolute -right-6 bottom-16 glass-card bg-brand-card p-3 flex items-center gap-3 shadow-lg border border-white/10">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 font-bold text-sm">🔥</div>
+                <div><p className="text-xs font-bold text-white">12 Day Streak</p></div>
+              </motion.div>
             </div>
-          ))}
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
 
       {/* MARQUEE */}
-      <div className="overflow-hidden py-4 border-y border-brand-border bg-brand-bg2">
-        <div className="flex gap-12 animate-marquee w-max">
-          {[...Array(2)].flatMap(() => ['⚡ Real-time AI Tutoring','📖 Structured Study Sessions','📝 AI Quiz Generation','📊 Progress Analytics','🏆 XP & Badges','🔒 Firebase Auth','🌍 40+ Subjects','👥 Group Study Rooms','🗺️ Learning Paths','🎙️ Voice Q&A'].map(t => (
-            <span key={t+Math.random()} className="text-xs font-medium text-white/30 whitespace-nowrap">{t}</span>
-          )))}
+      <div className="py-8 border-y border-white/5 bg-white/[0.02] overflow-hidden">
+        <p className="text-center text-xs font-semibold text-txt3 uppercase tracking-widest mb-6">Trusted by students from</p>
+        <div className="flex gap-16 animate-marquee w-max opacity-40 hover:opacity-80 transition-opacity">
+          {[...universities, ...universities].map((uni, i) => (
+            <span key={i} className="text-xl font-jakarta font-bold text-white whitespace-nowrap">{uni}</span>
+          ))}
         </div>
       </div>
 
-      {/* FEATURES */}
-      <section id="features" className="py-24 px-6 lg:px-16">
-        <div className="reveal max-w-7xl mx-auto mb-14">
-          <p className="text-xs font-bold uppercase tracking-widest text-cyan mb-4">Core Features</p>
-          <h2 className="font-syne font-black text-4xl lg:text-6xl leading-tight tracking-tight max-w-lg">
-            Everything a student <span className="text-white/30">needs to excel</span>
-          </h2>
-        </div>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-3 gap-px bg-brand-border border border-brand-border rounded-2xl overflow-hidden">
-          {features.map(({ icon:Icon, color, tag, title, desc }, i) => (
-            <motion.div key={title} whileHover={{ backgroundColor:'rgba(255,255,255,0.04)' }}
-              className={`reveal bg-brand-bg2 p-8 flex flex-col gap-4 group relative overflow-hidden ${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
-              style={{ transitionDelay:`${i*0.05}s` }}>
-              <div className="absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background:`linear-gradient(90deg,transparent,${color},transparent)` }} />
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background:`${color}20` }}>
-                <Icon size={22} style={{ color }} />
-              </div>
-              <div>
-                <h3 className={`font-syne font-bold mb-2 ${i===0 ? 'text-2xl' : 'text-xl'}`}>{title}</h3>
-                <p className="text-sm text-white/50 leading-relaxed">{desc}</p>
-              </div>
-              <span className="text-xs font-semibold px-3 py-1 rounded-full self-start" style={{ background:`${color}20`, color }}>{tag}</span>
-            </motion.div>
-          ))}
+      {/* FEATURES (Dark Theme) */}
+      <section id="features" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
+            <h2 className="font-jakarta font-black text-4xl lg:text-5xl tracking-tight mb-4 text-white">Unleash your potential</h2>
+            <p className="text-lg text-txt-sec font-medium">Everything you need to master any topic, beautifully integrated into one platform.</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6">
+            {features.map((f, i) => (
+              <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}
+                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] glass-card bg-brand-card p-6 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-white/5">
+                <div className="w-14 h-14 rounded-2xl mb-6 flex items-center justify-center text-white shadow-lg" style={{ background: f.color }}>
+                  <f.icon size={24} />
+                </div>
+                <h3 className="font-jakarta font-black text-2xl mb-3 text-white">{f.title}</h3>
+                <p className="text-txt-sec font-medium text-sm leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how-it-works" className="py-24 px-6 lg:px-16 bg-brand-bg2">
-        <div className="max-w-7xl mx-auto">
-          <div className="reveal text-center mb-16">
-            <p className="text-xs font-bold uppercase tracking-widest text-cyan mb-4">How It Works</p>
-            <h2 className="font-syne font-black text-4xl lg:text-6xl tracking-tight">
-              From signup to <span className="text-white/30">mastery in 4 steps</span>
-            </h2>
-            <p className="text-white/40 text-base mt-4 max-w-xl mx-auto">
-              BrainNex is designed around a proven learning loop: teach → check → quiz → review. Here's exactly how it works.
-            </p>
+      <section id="how-it-works" className="py-32 px-6 lg:px-8 relative">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="page-title mb-4">How BrainNex works</h2>
+            <p className="text-lg text-txt2 max-w-2xl mx-auto">A seamless loop designed to optimize retention and understanding.</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {HOW_STEPS.map(({ num, icon, title, desc, detail }, i) => (
-              <motion.div key={num}
-                whileHover={{ y:-4 }}
-                className="reveal glass border border-brand-border rounded-3xl p-7 relative overflow-hidden group"
-                style={{ transitionDelay:`${i*0.1}s` }}>
-                {/* Big number background */}
-                <div className="absolute -top-4 -right-2 font-syne font-black text-[120px] text-white/[0.03] leading-none select-none">
-                  {num}
-                </div>
-                <div className="relative">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-cyan/10 border border-cyan/20 flex items-center justify-center text-3xl flex-shrink-0">
-                      {icon}
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-cyan uppercase tracking-widest">Step {num}</span>
-                      <h3 className="font-syne font-black text-xl leading-tight">{title}</h3>
-                    </div>
+          
+          <div className="relative">
+            {/* Dashed line connecting steps (desktop) */}
+            <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 border-t-2 border-dashed border-white/10" />
+            
+            <div className="grid md:grid-cols-3 gap-12 relative z-10">
+              {HOW_STEPS.map((step, i) => (
+                <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.2 }}
+                  className="flex flex-col items-center text-center group">
+                  <div className="w-24 h-24 rounded-full bg-brand-bg2 border-4 border-brand-bg flex items-center justify-center text-4xl mb-6 shadow-glow-card group-hover:scale-110 transition-transform duration-300 relative">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-cyan opacity-20" />
+                    <span className="relative z-10">{step.icon}</span>
+                    <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold shadow-sm">{step.num}</div>
                   </div>
-                  <p className="text-sm text-white/55 leading-relaxed mb-4">{desc}</p>
-                  <div className="space-y-2">
-                    {detail.map(d => (
-                      <div key={d} className="flex items-center gap-2 text-xs text-white/50">
-                        <CheckCircle size={12} className="text-cyan flex-shrink-0" />{d}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Flow diagram */}
-          <div className="reveal mt-12 glass border border-brand-border rounded-2xl p-6">
-            <p className="text-xs text-white/30 text-center uppercase tracking-widest mb-5">The BrainNex Learning Loop</p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {['📖 AI Lesson Cards','→','✅ Checkpoints','→','📝 End Quiz','→','🏆 XP + Badges','→','📊 Analytics','→','⏰ Revisit Weak Topics','→','📖 Next Lesson'].map((item, i) => (
-                item === '→' ? (
-                  <ArrowRight key={i} size={14} className="text-white/20" />
-                ) : (
-                  <div key={i} className="text-xs font-semibold px-3 py-1.5 bg-white/[0.05] border border-brand-border rounded-full text-white/70">
-                    {item}
-                  </div>
-                )
+                  <h3 className="font-jakarta font-bold text-2xl mb-3">{step.title}</h3>
+                  <p className="text-txt2 text-sm leading-relaxed">{step.desc}</p>
+                </motion.div>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* SUBJECTS */}
-      <section id="subjects" className="py-24 px-6 lg:px-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="reveal mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-cyan mb-4">Subjects</p>
-            <h2 className="font-syne font-black text-4xl lg:text-6xl tracking-tight">
-              Learn anything, <span className="text-white/30">master everything</span>
-            </h2>
-          </div>
-          <div className="reveal grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-            {subjects.map(({ emoji, name }) => (
-              <motion.div key={name} whileHover={{ y:-4 }}
-                className="glass border border-brand-border rounded-2xl p-5 flex flex-col items-center text-center cursor-pointer transition-all hover:border-brand-border2">
-                <span className="text-3xl mb-2">{emoji}</span>
-                <span className="text-xs font-semibold text-white/70">{name}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* TESTIMONIALS */}
-      <section className="py-24 px-6 lg:px-16 bg-brand-bg2">
-        <div className="max-w-7xl mx-auto">
-          <div className="reveal text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-cyan mb-4">Testimonials</p>
-            <h2 className="font-syne font-black text-4xl lg:text-6xl tracking-tight">Students love <span className="text-white/30">BrainNex</span></h2>
+      <section id="testimonials" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
+            <h2 className="font-jakarta font-black text-4xl lg:text-5xl tracking-tight mb-4 text-white">Loved by Students</h2>
+            <p className="text-lg text-txt-sec font-medium">Join thousands who have already transformed their learning experience.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map(({ name, role, text, stars, grad }, i) => (
-              <motion.div key={name} whileHover={{ borderColor:'rgba(255,255,255,0.15)' }}
-                className="reveal glass border border-brand-border rounded-2xl p-8 transition-all" style={{ transitionDelay:`${i*0.1}s` }}>
-                <div className="flex gap-0.5 mb-4">{Array.from({length:stars}).map((_,j) => <Star key={j} size={13} className="text-neon-amber fill-neon-amber" />)}</div>
-                <p className="text-sm text-white/60 leading-relaxed mb-6">"{text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-sm font-bold text-brand-bg`}>
-                    {name.split(' ').map(w=>w[0]).join('')}
+          <div className="grid md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}
+                className="glass-card bg-brand-card p-8 rounded-2xl shadow-lg border border-white/5 flex flex-col justify-between hover:shadow-xl transition-all hover:-translate-y-2">
+                <div>
+                  <div className="flex text-amber-500 mb-6 gap-1">
+                    {[...Array(t.rating)].map((_, j) => <Star key={j} size={16} fill="currentColor" />)}
                   </div>
-                  <div><p className="text-sm font-semibold">{name}</p><p className="text-xs text-white/30">{role}</p></div>
+                  <p className="text-white text-lg italic leading-relaxed mb-6">"{t.text}"</p>
+                </div>
+                <div className="flex items-center gap-4 border-t border-white/5 pt-6">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-cyan flex items-center justify-center text-white font-bold shadow-sm text-xl border-2 border-brand-bg">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-base">{t.name}</h4>
+                    <p className="text-[10px] font-bold text-txt-sec uppercase tracking-widest mt-1">{t.role}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -306,39 +267,58 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 px-6 lg:px-16 text-center relative overflow-hidden">
-        <div className="absolute w-[600px] h-[600px] rounded-full bg-cyan/5 blur-[120px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-        <div className="reveal relative z-10 max-w-2xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest text-cyan mb-6">Free to Start</p>
-          <h2 className="font-syne font-black text-5xl lg:text-7xl tracking-tight leading-none mb-6">
-            Ready to learn<br />with <span className="gradient-text">AI by your side?</span>
-          </h2>
-          <p className="text-white/50 text-lg mb-10">Join thousands of students using BrainNex to study smarter and score higher.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register">
-              <motion.button whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
-                className="btn-cyan flex items-center gap-2 text-base px-10 py-4">
-                Start for Free <ArrowRight size={18} />
-              </motion.button>
-            </Link>
-            <Link to="/login">
-              <button className="btn-outline text-base px-10 py-4">Sign In</button>
+      {/* CTA BANNER */}
+      <section className="py-20 px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto relative group cursor-pointer">
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan to-primary rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+          <div className="relative glass-card bg-brand-bg2 p-12 sm:p-16 text-center overflow-hidden rounded-[30px] border border-white/10">
+            <h2 className="font-jakarta font-black text-4xl sm:text-5xl mb-4 text-white">Ready to ace your exams?</h2>
+            <p className="text-lg text-txt2 mb-10 max-w-xl mx-auto">Join BrainNex today and experience the future of personalized learning.</p>
+            <Link to="/register" className="btn-primary text-lg px-12 py-5 shadow-glow-primary inline-flex">
+              Get Started for Free
             </Link>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-brand-border py-10 px-6 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/images/BrainNex_logo.png" alt="BrainNex" className="w-7 h-7 object-contain" />
-          <span className="font-syne font-black text-lg" style={{ background:'linear-gradient(90deg,#00e5ff,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>BrainNex</span>
-        </Link>
-        <div className="flex gap-6 text-xs text-white/30">
-          {['Features','Privacy','Terms','Contact'].map(l => <a key={l} href="#" className="hover:text-white/60 transition-colors">{l}</a>)}
+      <footer className="border-t border-white/10 bg-brand-bg2 pt-16 pb-8 px-6 lg:px-8 text-sm">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+          <div className="col-span-1 md:col-span-1">
+            <BrainNexLogo size="sm" />
+            <p className="text-txt3 mt-4 leading-relaxed">Your personal AI tutor. Study smarter, retain more, and crush your goals.</p>
+          </div>
+          <div>
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Product</h4>
+            <ul className="space-y-3 text-txt2">
+              <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Testimonials</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Company</h4>
+            <ul className="space-y-3 text-txt2">
+              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Stay Updated</h4>
+            <div className="flex gap-2">
+              <input type="email" placeholder="Email address" className="input-field py-2 px-3 text-sm" />
+              <button className="btn-primary py-2 px-4 text-sm rounded-xl">Subscribe</button>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-white/20">© 2025 BrainNex · React · Tailwind · Node.js · Firebase</p>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-txt3 text-xs pt-8 border-t border-white/5">
+          <p>© 2026 BrainNex Inc. All rights reserved.</p>
+          <div className="flex gap-6 mt-4 md:mt-0">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          </div>
+        </div>
       </footer>
     </div>
   );

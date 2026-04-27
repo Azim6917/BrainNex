@@ -12,6 +12,16 @@ import ProtectedRoute        from './components/ProtectedRoute';
 import Sidebar               from './components/Sidebar';
 import OnboardingFlow        from './components/OnboardingFlow';
 
+const MascotOverlay = () => {
+  const { kidMode } = useTheme();
+  if (!kidMode) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 pointer-events-none animate-mascot-float">
+      <div className="text-6xl filter drop-shadow-lg">🐙</div>
+    </div>
+  );
+};
+
 import LandingPage        from './pages/LandingPage';
 import LoginPage          from './pages/LoginPage';
 import RegisterPage       from './pages/RegisterPage';
@@ -65,11 +75,12 @@ function OnboardingGate({ children }) {
 function AppLayout({ children }) {
   const { desktopSidebarOpen } = { desktopSidebarOpen: true }; // managed inside Sidebar
   return (
-    <div className="flex min-h-screen" style={{ background:'var(--bg)' }}>
+    <div className="flex min-h-screen relative" style={{ background:'var(--bg)' }}>
       <Sidebar />
-      <main className="flex-1 min-h-screen overflow-y-auto w-full lg:ml-60" id="main-content">
+      <main className="flex-1 min-h-screen overflow-y-auto w-full lg:ml-[220px]" id="main-content">
         {children}
       </main>
+      <MascotOverlay />
     </div>
   );
 }

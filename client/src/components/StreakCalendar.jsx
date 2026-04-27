@@ -22,23 +22,24 @@ export default function StreakCalendar({ compact = false }) {
     }).catch(() => {});
   }, [user]);
 
-  // 35 days, split into 5 weeks of 7
-  const days = Array.from({ length: 35 }, (_, i) => {
+  // 13 weeks of 7 days = 91 days
+  const numDays = 91;
+  const days = Array.from({ length: numDays }, (_, i) => {
     const d   = new Date();
-    d.setDate(d.getDate() - (34 - i));
+    d.setDate(d.getDate() - (numDays - 1 - i));
     const key = d.toDateString();
     return { d, key, count: dayMap[key] || 0, isToday: key === new Date().toDateString() };
   });
 
   const weeks = [];
-  for (let i = 0; i < 5; i++) weeks.push(days.slice(i * 7, i * 7 + 7));
+  for (let i = 0; i < 13; i++) weeks.push(days.slice(i * 7, i * 7 + 7));
 
   const color = (n) => {
-    if (n === 0) return 'rgba(255,255,255,0.06)';
-    if (n === 1) return 'rgba(0,229,255,0.25)';
-    if (n === 2) return 'rgba(0,229,255,0.50)';
-    if (n === 3) return 'rgba(0,229,255,0.75)';
-    return '#00e5ff';
+    if (n === 0) return 'var(--border2)'; // bg-space-800 or border2
+    if (n === 1) return 'rgba(124, 58, 237, 0.25)'; // primary with opacity
+    if (n === 2) return 'rgba(124, 58, 237, 0.50)';
+    if (n === 3) return 'rgba(124, 58, 237, 0.75)';
+    return 'var(--primary)'; // full primary
   };
 
   const totalActive = Object.keys(dayMap).length;
@@ -47,24 +48,24 @@ export default function StreakCalendar({ compact = false }) {
   const DAYS_LABEL = ['M','T','W','T','F','S','S'];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-white/50">Activity — last 35 days</span>
-        <span className="text-[10px] text-white/25">{totalActive} active days · {totalQuizzes} quizzes</span>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-jakarta font-bold text-sm text-txt">Activity Calendar</h2>
+        <span className="text-[11px] font-medium text-txt3 bg-white/5 px-2 py-1 rounded-md">{totalQuizzes} quizzes in 90 days</span>
       </div>
 
-      <div className="flex gap-1 items-start">
+      <div className="flex gap-2 items-start w-full overflow-x-auto pb-1 custom-scrollbar">
         {/* Day labels on left */}
-        <div className="flex flex-col gap-1 mr-1 mt-0.5">
+        <div className="flex flex-col gap-[3px] mr-1 mt-0.5 flex-shrink-0">
           {DAYS_LABEL.map((l, i) => (
-            <div key={i} className="text-[9px] text-white/20 h-3 flex items-center">{i % 2 === 0 ? l : ''}</div>
+            <div key={i} className="text-[10px] font-bold text-txt3 h-3.5 flex items-center">{i % 2 === 0 ? l : ''}</div>
           ))}
         </div>
 
         {/* Grid — weeks as columns */}
-        <div className="flex gap-1 flex-1">
+        <div className="flex gap-[3px] flex-1">
           {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-1 flex-1">
+            <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-[12px]">
               {week.map(({ d, key, count, isToday }) => (
                 <motion.div
                   key={key}
@@ -72,13 +73,12 @@ export default function StreakCalendar({ compact = false }) {
                   animate={{ scale: 1 }}
                   transition={{ delay: wi * 0.02, duration: 0.15 }}
                   title={`${d.toLocaleDateString('en-IN', { weekday:'short', month:'short', day:'numeric' })}: ${count} quiz${count !== 1 ? 'zes' : ''}`}
-                  className={`rounded-[2px] cursor-default transition-all ${isToday ? 'ring-1 ring-cyan ring-offset-[1px] ring-offset-brand-bg2' : ''}`}
+                  className={`rounded-[3px] cursor-default transition-all hover:scale-125 hover:z-10 relative ${isToday ? 'ring-1 ring-primary ring-offset-1 ring-offset-space-dark' : ''}`}
                   style={{
                     background: color(count),
                     width: '100%',
                     aspectRatio: '1 / 1',
-                    minWidth: 10,
-                    maxWidth: 16,
+                    minHeight: '12px'
                   }}
                 />
               ))}
@@ -88,12 +88,12 @@ export default function StreakCalendar({ compact = false }) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-1 mt-2 justify-end">
-        <span className="text-[9px] text-white/20">Less</span>
+      <div className="flex items-center gap-1.5 mt-3 justify-end">
+        <span className="text-[10px] font-medium text-txt3">Less</span>
         {[0,1,2,3,4].map(n => (
-          <div key={n} className="w-2.5 h-2.5 rounded-[2px]" style={{ background: color(n) }} />
+          <div key={n} className="w-3 h-3 rounded-[3px]" style={{ background: color(n) }} />
         ))}
-        <span className="text-[9px] text-white/20">More</span>
+        <span className="text-[10px] font-medium text-txt3">More</span>
       </div>
     </div>
   );

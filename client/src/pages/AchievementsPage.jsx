@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Lock, Zap, Star } from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
 import { triggerConfetti } from '../utils/confetti';
-import { playBadge } from '../utils/soundEffects';
+import { audioSystem } from '../utils/audio';
 
 export const ALL_BADGES = [
   // Milestone
@@ -41,12 +41,12 @@ export const ALL_BADGES = [
 
 const CAT_COLORS = {
   Milestone:   { bg:'bg-cyan/10',         border:'border-cyan/30',         text:'text-cyan'         },
-  Achievement: { bg:'bg-neon-amber/10',   border:'border-neon-amber/30',   text:'text-neon-amber'   },
-  Streak:      { bg:'bg-orange-500/10',   border:'border-orange-500/30',   text:'text-orange-400'   },
-  XP:          { bg:'bg-violet-500/10',   border:'border-violet-500/30',   text:'text-violet-400'   },
-  Social:      { bg:'bg-pink-500/10',     border:'border-pink-500/30',     text:'text-pink-400'     },
-  Learning:    { bg:'bg-neon-green/10',   border:'border-neon-green/30',   text:'text-neon-green'   },
-  Goals:       { bg:'bg-cyan/10',         border:'border-cyan/30',         text:'text-cyan'         },
+  Achievement: { bg:'bg-amber-500/10',    border:'border-amber-500/30',    text:'text-amber-500'    },
+  Streak:      { bg:'bg-orange-500/10',   border:'border-orange-500/30',   text:'text-orange-500'   },
+  XP:          { bg:'bg-violet-500/10',   border:'border-violet-500/30',   text:'text-violet-500'   },
+  Social:      { bg:'bg-pink-500/10',     border:'border-pink-500/30',     text:'text-pink-500'     },
+  Learning:    { bg:'bg-green-500/10',    border:'border-green-500/30',    text:'text-green-500'    },
+  Goals:       { bg:'bg-primary/10',      border:'border-primary/30',      text:'text-primary'      },
 };
 
 const LEVELS = [
@@ -75,46 +75,48 @@ export default function AchievementsPage() {
 
   const handleBadgeClick = (badge) => {
     if (earnedMap.has(badge.id)) {
-      playBadge();
+      audioSystem.playClick();
       setSelected(badge);
     }
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-4xl">
-      <div className="mb-6 pt-12 lg:pt-0">
-        <h1 className="font-syne font-black text-2xl md:text-3xl mb-1">Achievements</h1>
-        <p className="text-white/40 text-sm">Your badges, level progress, and stats</p>
+    <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
+      <div className="mb-8 pt-12 lg:pt-0">
+        <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Achievements</h1>
+        <p className="text-sm font-medium text-txt3">Your badges, level progress, and stats</p>
       </div>
 
       {/* Level card */}
       <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
-        className="glass border border-brand-border rounded-2xl p-5 mb-5">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-4">
+        className="glass-card p-6 md:p-8 mb-8 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 opacity-20 rounded-bl-full pointer-events-none" style={{ background:`linear-gradient(to bottom left, ${levelInfo.color}, transparent)` }} />
+        
+        <div className="flex flex-col md:flex-row md:items-center gap-6 relative z-10">
+          <div className="flex items-center gap-5">
             <motion.div
               whileHover={{ rotate:5, scale:1.05 }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-syne font-black text-2xl border-2 relative flex-shrink-0"
+              className="w-20 h-20 rounded-2xl flex items-center justify-center font-jakarta font-black text-4xl border-2 relative flex-shrink-0 shadow-sm"
               style={{ borderColor:levelInfo.color, background:`${levelInfo.color}15`, color:levelInfo.color }}>
               {level}
-              <div className="absolute -top-2 -right-2 text-[9px] bg-brand-bg2 border border-brand-border px-1.5 py-0.5 rounded-full font-bold" style={{ color:levelInfo.color }}>
+              <div className="absolute -top-3 -right-3 text-[10px] bg-space-900 border px-2 py-1 rounded-lg font-bold shadow-sm uppercase tracking-wider" style={{ color:levelInfo.color, borderColor:levelInfo.color }}>
                 Lv.{level}
               </div>
             </motion.div>
             <div>
-              <p className="text-xs text-white/40">Current Level</p>
-              <p className="font-syne font-black text-xl" style={{ color:levelInfo.color }}>{levelInfo.name}</p>
-              <p className="text-xs text-white/40">{totalXP.toLocaleString()} total XP</p>
+              <p className="text-xs font-bold text-txt3 uppercase tracking-widest mb-1">Current Level</p>
+              <p className="font-jakarta font-black text-2xl mb-1" style={{ color:levelInfo.color }}>{levelInfo.name}</p>
+              <p className="text-sm font-medium text-txt2">{totalXP.toLocaleString()} total XP</p>
             </div>
           </div>
-          <div className="flex-1">
-            <div className="flex justify-between text-xs text-white/40 mb-1.5">
+          <div className="flex-1 md:ml-8 mt-4 md:mt-0">
+            <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-txt3 mb-2">
               <span>{xpInLevel} / {xpNeeded} XP</span>
               <span>{xpPct}% to Lv.{Math.min(level+1,10)}</span>
             </div>
-            <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-3 bg-space-800 rounded-full overflow-hidden shadow-inner">
               <motion.div className="h-full rounded-full"
-                style={{ background:`linear-gradient(90deg,${levelInfo.color}88,${levelInfo.color})` }}
+                style={{ background:`linear-gradient(90deg,${levelInfo.color}88,${levelInfo.color})`, boxShadow:`0 0 10px ${levelInfo.color}60` }}
                 initial={{ width:0 }} animate={{ width:`${xpPct}%` }} transition={{ duration:1.2, delay:0.3 }} />
             </div>
           </div>
@@ -122,7 +124,7 @@ export default function AchievementsPage() {
       </motion.div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
           { icon:'🏆', label:'Badges',       val:`${earnedMap.size}/${ALL_BADGES.length}` },
           { icon:'🔥', label:'Streak',        val:`${profile?.streak||0} days` },
@@ -130,34 +132,37 @@ export default function AchievementsPage() {
           { icon:'📝', label:'Total Quizzes', val:profile?.totalQuizzes||0 },
         ].map(({ icon, label, val }) => (
           <motion.div key={label} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-            className="glass border border-brand-border rounded-2xl p-4 text-center">
-            <div className="text-2xl mb-1">{icon}</div>
-            <div className="font-syne font-black text-lg text-cyan">{val}</div>
-            <div className="text-[10px] text-white/30">{label}</div>
+            className="glass-card p-6 text-center shadow-sm">
+            <div className="text-3xl mb-3 drop-shadow-sm">{icon}</div>
+            <div className="font-jakarta font-black text-2xl text-primary mb-1 drop-shadow-sm">{val}</div>
+            <div className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{label}</div>
           </motion.div>
         ))}
       </div>
 
       {/* Recently earned — with entrance animation */}
       {earnedMap.size > 0 && (
-        <div className="mb-6">
-          <h2 className="font-syne font-bold text-base mb-3 flex items-center gap-2">
-            <Star size={15} className="text-neon-amber" />Recently Earned
-          </h2>
-          <div className="flex flex-wrap gap-3">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1 h-6 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)]"/>
+            <h2 className="font-jakarta font-black text-xl text-txt flex items-center gap-2">
+              <Star size={20} className="text-amber-500" />Recently Earned
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-4">
             {[...(profile?.badges||[])].reverse().slice(0,6).map((badge, i) => {
               const colors = CAT_COLORS[badge.category] || CAT_COLORS.Achievement;
               return (
                 <motion.div key={badge.id}
                   initial={{ scale:0, rotate:-10 }} animate={{ scale:1, rotate:0 }}
                   transition={{ delay:i*0.08, type:'spring', stiffness:300 }}
-                  whileHover={{ scale:1.08, rotate:2 }}
+                  whileHover={{ scale:1.05, rotate:2, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' }}
                   onClick={() => handleBadgeClick(badge)}
-                  className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border cursor-pointer ${colors.bg} ${colors.border}`}>
-                  <span className="text-2xl">{badge.icon}</span>
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer shadow-sm ${colors.bg} ${colors.border}`}>
+                  <span className="text-3xl drop-shadow-sm">{badge.icon}</span>
                   <div>
-                    <p className={`text-xs font-bold ${colors.text}`}>{badge.name}</p>
-                    <p className="text-[10px] text-white/30">{badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : ''}</p>
+                    <p className={`text-sm font-bold ${colors.text}`}>{badge.name}</p>
+                    <p className="text-[10px] font-bold text-txt3 uppercase tracking-widest mt-0.5">{badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : ''}</p>
                   </div>
                 </motion.div>
               );
@@ -167,36 +172,39 @@ export default function AchievementsPage() {
       )}
 
       {/* All badges */}
-      <div>
-        <h2 className="font-syne font-bold text-base mb-3 flex items-center gap-2">
-          <Zap size={15} className="text-cyan" />All Badges
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-cyan rounded-full shadow-[0_0_8px_rgba(0,229,255,0.6)]"/>
+          <h2 className="font-jakarta font-black text-xl text-txt flex items-center gap-2">
+            <Zap size={20} className="text-cyan" />All Badges
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
           {ALL_BADGES.map((badge, i) => {
             const earned = earnedMap.has(badge.id);
             const info   = earnedMap.get(badge.id);
             const colors = CAT_COLORS[badge.category] || CAT_COLORS.Achievement;
             return (
               <motion.div key={badge.id}
-                initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.03 }}
-                whileHover={earned ? { y:-3, scale:1.03 } : {}}
+                initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.02 }}
+                whileHover={earned ? { y:-4, scale:1.02, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' } : {}}
                 onClick={() => handleBadgeClick(badge)}
-                className={`rounded-2xl p-4 border text-center transition-all relative ${earned ? `${colors.bg} ${colors.border} cursor-pointer` : 'bg-white/[0.02] border-brand-border opacity-40 cursor-default'}`}>
-                {!earned && <Lock size={10} className="absolute top-2.5 right-2.5 text-white/20" />}
+                className={`rounded-2xl p-5 border text-center transition-all relative glass-card shadow-sm ${earned ? `${colors.bg} ${colors.border} cursor-pointer` : 'bg-space-800 border-border opacity-60 cursor-default'}`}>
+                {!earned && <div className="absolute top-3 right-3 p-1.5 bg-space-900 rounded-lg text-txt3 shadow-sm border border-white/5"><Lock size={12} /></div>}
                 {earned && (
                   <motion.div
-                    initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.03+0.2, type:'spring' }}
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-neon-green flex items-center justify-center">
-                    <span className="text-[8px] text-brand-bg font-bold">✓</span>
+                    initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.02+0.2, type:'spring' }}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm border-2 border-space-900">
+                    <span className="text-[10px] text-white font-black">✓</span>
                   </motion.div>
                 )}
-                <div className={`text-3xl mb-2 ${!earned ? 'grayscale' : ''}`}>{badge.icon}</div>
-                <p className={`font-syne font-bold text-xs mb-1 ${earned ? colors.text : 'text-white/30'}`}>{badge.name}</p>
-                <p className="text-[10px] text-white/30 leading-snug">{badge.desc}</p>
+                <div className={`text-4xl mb-3 mt-2 drop-shadow-sm ${!earned ? 'grayscale opacity-50' : ''}`}>{badge.icon}</div>
+                <p className={`font-jakarta font-bold text-sm mb-1.5 ${earned ? colors.text : 'text-txt3'}`}>{badge.name}</p>
+                <p className="text-[10px] font-medium text-txt2 leading-relaxed">{badge.desc}</p>
                 {earned && info?.earnedAt && (
-                  <p className="text-[9px] text-white/20 mt-1">{new Date(info.earnedAt).toLocaleDateString()}</p>
+                  <p className="text-[9px] font-bold text-txt3 mt-2 uppercase tracking-widest">{new Date(info.earnedAt).toLocaleDateString()}</p>
                 )}
-                <div className={`mt-2 text-[9px] font-semibold px-2 py-0.5 rounded-full inline-block ${earned ? colors.bg : 'bg-white/[0.04]'} ${earned ? colors.text : 'text-white/20'}`}>
+                <div className={`mt-3 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md inline-block shadow-sm ${earned ? colors.bg : 'bg-space-900 border border-white/5'} ${earned ? colors.text : 'text-txt3'}`}>
                   {badge.category}
                 </div>
               </motion.div>
@@ -206,28 +214,31 @@ export default function AchievementsPage() {
       </div>
 
       {/* Level roadmap */}
-      <div className="mt-8">
-        <h2 className="font-syne font-bold text-base mb-3 flex items-center gap-2">
-          <Trophy size={15} className="text-cyan" />Level Roadmap
-        </h2>
-        <div className="space-y-2">
+      <div className="mt-10 mb-8">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(124,58,237,0.6)]"/>
+          <h2 className="font-jakarta font-black text-xl text-txt flex items-center gap-2">
+            <Trophy size={20} className="text-primary" />Level Roadmap
+          </h2>
+        </div>
+        <div className="space-y-3">
           {LEVELS.map(l => {
             const isCurrent = l.level === level;
             const isPast    = l.level < level;
             return (
               <motion.div key={l.level}
                 initial={{ opacity:0, x:-10 }} animate={{ opacity:1, x:0 }} transition={{ delay:l.level*0.04 }}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isCurrent ? '' : isPast ? 'opacity-60' : 'opacity-25'}`}
-                style={{ borderColor:isCurrent ? l.color : 'rgba(255,255,255,0.08)', background:isCurrent ? `${l.color}08` : 'transparent' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-syne font-black text-sm border flex-shrink-0"
-                  style={{ borderColor:l.color, color:l.color, background:`${l.color}15` }}>{l.level}</div>
+                className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${isCurrent ? 'shadow-md scale-[1.01]' : isPast ? 'opacity-70' : 'opacity-40'}`}
+                style={{ borderColor:isCurrent ? l.color : 'var(--border)', background:isCurrent ? `${l.color}10` : 'var(--space-800)' }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-jakarta font-black text-lg border-2 flex-shrink-0 shadow-sm"
+                  style={{ borderColor:l.color, color:l.color, background:`${l.color}20` }}>{l.level}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color:isCurrent ? l.color : undefined }}>{l.name}</p>
-                  <p className="text-xs text-white/30">{l.minXP.toLocaleString()}{l.maxXP ? ` – ${l.maxXP.toLocaleString()}` : '+'} XP</p>
+                  <p className="text-base font-bold" style={{ color:isCurrent ? l.color : 'var(--txt)' }}>{l.name}</p>
+                  <p className="text-xs font-bold text-txt3 uppercase tracking-widest mt-1">{l.minXP.toLocaleString()}{l.maxXP ? ` – ${l.maxXP.toLocaleString()}` : '+'} XP</p>
                 </div>
-                {isPast    && <span className="text-xs text-neon-green font-semibold flex-shrink-0">✓ Reached</span>}
-                {isCurrent && <motion.span animate={{ opacity:[1,0.4,1] }} transition={{ repeat:Infinity, duration:2 }}
-                  className="text-xs font-bold flex-shrink-0" style={{ color:l.color }}>← You</motion.span>}
+                {isPast    && <span className="text-xs text-green-500 font-bold uppercase tracking-widest flex-shrink-0 px-3 py-1 bg-green-500/10 rounded-lg border border-green-500/20 shadow-sm">✓ Reached</span>}
+                {isCurrent && <motion.span animate={{ opacity:[1,0.5,1] }} transition={{ repeat:Infinity, duration:2 }}
+                  className="text-xs font-black uppercase tracking-widest flex-shrink-0 px-3 py-1 rounded-lg border shadow-sm" style={{ color:l.color, backgroundColor:`${l.color}15`, borderColor:l.color }}>← You</motion.span>}
               </motion.div>
             );
           })}
@@ -238,21 +249,25 @@ export default function AchievementsPage() {
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setSelected(null)}>
-            <motion.div initial={{ scale:0.8, rotate:-5 }} animate={{ scale:1, rotate:0 }} exit={{ scale:0.8 }}
+            className="fixed inset-0 bg-space-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            onClick={() => { audioSystem.playClick(); setSelected(null); }}>
+            <motion.div initial={{ scale:0.9, y:20 }} animate={{ scale:1, y:0 }} exit={{ scale:0.9, y:20 }}
               transition={{ type:'spring', stiffness:300 }}
               onClick={e => e.stopPropagation()}
-              className="glass border border-brand-border2 rounded-3xl p-8 max-w-xs w-full text-center shadow-2xl">
-              <motion.div animate={{ rotate:[0,10,-10,0] }} transition={{ delay:0.2, duration:0.4 }} className="text-6xl mb-4">
+              className="glass-card border-primary/20 rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full pointer-events-none" />
+              <motion.div animate={{ rotate:[0,10,-10,0], scale:[1,1.1,1] }} transition={{ delay:0.1, duration:0.5 }} className="text-7xl mb-6 drop-shadow-lg relative z-10">
                 {selected.icon}
               </motion.div>
-              <h3 className="font-syne font-black text-xl mb-1">{selected.name}</h3>
-              <p className="text-white/50 text-sm mb-4">{selected.desc}</p>
+              <h3 className="font-jakarta font-black text-2xl mb-2 text-txt relative z-10">{selected.name}</h3>
+              <p className="text-txt2 font-medium text-base mb-6 relative z-10">{selected.desc}</p>
               {earnedMap.get(selected.id)?.earnedAt && (
-                <p className="text-xs text-white/30">Earned on {new Date(earnedMap.get(selected.id).earnedAt).toLocaleDateString('en-IN', { year:'numeric', month:'long', day:'numeric' })}</p>
+                <div className="bg-space-800 rounded-xl p-3 mb-6 border border-white/5 relative z-10">
+                  <p className="text-[10px] font-bold text-txt3 uppercase tracking-widest mb-1">Earned On</p>
+                  <p className="text-sm font-bold text-txt2">{new Date(earnedMap.get(selected.id).earnedAt).toLocaleDateString('en-IN', { year:'numeric', month:'long', day:'numeric' })}</p>
+                </div>
               )}
-              <button onClick={() => setSelected(null)} className="mt-5 btn-cyan py-2 px-8 text-sm">Close</button>
+              <button onClick={() => { audioSystem.playClick(); setSelected(null); }} className="btn-primary w-full py-3.5 text-sm font-bold shadow-glow-primary relative z-10">Awesome!</button>
             </motion.div>
           </motion.div>
         )}

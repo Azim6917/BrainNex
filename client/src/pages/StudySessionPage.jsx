@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, CheckCircle,
   XCircle, Brain, RotateCcw, Trophy, Layers, ArrowRight,
-  HelpCircle, Eye, EyeOff, Loader
+  HelpCircle, Eye, EyeOff, Loader, Clock
 } from 'lucide-react';
 import { generateStudySession, generateQuiz, generateFlashcards, explainAnswer } from '../utils/api';
 import { saveQuizResultToFirestore } from '../utils/firestoreUtils';
 import { useAuth } from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
-import { playClick, playCorrect, playWrong, playXP, playPerfect, playComplete } from '../utils/soundEffects';
+import { audioSystem } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import toast from 'react-hot-toast';
 
@@ -28,7 +28,7 @@ function SessionSetup({ onStart }) {
     setLoading(true);
     try {
       const res = await generateStudySession(subject, topic, level, profile?.grade);
-      playClick();
+      audioSystem.playClick();
       onStart({ ...res.data, grade: profile?.grade });
     } catch (err) {
       if (!err.response) {
@@ -40,23 +40,25 @@ function SessionSetup({ onStart }) {
   };
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
-        className="glass border border-brand-border rounded-3xl p-7">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-            <BookOpen size={22} className="text-violet-400" />
+        className="glass-card p-6 md:p-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
+        
+        <div className="flex items-center gap-4 mb-8 relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <BookOpen size={24} className="text-primary" />
           </div>
           <div>
-            <h2 className="font-syne font-bold text-xl">Start Study Session</h2>
-            <p className="text-xs text-white/40">AI teaches you step by step, then quizzes you</p>
+            <h2 className="font-jakarta font-black text-2xl text-txt mb-1">Start Study Session</h2>
+            <p className="text-sm font-medium text-txt3">AI teaches you step by step, then quizzes you</p>
           </div>
         </div>
 
         {/* How it works mini-guide */}
-        <div className="bg-white/[0.03] border border-brand-border rounded-2xl p-4 mb-6">
-          <p className="text-xs font-semibold text-white/60 mb-2">How it works:</p>
-          <div className="flex items-center gap-0 overflow-hidden">
+        <div className="bg-space-800 border border-white/5 rounded-2xl p-5 mb-8 relative z-10 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-txt3 mb-4">How it works:</p>
+          <div className="flex items-center justify-between gap-2 overflow-hidden">
             {[
               { icon:'📖', label:'5 lesson cards' },
               { icon:'✅', label:'2 checkpoints' },
@@ -65,22 +67,22 @@ function SessionSetup({ onStart }) {
             ].map((s, i) => (
               <React.Fragment key={i}>
                 <div className="flex flex-col items-center text-center flex-1">
-                  <span className="text-lg mb-1">{s.icon}</span>
-                  <span className="text-[10px] text-white/40">{s.label}</span>
+                  <span className="text-2xl mb-2 drop-shadow-sm">{s.icon}</span>
+                  <span className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{s.label}</span>
                 </div>
-                {i < 3 && <ChevronRight size={12} className="text-white/20 flex-shrink-0" />}
+                {i < 3 && <ChevronRight size={16} className="text-white/10 flex-shrink-0" />}
               </React.Fragment>
             ))}
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6 relative z-10">
           <div>
-            <label className="text-xs font-medium text-white/50 mb-2 block">Subject</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-txt3 mb-3 block">Subject</label>
+            <div className="flex flex-wrap gap-2.5">
               {SUBJECTS.map(s => (
-                <button key={s} onClick={() => { playClick(); setSubject(s); }}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${s===subject ? 'bg-violet-500/20 border-violet-500/40 text-violet-400' : 'border-brand-border text-white/40 hover:border-brand-border2'}`}>
+                <button key={s} onClick={() => { audioSystem.playClick(); setSubject(s); }}
+                  className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all border shadow-sm ${s===subject ? 'bg-primary/10 border-primary/50 text-primary' : 'bg-transparent border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
                   {s}
                 </button>
               ))}
@@ -88,21 +90,21 @@ function SessionSetup({ onStart }) {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-white/50 mb-2 block">
-              Topic <span className="text-white/20">(be specific for best lessons)</span>
+            <label className="text-xs font-bold uppercase tracking-widest text-txt3 mb-3 block">
+              Topic <span className="text-white/20 ml-1 font-medium lowercase">(be specific for best lessons)</span>
             </label>
             <input value={topic} onChange={e => setTopic(e.target.value)}
               onKeyDown={e => e.key==='Enter' && start()}
               placeholder="e.g. Photosynthesis, Quadratic Equations, French Revolution..."
-              className="input-dark w-full text-sm" autoFocus />
+              className="input-field text-sm" autoFocus />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-white/50 mb-2 block">Your Level</label>
-            <div className="flex gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-txt3 mb-3 block">Your Level</label>
+            <div className="flex gap-3">
               {['beginner','intermediate','advanced'].map(l => (
-                <button key={l} onClick={() => { playClick(); setLevel(l); }}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-semibold capitalize border transition-all ${l===level ? l==='beginner' ? 'bg-neon-green/20 border-neon-green/40 text-neon-green' : l==='intermediate' ? 'bg-violet-500/20 border-violet-500/40 text-violet-400' : 'bg-red-500/20 border-red-500/40 text-red-400' : 'border-brand-border text-white/40'}`}>
+                <button key={l} onClick={() => { audioSystem.playClick(); setLevel(l); }}
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold capitalize border transition-all shadow-sm ${l===level ? l==='beginner' ? 'bg-green-500/10 border-green-500/40 text-green-500' : l==='intermediate' ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-red-500/10 border-red-500/40 text-red-500' : 'bg-transparent border-border text-txt3 hover:border-white/20'}`}>
                   {l}
                 </button>
               ))}
@@ -111,11 +113,10 @@ function SessionSetup({ onStart }) {
 
           <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
             onClick={start} disabled={loading}
-            className="w-full py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
-            style={{ background:'linear-gradient(135deg, #a78bfa, #00e5ff)', color:'#060912' }}>
+            className="w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50 transition-all btn-primary shadow-glow-primary mt-4">
             {loading
-              ? <><Loader size={16} className="animate-spin" />Generating your lesson...</>
-              : <><BookOpen size={16} />Start Learning Session</>}
+              ? <><Loader size={18} className="animate-spin" />Generating your lesson...</>
+              : <><BookOpen size={18} />Start Learning Session</>}
           </motion.button>
         </div>
       </motion.div>
@@ -139,7 +140,7 @@ function LessonCards({ session, onComplete }) {
   const checkAfterThis = session.checkpoints?.find(c => c.afterCard === cardIdx + 1);
 
   const handleNext = () => {
-    playClick();
+    audioSystem.playClick();
     setFlipped(false);
     if (checkAfterThis && !cpShown) {
       setCheckpoint(checkAfterThis);
@@ -149,7 +150,7 @@ function LessonCards({ session, onComplete }) {
     setCpShown(false);
     setCheckpoint(null);
     if (cardIdx + 1 >= total) {
-      playComplete();
+      audioSystem.playQuizComplete();
       onComplete();
     } else {
       setCardIdx(i => i + 1);
@@ -161,32 +162,32 @@ function LessonCards({ session, onComplete }) {
     setCpSelected(idx);
     setCpShown(true);
     if (idx === checkpoint.correctIndex) {
-      playCorrect();
+      audioSystem.playCorrect();
       toast.success('Correct! Keep going 🎯', { duration: 2000 });
     } else {
-      playWrong();
+      audioSystem.playWrong();
     }
   };
 
   const handleCpContinue = () => {
-    playClick();
+    audioSystem.playClick();
     setCheckpoint(null);
     setCpShown(false);
-    if (cardIdx + 1 >= total) { playComplete(); onComplete(); }
+    if (cardIdx + 1 >= total) { audioSystem.playQuizComplete(); onComplete(); }
     else setCardIdx(i => i + 1);
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       {/* Progress */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-          <motion.div className="h-full rounded-full"
-            style={{ background:'linear-gradient(90deg, #a78bfa, #00e5ff)' }}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex-1 h-2 bg-space-800 rounded-full overflow-hidden shadow-inner">
+          <motion.div className="h-full rounded-full shadow-[0_0_10px_rgba(124,58,237,0.5)]"
+            style={{ background:'linear-gradient(90deg, var(--primary), var(--cyan))' }}
             animate={{ width:`${pct}%` }} transition={{ duration:0.4 }} />
         </div>
-        <span className="text-xs text-white/40 flex-shrink-0">{cardIdx + 1}/{total}</span>
-        <span className="text-xs text-white/30 flex-shrink-0">~{session.estimatedMinutes}min</span>
+        <span className="text-xs font-bold text-txt3 flex-shrink-0 bg-space-800 px-3 py-1.5 rounded-lg border border-white/5">{cardIdx + 1}/{total}</span>
+        <span className="text-xs font-bold text-txt3 flex-shrink-0 bg-space-800 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-1.5"><Clock size={12}/>~{session.estimatedMinutes}min</span>
       </div>
 
       <AnimatePresence mode="wait">
@@ -194,43 +195,43 @@ function LessonCards({ session, onComplete }) {
         {checkpoint ? (
           <motion.div key="checkpoint"
             initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
-            className="glass border border-neon-amber/30 rounded-3xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-neon-amber/20 flex items-center justify-center text-sm">✅</div>
+            className="glass-card border-amber-500/30 p-8 shadow-lg">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-lg shadow-sm">✅</div>
               <div>
-                <p className="font-syne font-bold text-sm text-neon-amber">Quick Check</p>
-                <p className="text-xs text-white/40">Let's make sure you've got this</p>
+                <p className="font-jakarta font-black text-base text-amber-500 tracking-tight">Quick Check</p>
+                <p className="text-xs font-medium text-txt3">Let's make sure you've got this</p>
               </div>
             </div>
-            <p className="text-base font-semibold leading-relaxed mb-5">{checkpoint.question}</p>
-            <div className="space-y-2.5 mb-4">
+            <p className="text-lg font-bold leading-relaxed mb-6 text-txt">{checkpoint.question}</p>
+            <div className="space-y-3 mb-6">
               {checkpoint.options.map((opt, i) => {
-                let cls = 'border-brand-border text-white/70 hover:border-brand-border2';
+                let cls = 'bg-space-800 border-border text-txt2 hover:border-white/20 hover:text-txt';
                 if (cpSelected !== null) {
-                  if (i === checkpoint.correctIndex)  cls = 'border-neon-green bg-neon-green/10 text-neon-green';
-                  else if (i === cpSelected)           cls = 'border-red-400 bg-red-500/10 text-red-400';
-                  else                                 cls = 'border-brand-border text-white/30 opacity-50';
+                  cls = 'bg-space-800 border-border text-txt3 opacity-60';
+                  if (i === checkpoint.correctIndex)  cls = 'border-green-500/50 bg-green-500/10 text-green-500 font-medium';
+                  else if (i === cpSelected)           cls = 'border-red-500/50 bg-red-500/10 text-red-500 font-medium';
                 }
                 return (
                   <button key={i} onClick={() => handleCpAnswer(i)} disabled={cpSelected !== null}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm text-left transition-all ${cls}`}>
-                    <span className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-sm text-left transition-all ${cls}`}>
+                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm ${cpSelected===null ? 'bg-space-900 text-txt2' : i===checkpoint.correctIndex ? 'bg-green-500/20 text-green-500' : i===cpSelected ? 'bg-red-500/20 text-red-500' : 'bg-space-900 text-txt3'}`}>
                       {['A','B','C','D'][i]}
                     </span>
-                    {opt}
-                    {cpSelected !== null && i === checkpoint.correctIndex && <CheckCircle size={14} className="ml-auto flex-shrink-0" />}
+                    <span className="flex-1 text-base">{opt}</span>
+                    {cpSelected !== null && i === checkpoint.correctIndex && <CheckCircle size={18} className="ml-auto flex-shrink-0 text-green-500" />}
+                    {cpSelected !== null && i === cpSelected && i !== checkpoint.correctIndex && <XCircle size={18} className="ml-auto flex-shrink-0 text-red-500" />}
                   </button>
                 );
               })}
             </div>
             {cpSelected !== null && (
-              <motion.div initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}>
-                <div className={`px-4 py-3 rounded-xl text-xs mb-4 border ${cpSelected===checkpoint.correctIndex ? 'bg-neon-green/10 border-neon-green/20 text-neon-green/80' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
+              <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}>
+                <div className={`px-5 py-4 rounded-xl text-sm font-medium mb-6 border border-l-4 ${cpSelected===checkpoint.correctIndex ? 'bg-green-500/5 border-green-500/20 border-l-green-500 text-txt2' : 'bg-red-500/5 border-red-500/20 border-l-red-500 text-txt2'}`}>
                   {checkpoint.explanation}
                 </div>
                 <button onClick={handleCpContinue}
-                  style={{ background:'linear-gradient(135deg, #a78bfa, #00e5ff)', color:'#060912' }}
-                  className="w-full py-3 rounded-2xl font-semibold text-sm">
+                  className="btn-primary w-full py-4 font-bold text-base shadow-glow-primary">
                   Continue to next card →
                 </button>
               </motion.div>
@@ -240,53 +241,53 @@ function LessonCards({ session, onComplete }) {
           /* ── LESSON CARD ── */
           <motion.div key={cardIdx}
             initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }}
-            className="glass border border-brand-border rounded-3xl overflow-hidden">
+            className="glass-card overflow-hidden shadow-lg">
             {/* Card header */}
-            <div className="px-6 pt-6 pb-4" style={{ background:'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(0,229,255,0.06))' }}>
-              <div className="flex items-center gap-3">
-                <span className="text-4xl">{card.emoji}</span>
+            <div className="px-8 pt-8 pb-6 bg-gradient-to-br from-primary/10 to-transparent border-b border-border">
+              <div className="flex items-center gap-4">
+                <span className="text-5xl drop-shadow-md">{card.emoji}</span>
                 <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">Card {cardIdx+1} of {total}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-md shadow-sm border border-primary/20">Card {cardIdx+1} of {total}</span>
                   </div>
-                  <h3 className="font-syne font-black text-xl leading-tight">{card.title}</h3>
+                  <h3 className="font-jakarta font-black text-2xl leading-tight text-txt">{card.title}</h3>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-8 py-6 space-y-6">
               {/* Main content */}
-              <p className="text-white/80 leading-relaxed text-sm">{card.content}</p>
+              <p className="text-txt2 font-medium leading-relaxed text-base">{card.content}</p>
 
               {/* Formula box */}
               {card.formula && (
-                <div className="bg-black/30 border border-brand-border2 rounded-2xl p-4">
+                <div className="bg-space-800 border border-border rounded-2xl p-5 shadow-inner">
                   {card.formulaLabel && (
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-cyan mb-2">{card.formulaLabel}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-cyan mb-2.5 opacity-80">{card.formulaLabel}</p>
                   )}
-                  <code className="text-cyan font-mono text-lg font-bold block text-center">{card.formula}</code>
+                  <code className="text-cyan font-mono text-xl font-bold block text-center tracking-wide">{card.formula}</code>
                 </div>
               )}
 
               {/* Example */}
               {card.example && (
-                <div className="bg-violet-500/8 border border-violet-500/20 rounded-2xl p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-2">📌 Example</p>
-                  <p className="text-sm text-white/70 leading-relaxed">{card.example}</p>
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2.5 flex items-center gap-1.5"><Zap size={12}/> Example</p>
+                  <p className="text-sm font-medium text-txt2 leading-relaxed">{card.example}</p>
                 </div>
               )}
 
               {/* Key points */}
               {card.keyPoints?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Key Points</p>
-                  <div className="space-y-2">
+                <div className="pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-3 pl-1">Key Points</p>
+                  <div className="space-y-3">
                     {card.keyPoints.map((pt, i) => (
                       <motion.div key={i}
                         initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} transition={{ delay: i*0.1 }}
-                        className="flex items-start gap-2.5 text-sm text-white/70">
-                        <span className="w-5 h-5 rounded-full bg-cyan/20 text-cyan flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">{i+1}</span>
-                        {pt}
+                        className="flex items-start gap-3 text-sm font-medium text-txt2">
+                        <span className="w-6 h-6 rounded-full bg-cyan/20 text-cyan flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm border border-cyan/30 mt-0.5">{i+1}</span>
+                        <span className="pt-0.5 leading-relaxed">{pt}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -295,17 +296,16 @@ function LessonCards({ session, onComplete }) {
             </div>
 
             {/* Navigation */}
-            <div className="px-6 pb-6 flex items-center gap-3">
+            <div className="px-8 pb-8 pt-2 flex items-center gap-4">
               {cardIdx > 0 && (
-                <button onClick={() => { playClick(); setFlipped(false); setCardIdx(i => i-1); }}
-                  className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
-                  <ChevronLeft size={16} /> Previous
+                <button onClick={() => { audioSystem.playClick(); setFlipped(false); setCardIdx(i => i-1); }}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-space-800 border border-border hover:border-white/20 transition-all text-txt2 hover:text-txt shadow-sm">
+                  <ChevronLeft size={20} />
                 </button>
               )}
               <button onClick={handleNext}
-                style={{ background:'linear-gradient(135deg, #a78bfa, #00e5ff)', color:'#060912' }}
-                className="flex-1 py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2">
-                {checkAfterThis && !cpShown ? <>Quick Check <CheckCircle size={15} /></> : cardIdx+1 >= total ? <>Go to Quiz 📝</> : <>Next Card <ChevronRight size={15} /></>}
+                className="flex-1 btn-primary py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-glow-primary">
+                {checkAfterThis && !cpShown ? <>Quick Check <CheckCircle size={18} /></> : cardIdx+1 >= total ? <>Go to Quiz 📝</> : <>Next Card <ChevronRight size={18} /></>}
               </button>
             </div>
           </motion.div>
@@ -333,10 +333,10 @@ function EndQuiz({ session, onComplete }) {
   }, []);
 
   if (loading) return (
-    <div className="max-w-2xl mx-auto glass border border-brand-border rounded-3xl p-12 text-center">
-      <Loader size={32} className="text-violet-400 animate-spin mx-auto mb-4" />
-      <p className="text-white/60 font-syne font-bold text-lg">Generating your quiz...</p>
-      <p className="text-white/30 text-sm mt-2">Based on what you just learned in {session.topic}</p>
+    <div className="max-w-3xl mx-auto glass-card p-16 text-center shadow-lg">
+      <Loader size={40} className="text-primary animate-spin mx-auto mb-6" />
+      <p className="text-txt font-jakarta font-black text-2xl mb-2">Generating your quiz...</p>
+      <p className="text-txt3 font-medium text-base">Based on what you just learned in <span className="text-primary">{session.topic}</span></p>
     </div>
   );
 
@@ -350,8 +350,8 @@ function EndQuiz({ session, onComplete }) {
     setSelected(idx);
     setShowExp(true);
     setDeepExp('');
-    if (idx === q.correctIndex) playCorrect();
-    else playWrong();
+    if (idx === q.correctIndex) audioSystem.playCorrect();
+    else audioSystem.playWrong();
     setAnswers(prev => [...prev, { questionIndex:current, selectedIndex:idx, correct: idx === q.correctIndex }]);
   };
 
@@ -365,6 +365,7 @@ function EndQuiz({ session, onComplete }) {
   };
 
   const next = () => {
+    audioSystem.playClick();
     if (current + 1 >= total) {
       const correct = answers.filter(a => a.correct).length;
       onComplete({ quiz, answers, correct, total });
@@ -377,40 +378,43 @@ function EndQuiz({ session, onComplete }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="text-sm text-white/40 flex-1">📝 End-of-Session Quiz — <span className="text-violet-400 font-semibold">{session.topic}</span></div>
-        <span className="text-xs text-white/40">{current+1}/{total}</span>
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="text-sm font-semibold text-txt2 flex-1 bg-space-800 px-4 py-2.5 rounded-xl border border-white/5 shadow-sm truncate">
+          📝 End-of-Session Quiz — <span className="text-primary">{session.topic}</span>
+        </div>
+        <span className="text-sm font-bold text-txt3 bg-space-800 px-4 py-2.5 rounded-xl border border-white/5 shadow-sm flex-shrink-0">{current+1}/{total}</span>
       </div>
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-5">
-        <motion.div className="h-full rounded-full" style={{ background:'linear-gradient(90deg,#a78bfa,#00e5ff)' }}
-          animate={{ width:`${(current/total)*100}%` }} />
+      <div className="h-2 bg-space-800 rounded-full overflow-hidden mb-6 shadow-inner">
+        <motion.div className="h-full rounded-full shadow-[0_0_10px_rgba(124,58,237,0.5)]" style={{ background:'linear-gradient(90deg,var(--primary),var(--cyan))' }}
+          animate={{ width:`${(current/total)*100}%` }} transition={{ duration:0.4 }} />
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div key={current}
           initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }}
-          className="glass border border-brand-border rounded-3xl p-6 mb-4">
-          <p className="text-xs text-violet-400 font-bold uppercase tracking-widest mb-3">Question {current+1}</p>
-          <p className="text-lg font-semibold leading-relaxed mb-5">{q.question}</p>
-          <div className="space-y-2.5">
+          className="glass-card p-6 md:p-8 mb-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none" />
+          <p className="text-xs text-primary font-bold uppercase tracking-widest mb-4">Question {current+1}</p>
+          <p className="text-xl font-jakarta font-bold leading-relaxed mb-6 text-txt relative z-10">{q.question}</p>
+          <div className="space-y-3 relative z-10">
             {q.options.map((opt, i) => {
-              let cls = 'border-brand-border text-white/70 hover:border-brand-border2';
+              let cls = 'bg-space-800 border-border text-txt2 hover:border-white/20 hover:text-txt';
               if (selected !== null) {
-                if (i === q.correctIndex)  cls = 'border-neon-green bg-neon-green/10 text-neon-green';
-                else if (i === selected)   cls = 'border-red-400 bg-red-500/10 text-red-400';
-                else                       cls = 'border-brand-border text-white/25 opacity-50';
+                cls = 'bg-space-800 border-border text-txt3 opacity-60';
+                if (i === q.correctIndex)  cls = 'border-green-500/50 bg-green-500/10 text-green-500 font-medium';
+                else if (i === selected)   cls = 'border-red-500/50 bg-red-500/10 text-red-500 font-medium';
               }
               return (
-                <motion.button key={i} whileHover={selected===null ? {x:3} : {}}
+                <motion.button key={i} whileHover={selected===null ? { scale: 1.01 } : {}} whileTap={selected===null ? { scale: 0.99 } : {}}
                   onClick={() => handleSelect(i)} disabled={selected!==null}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm text-left transition-all disabled:cursor-default ${cls}`}>
-                  <span className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border text-base text-left transition-all ${cls}`}>
+                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm ${selected===null ? 'bg-space-900 text-txt2' : i===q.correctIndex ? 'bg-green-500/20 text-green-500' : i===selected ? 'bg-red-500/20 text-red-500' : 'bg-space-900 text-txt3'}`}>
                     {['A','B','C','D'][i]}
                   </span>
                   <span className="flex-1">{opt}</span>
-                  {selected!==null && i===q.correctIndex && <CheckCircle size={14} className="flex-shrink-0" />}
-                  {selected!==null && i===selected && i!==q.correctIndex && <XCircle size={14} className="flex-shrink-0" />}
+                  {selected!==null && i===q.correctIndex && <CheckCircle size={18} className="flex-shrink-0 text-green-500 drop-shadow-sm" />}
+                  {selected!==null && i===selected && i!==q.correctIndex && <XCircle size={18} className="flex-shrink-0 text-red-500 drop-shadow-sm" />}
                 </motion.button>
               );
             })}
@@ -418,34 +422,35 @@ function EndQuiz({ session, onComplete }) {
         </motion.div>
       </AnimatePresence>
 
-      {showExp && (
-        <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
-          className={`rounded-2xl px-4 py-3.5 mb-3 border text-sm ${selected===q.correctIndex ? 'bg-neon-green/10 border-neon-green/30' : 'bg-red-500/10 border-red-500/30'}`}>
-          <p className="font-semibold text-white mb-1">{selected===q.correctIndex ? '✅ Correct!' : '❌ Incorrect'}</p>
-          <p className="text-white/60 text-xs">{q.explanation}</p>
-          {/* Explain deeper button */}
-          {selected !== q.correctIndex && (
-            <div className="mt-3">
-              {deepExp ? (
-                <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3 text-xs text-violet-300 leading-relaxed">
-                  🧠 <strong>Deeper explanation:</strong> {deepExp}
-                </div>
-              ) : (
-                <button onClick={handleExplain} disabled={explaining}
-                  className="flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-50">
-                  {explaining ? <Loader size={11} className="animate-spin" /> : <HelpCircle size={11} />}
-                  Explain this answer in more detail
-                </button>
-              )}
-            </div>
-          )}
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {showExp && (
+          <motion.div initial={{ opacity:0, y:10, height: 0 }} animate={{ opacity:1, y:0, height: 'auto' }}
+            className={`rounded-2xl px-6 py-5 mb-6 border text-sm shadow-sm border-l-4 ${selected===q.correctIndex ? 'bg-green-500/5 border-green-500/20 border-l-green-500' : 'bg-red-500/5 border-red-500/20 border-l-red-500'}`}>
+            <p className={`font-bold text-base mb-2 ${selected===q.correctIndex ? 'text-green-500' : 'text-red-500'}`}>{selected===q.correctIndex ? '✅ Correct!' : '❌ Incorrect'}</p>
+            <p className="text-txt2 font-medium leading-relaxed">{q.explanation}</p>
+            {/* Explain deeper button */}
+            {selected !== q.correctIndex && (
+              <div className="mt-4">
+                {deepExp ? (
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-sm text-primary font-medium leading-relaxed shadow-sm">
+                    🧠 <strong className="uppercase tracking-wider text-xs mr-1 opacity-80">Deeper explanation:</strong> {deepExp}
+                  </div>
+                ) : (
+                  <button onClick={handleExplain} disabled={explaining}
+                    className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary-light transition-colors mt-2 bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 shadow-sm disabled:opacity-50">
+                    {explaining ? <Loader size={14} className="animate-spin" /> : <HelpCircle size={14} />}
+                    Explain this answer in more detail
+                  </button>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {selected !== null && (
         <motion.button initial={{ opacity:0 }} animate={{ opacity:1 }} onClick={next}
-          style={{ background:'linear-gradient(135deg, #a78bfa, #00e5ff)', color:'#060912' }}
-          className="w-full py-3 rounded-2xl font-semibold text-sm">
+          className="btn-primary w-full py-4 rounded-2xl font-bold text-base shadow-glow-primary">
           {current+1 >= total ? 'See Results 🏆' : 'Next Question →'}
         </motion.button>
       )}
@@ -465,13 +470,13 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
 
   const score    = quizResult.total > 0 ? Math.round((quizResult.correct / quizResult.total) * 100) : 0;
   const xpEarned = quizResult.correct * 15 + (score===100 ? 75 : score>=80 ? 40 : 20) + 50; // bonus 50 XP for completing session
-  const color    = score>=80 ? '#34d399' : score>=60 ? '#a78bfa' : '#ffb830';
+  const color    = score>=80 ? 'text-green-500' : score>=60 ? 'text-primary' : 'text-amber-500';
 
   useEffect(() => {
     if (saved) return;
     const save = async () => {
-      if (score === 100) { triggerConfetti(); playPerfect(); }
-      else { playXP(); }
+      if (score === 100) { triggerConfetti(); audioSystem.playPerfect(); }
+      else { audioSystem.playXP(); }
 
       const res = await saveQuizResultToFirestore(user?.uid, {
         subject: session.subject, topic: session.topic,
@@ -502,47 +507,46 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
   const emoji = score===100 ? '🏆' : score>=80 ? '🎉' : score>=60 ? '💪' : '📚';
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Score card */}
       <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-        className="glass border border-brand-border rounded-3xl p-7 text-center"
-        style={{ borderColor: `${color}30` }}>
-        <div className="text-5xl mb-3">{emoji}</div>
-        <h2 className="font-syne font-black text-5xl mb-1" style={{ color }}>{score}%</h2>
-        <p className="text-white/50 text-sm mb-0.5">{quizResult.correct}/{quizResult.total} correct · {session.topic}</p>
-        <p className="text-white/30 text-xs mb-5">Session complete · {session.subject}</p>
+        className="glass-card p-10 text-center relative overflow-hidden shadow-lg border-primary/20">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
+        <div className="text-6xl mb-4 drop-shadow-md">{emoji}</div>
+        <h2 className={`font-jakarta font-black text-6xl mb-2 drop-shadow-sm ${color}`}>{score}%</h2>
+        <p className="text-txt2 font-medium text-base mb-1">{quizResult.correct}/{quizResult.total} correct · <span className="text-txt">{session.topic}</span></p>
+        <p className="text-txt3 font-bold uppercase tracking-widest text-xs mb-8">Session complete · {session.subject}</p>
 
         {/* XP */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex items-center justify-center gap-2 mb-8">
           <motion.div
             initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:0.5, type:'spring' }}
-            className="flex items-center gap-2 bg-neon-amber/10 border border-neon-amber/30 rounded-full px-5 py-2 text-neon-amber font-bold">
-            <Zap size={16} /> +{xpEarned} XP earned
+            className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-6 py-3 text-amber-500 font-bold shadow-sm">
+            <Zap size={18} /> +{xpEarned} XP earned
           </motion.div>
         </div>
 
         {/* Breakdown */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             { l:'Score',         v:`${score}%`,              c:color },
-            { l:'Session XP',    v:`+${xpEarned}`,           c:'#ffb830' },
-            { l:'Correct',       v:`${quizResult.correct}/${quizResult.total}`, c:'#34d399' },
+            { l:'Session XP',    v:`+${xpEarned}`,           c:'text-amber-500' },
+            { l:'Correct',       v:`${quizResult.correct}/${quizResult.total}`, c:'text-green-500' },
           ].map(({ l, v, c }) => (
-            <div key={l} className="bg-white/[0.04] rounded-xl p-3">
-              <div className="font-syne font-black text-lg" style={{ color:c }}>{v}</div>
-              <div className="text-[10px] text-white/30">{l}</div>
+            <div key={l} className="bg-space-800 border border-border rounded-2xl p-4 shadow-sm">
+              <div className={`font-jakarta font-black text-2xl mb-1 ${c}`}>{v}</div>
+              <div className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{l}</div>
             </div>
           ))}
         </div>
 
-        <div className="flex gap-3">
-          <button onClick={onRestart}
-            className="flex-1 btn-outline py-2.5 text-sm flex items-center justify-center gap-1.5">
-            <RotateCcw size={13} />Retry Quiz
+        <div className="flex gap-4">
+          <button onClick={() => { audioSystem.playClick(); onRestart(); }}
+            className="flex-1 btn-outline py-3.5 text-sm flex items-center justify-center gap-2 bg-space-800 shadow-sm">
+            <RotateCcw size={16} />Retry Quiz
           </button>
-          <button onClick={onNewSession}
-            style={{ background:'linear-gradient(135deg,#a78bfa,#00e5ff)', color:'#060912' }}
-            className="flex-1 py-2.5 rounded-2xl font-semibold text-sm">
+          <button onClick={() => { audioSystem.playClick(); onNewSession(); }}
+            className="flex-1 btn-primary py-3.5 text-sm shadow-glow-primary">
             New Session →
           </button>
         </div>
@@ -551,55 +555,64 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
       {/* Flashcards for wrong answers */}
       {(fcLoading || flashcards.length > 0) && (
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
-          className="glass border border-violet-500/20 rounded-3xl p-5">
-          <h3 className="font-syne font-bold text-base mb-1 flex items-center gap-2">
-            <Layers size={16} className="text-violet-400" />Review Flashcards
-          </h3>
-          <p className="text-xs text-white/40 mb-4">AI-generated for the questions you got wrong</p>
+          className="glass-card p-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center shadow-sm">
+              <Layers size={18} />
+            </div>
+            <div>
+              <h3 className="font-jakarta font-bold text-base text-txt">Review Flashcards</h3>
+              <p className="text-xs font-medium text-txt3">AI-generated for the questions you got wrong</p>
+            </div>
+          </div>
 
           {fcLoading ? (
-            <div className="flex items-center gap-2 text-sm text-white/40 py-4 justify-center">
-              <Loader size={15} className="animate-spin text-violet-400" />Generating flashcards...
+            <div className="flex items-center gap-2 text-sm font-bold text-primary py-10 justify-center">
+              <Loader size={18} className="animate-spin" />Generating personalized flashcards...
             </div>
           ) : (
-            <>
+            <div className="mt-6">
               {/* Flashcard flip */}
-              <div className="relative h-36 mb-4 cursor-pointer" onClick={() => { playClick(); setShowBack(b => !b); }}
+              <div className="relative h-48 mb-4 cursor-pointer" onClick={() => { audioSystem.playClick(); setShowBack(b => !b); }}
                 style={{ perspective:'1000px' }}>
                 <motion.div animate={{ rotateY: showBack ? 180 : 0 }}
                   transition={{ duration: 0.4 }} style={{ transformStyle:'preserve-3d', width:'100%', height:'100%' }}>
                   {/* Front */}
-                  <div className="absolute inset-0 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex flex-col items-center justify-center px-5 text-center"
+                  <div className="absolute inset-0 rounded-2xl bg-space-800 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center px-6 text-center"
                     style={{ backfaceVisibility:'hidden' }}>
-                    <p className="text-xs text-violet-400 font-semibold mb-2">QUESTION</p>
-                    <p className="text-sm font-semibold text-white">{flashcards[currentFc]?.front}</p>
-                    <p className="text-xs text-white/30 mt-3 flex items-center gap-1"><Eye size={11} />Tap to reveal answer</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-txt3 bg-white/5 px-2 py-1 rounded-md mb-4">Question</p>
+                    <p className="text-lg font-bold text-txt leading-relaxed">{flashcards[currentFc]?.front}</p>
+                    <p className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full mt-4 flex items-center gap-1.5"><Eye size={12} />Tap to reveal answer</p>
                   </div>
                   {/* Back */}
-                  <div className="absolute inset-0 rounded-2xl bg-cyan/10 border border-cyan/20 flex flex-col items-center justify-center px-5 text-center"
+                  <div className="absolute inset-0 rounded-2xl bg-green-500/10 border border-green-500/30 shadow-[0_10px_30px_rgba(16,185,129,0.1)] flex flex-col items-center justify-center px-6 text-center"
                     style={{ backfaceVisibility:'hidden', transform:'rotateY(180deg)' }}>
-                    <p className="text-xs text-cyan font-semibold mb-2">ANSWER</p>
-                    <p className="text-sm text-white leading-relaxed">{flashcards[currentFc]?.back}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-green-500 bg-green-500/20 px-2 py-1 rounded-md mb-4">Answer</p>
+                    <p className="text-base font-medium text-txt leading-relaxed">{flashcards[currentFc]?.back}</p>
                     {flashcards[currentFc]?.hint && (
-                      <p className="text-[10px] text-white/30 mt-2 italic">💡 {flashcards[currentFc].hint}</p>
+                      <p className="text-[10px] text-txt3 mt-3 italic font-medium">💡 {flashcards[currentFc].hint}</p>
                     )}
                   </div>
                 </motion.div>
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between">
-                <button onClick={() => { playClick(); setShowBack(false); setCurrentFc(i => Math.max(0, i-1)); }}
-                  disabled={currentFc===0} className="p-2 rounded-xl glass border border-brand-border disabled:opacity-30">
-                  <ChevronLeft size={16} />
+              <div className="flex items-center justify-between px-2">
+                <button onClick={() => { audioSystem.playClick(); setShowBack(false); setCurrentFc(i => Math.max(0, i-1)); }}
+                  disabled={currentFc===0} className="w-10 h-10 flex items-center justify-center rounded-xl bg-space-800 border border-border hover:border-white/20 disabled:opacity-30 disabled:hover:border-border transition-all shadow-sm text-txt2 hover:text-txt">
+                  <ChevronLeft size={18} />
                 </button>
-                <span className="text-xs text-white/40">{currentFc+1} / {flashcards.length}</span>
-                <button onClick={() => { playClick(); setShowBack(false); setCurrentFc(i => Math.min(flashcards.length-1, i+1)); }}
-                  disabled={currentFc===flashcards.length-1} className="p-2 rounded-xl glass border border-brand-border disabled:opacity-30">
-                  <ChevronRight size={16} />
+                <div className="flex gap-1.5">
+                  {flashcards.map((_, i) => (
+                    <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === currentFc ? 'bg-primary w-4' : 'bg-white/10'}`} />
+                  ))}
+                </div>
+                <button onClick={() => { audioSystem.playClick(); setShowBack(false); setCurrentFc(i => Math.min(flashcards.length-1, i+1)); }}
+                  disabled={currentFc===flashcards.length-1} className="w-10 h-10 flex items-center justify-center rounded-xl bg-space-800 border border-border hover:border-white/20 disabled:opacity-30 disabled:hover:border-border transition-all shadow-sm text-txt2 hover:text-txt">
+                  <ChevronRight size={18} />
                 </button>
               </div>
-            </>
+            </div>
           )}
         </motion.div>
       )}
@@ -615,15 +628,15 @@ export default function StudySessionPage() {
   const [quizRes, setQuizRes] = useState(null);
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-4xl">
+    <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
       {/* Header with phase indicator */}
-      <div className="mb-6 pt-10 lg:pt-0">
-        <h1 className="font-syne font-black text-2xl md:text-3xl mb-1">Study Sessions</h1>
-        <p className="text-white/40 text-sm">AI teaches you first, then quizzes you on what you learned</p>
+      <div className="mb-8 pt-12 lg:pt-0">
+        <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Study Sessions</h1>
+        <p className="text-sm font-medium text-txt3">AI teaches you first, then quizzes you on what you learned</p>
 
         {/* Phase breadcrumb */}
         {session && (
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-3 mt-5 bg-space-800 inline-flex px-4 py-2 rounded-xl border border-white/5 shadow-sm">
             {[
               { id:'setup',   label:'Setup' },
               { id:'lesson',  label:`Lesson: ${session.topic}` },
@@ -635,10 +648,10 @@ export default function StudySessionPage() {
               const idx     = phases.indexOf(p.id);
               return (
                 <React.Fragment key={p.id}>
-                  <span className={`text-xs font-medium ${idx === current ? 'text-violet-400' : idx < current ? 'text-white/40' : 'text-white/20'}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider transition-colors ${idx === current ? 'text-primary' : idx < current ? 'text-txt3' : 'text-txt3/40'}`}>
                     {p.label}
                   </span>
-                  {i < 3 && <ChevronRight size={12} className="text-white/15" />}
+                  {i < 3 && <ChevronRight size={14} className="text-white/10" />}
                 </React.Fragment>
               );
             })}
@@ -646,23 +659,27 @@ export default function StudySessionPage() {
         )}
       </div>
 
-      {phase === 'setup' && (
-        <SessionSetup onStart={(s) => { setSession({...s, grade:profile?.grade}); setPhase('lesson'); }} />
-      )}
-      {phase === 'lesson' && session && (
-        <LessonCards session={session} onComplete={() => setPhase('quiz')} />
-      )}
-      {phase === 'quiz' && session && (
-        <EndQuiz session={session} onComplete={(r) => { setQuizRes(r); setPhase('results'); }} />
-      )}
-      {phase === 'results' && session && quizRes && (
-        <SessionResults
-          session={session}
-          quizResult={quizRes}
-          onRestart={() => setPhase('quiz')}
-          onNewSession={() => { setSession(null); setQuizRes(null); setPhase('setup'); }}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+          {phase === 'setup' && (
+            <SessionSetup onStart={(s) => { setSession({...s, grade:profile?.grade}); setPhase('lesson'); }} />
+          )}
+          {phase === 'lesson' && session && (
+            <LessonCards session={session} onComplete={() => setPhase('quiz')} />
+          )}
+          {phase === 'quiz' && session && (
+            <EndQuiz session={session} onComplete={(r) => { setQuizRes(r); setPhase('results'); }} />
+          )}
+          {phase === 'results' && session && quizRes && (
+            <SessionResults
+              session={session}
+              quizResult={quizRes}
+              onRestart={() => setPhase('quiz')}
+              onNewSession={() => { setSession(null); setQuizRes(null); setPhase('setup'); }}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

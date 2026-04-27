@@ -12,7 +12,7 @@ import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { getWeeklyReport } from '../utils/api';
 import StreakCalendar from '../components/StreakCalendar';
-import { playClick } from '../utils/soundEffects';
+import { audioSystem } from '../utils/audio';
 
 function AnimNum({ target }) {
   const [val, setVal] = useState(0);
@@ -28,12 +28,12 @@ function AnimNum({ target }) {
   return <>{val}</>;
 }
 
-function RingProgress({ pct, color, size=44, stroke=3.5, children }) {
+function RingProgress({ pct, color, size=48, stroke=4, children }) {
   const r = (size-stroke)/2; const circ = 2*Math.PI*r;
   return (
     <div className="relative flex-shrink-0" style={{ width:size, height:size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border2)" strokeWidth={stroke} />
         <motion.circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circ} initial={{ strokeDashoffset:circ }}
           animate={{ strokeDashoffset: circ-(circ*Math.min(pct,100)/100) }}
@@ -61,12 +61,12 @@ const QUOTES = [
   "The best time to study was yesterday. Now is second best! ⚡",
 ];
 const SUBJECTS = [
-  {emoji:'🧮',name:'Mathematics',color:'#00e5ff'},
-  {emoji:'⚗️',name:'Chemistry',  color:'#a78bfa'},
-  {emoji:'⚡',name:'Physics',     color:'#ffb830'},
-  {emoji:'🔬',name:'Biology',     color:'#34d399'},
-  {emoji:'💻',name:'Comp. Sci.',  color:'#00e5ff'},
-  {emoji:'🌍',name:'Geography',   color:'#f87171'},
+  {emoji:'🧮',name:'Mathematics',color:'#0EA5E9'},
+  {emoji:'⚗️',name:'Chemistry',  color:'#8B5CF6'},
+  {emoji:'⚡',name:'Physics',     color:'#F59E0B'},
+  {emoji:'🔬',name:'Biology',     color:'#10B981'},
+  {emoji:'💻',name:'Comp. Sci.',  color:'#0EA5E9'},
+  {emoji:'🌍',name:'Geography',   color:'#EF4444'},
 ];
 
 export default function DashboardPage() {
@@ -116,7 +116,7 @@ export default function DashboardPage() {
   useEffect(() => { if (profile?.totalQuizzes > 0) refreshProfile(); }, [profile?.totalQuizzes]);
 
   const loadReport = async () => {
-    playClick(); setReportLoading(true); setShowReport(true);
+    audioSystem.playClick(); setReportLoading(true); setShowReport(true);
     try {
       const weekH = quizHistory.filter(q => q.timestamp && (Date.now()-new Date(q.timestamp).getTime()) < 7*86400000);
       const res   = await getWeeklyReport(weekH, profile?.streak||0, profile?.xp||0);
@@ -127,8 +127,7 @@ export default function DashboardPage() {
 
   const avgScore      = quizHistory.length ? Math.round(quizHistory.reduce((a,b)=>a+b.score,0)/quizHistory.length) : 0;
   const totalAccuracy = profile?.totalQuestions>0 ? Math.round((profile.totalCorrect/profile.totalQuestions)*100) : 0;
-  const xpInLevel     = (profile?.xp||0) % 500;
-  const xpPct         = Math.round((xpInLevel/500)*100);
+  const xpPct         = Math.round(((profile?.xp||0)%500)/500*100);
   const level         = profile?.level || 1;
   const todayQ        = quizHistory.filter(q => q.timestamp && new Date(q.timestamp).toDateString()===new Date().toDateString()).length;
   const goalPct       = Math.min(100, (todayQ/5)*100);
@@ -141,26 +140,26 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="p-4 md:p-5 lg:p-6 space-y-4 max-w-[1400px]">
+    <div className="p-5 md:p-8 space-y-6 max-w-[1400px] mx-auto w-full">
 
       {/* Header */}
       <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-12 lg:pt-0">
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-12 lg:pt-0">
         <div>
-          <h1 className="font-syne font-black text-2xl md:text-3xl">
+          <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt">
             {greeting}, {firstName}! {hour<12?'☀️':hour<17?'👋':'🌙'}
           </h1>
-          <p className="text-white/40 text-sm">{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+          <p className="text-txt3 text-sm mt-1">{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 glass border border-cyan/15 rounded-full px-3 py-1.5 text-xs text-white/45 max-w-[220px]">
-            <Sparkles size={10} className="text-cyan flex-shrink-0" />
-            <span className="italic truncate">{quote}</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 glass-card rounded-full px-4 py-2 text-xs text-txt2 max-w-[260px] shadow-sm">
+            <Sparkles size={12} className="text-primary flex-shrink-0" />
+            <span className="italic truncate font-medium">{quote}</span>
           </div>
           <button onClick={loadReport} disabled={reportLoading}
-            className="flex items-center gap-1.5 text-xs glass border border-violet-500/20 text-violet-400 rounded-full px-3 py-1.5 hover:border-violet-500/40 transition-all flex-shrink-0">
-            {reportLoading ? <div className="w-3 h-3 border border-violet-400 border-t-transparent rounded-full animate-spin" /> : <Brain size={11} />}
-            AI Report
+            className="flex items-center gap-2 text-sm font-semibold glass-card border-primary/20 text-primary rounded-full px-5 py-2 hover:bg-primary/5 hover:border-primary/40 transition-all shadow-sm">
+            {reportLoading ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Brain size={16} />}
+            AI Weekly Report
           </button>
         </div>
       </motion.div>
@@ -168,14 +167,14 @@ export default function DashboardPage() {
       {/* Weekly AI Report */}
       {showReport && (
         <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }}>
-          <div className="glass border border-violet-500/20 rounded-2xl p-4 flex items-start gap-3">
-            <Brain size={15} className="text-violet-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-xs font-bold text-violet-400 mb-1">AI Weekly Report</p>
-              {reportLoading ? <p className="text-xs text-white/40">Analyzing your week...</p>
-                : <p className="text-sm text-white/65 leading-relaxed">{weeklyReport}</p>}
+          <div className="glass-card border-primary/30 p-5 flex items-start gap-4 bg-gradient-to-r from-primary/5 to-transparent relative">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0 shadow-sm"><Brain size={20} /></div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-primary mb-1.5">Your AI Weekly Insights</p>
+              {reportLoading ? <p className="text-sm text-txt3">Analyzing your performance data...</p>
+                : <p className="text-sm text-txt2 leading-relaxed whitespace-pre-wrap">{weeklyReport}</p>}
             </div>
-            <button onClick={() => setShowReport(false)} className="text-white/20 hover:text-white/50 text-xs flex-shrink-0">✕</button>
+            <button onClick={() => setShowReport(false)} className="text-txt3 hover:text-txt absolute top-4 right-4 p-1">✕</button>
           </div>
         </motion.div>
       )}
@@ -183,14 +182,15 @@ export default function DashboardPage() {
       {/* Streak banner */}
       {(profile?.streak||0) >= 2 && (
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-          className="bg-gradient-to-r from-amber-500/12 to-transparent border border-neon-amber/15 rounded-2xl p-3 flex items-center gap-3">
-          <span className="text-2xl">🔥</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-syne font-bold text-neon-amber text-sm">{profile.streak}-Day Streak!</p>
-            <p className="text-xs text-white/35 truncate">Best: {profile.longestStreak||0} days</p>
+          className="bg-gradient-to-r from-amber-500/15 to-transparent border border-amber-500/20 rounded-2xl p-4 flex items-center gap-4 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none" />
+          <span className="text-4xl filter drop-shadow-md">🔥</span>
+          <div className="flex-1 min-w-0 z-10">
+            <p className="font-jakarta font-black text-amber-500 text-lg sm:text-xl tracking-tight">{profile.streak} Day Streak!</p>
+            <p className="text-sm text-txt3 font-medium">Your personal best is {profile.longestStreak||0} days.</p>
           </div>
-          <div className="hidden sm:flex gap-0.5 flex-shrink-0">
-            {Array.from({length:Math.min(profile.streak,7)}).map((_,i)=><span key={i} className="text-sm">🔥</span>)}
+          <div className="hidden md:flex gap-1 flex-shrink-0 z-10">
+            {Array.from({length:Math.min(profile.streak,7)}).map((_,i)=><motion.span key={i} initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.1 }} className="text-xl filter drop-shadow">🔥</motion.span>)}
           </div>
         </motion.div>
       )}
@@ -198,13 +198,13 @@ export default function DashboardPage() {
       {/* Spaced repetition */}
       {spacedTopics.length > 0 && (
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-          className="glass border border-neon-amber/15 rounded-2xl p-3.5">
-          <p className="text-xs font-bold text-neon-amber mb-2 flex items-center gap-1.5"><AlertTriangle size={12} />Revisit These Topics</p>
-          <div className="flex flex-wrap gap-2">
+          className="glass-card border-red-500/20 p-4">
+          <p className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2"><AlertTriangle size={16} />Needs Review (Spaced Repetition)</p>
+          <div className="flex flex-wrap gap-3">
             {spacedTopics.map((t,i) => (
               <Link key={i} to="/app/study-sessions">
-                <div className="flex items-center gap-1.5 text-xs bg-neon-amber/10 border border-neon-amber/20 rounded-xl px-3 py-1.5 hover:border-neon-amber/40 transition-all cursor-pointer">
-                  ⏰ <span className="text-neon-amber font-medium">{t.topic}</span> <ArrowRight size={9} className="text-neon-amber" />
+                <div className="flex items-center gap-2 text-sm font-medium bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 hover:bg-red-500/20 hover:border-red-500/40 transition-all cursor-pointer shadow-sm">
+                  ⏰ <span className="text-txt">{t.topic}</span> <ArrowRight size={14} className="text-red-400" />
                 </div>
               </Link>
             ))}
@@ -213,63 +213,67 @@ export default function DashboardPage() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { icon:Zap,      color:'#00e5ff', val:profile?.xp||0,           label:'Total XP',       sub:`Level ${level}`,          pct:xpPct },
-          { icon:Flame,    color:'#ffb830', val:profile?.streak||0,       label:'Day Streak',     sub:'🔥 Keep going!',           pct:Math.min(100,(profile?.streak||0)*10) },
-          { icon:Target,   color:'#34d399', val:null,                     label:'Avg Score',      sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!', pct:avgScore, display:`${avgScore}%` },
-          { icon:BookOpen, color:'#a78bfa', val:profile?.totalQuizzes||0, label:'Quizzes Taken',  sub:`${profile?.subjects?.length||0} subjects`, pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
+          { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',       sub:`Level ${level}`,          pct:xpPct },
+          { icon:Flame,    color:'#F59E0B', val:profile?.streak||0,       label:'Day Streak',     sub:'🔥 Keep going!',           pct:Math.min(100,(profile?.streak||0)*10) },
+          { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',      sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!', pct:avgScore, display:`${avgScore}%` },
+          { icon:BookOpen, color:'#8B5CF6', val:profile?.totalQuizzes||0, label:'Quizzes Taken',  sub:`${profile?.subjects?.length||0} subjects`, pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
         ].map(({ icon:Icon, color, val, label, sub, pct, display }, i) => (
           <motion.div key={label}
-            initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.07 }}
-            whileHover={{ y:-2 }}
-            className="glass border border-brand-border rounded-2xl p-4 flex flex-col gap-2.5 hover:border-brand-border2 transition-all">
-            <div className="flex items-center justify-between">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:`${color}20` }}>
-                <Icon size={16} style={{ color }} />
+            initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.07 }}
+            whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
+            className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom left, ${color}20, transparent)` }} />
+            <div className="flex items-center justify-between relative z-10">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20`, color }}>
+                <Icon size={24} />
               </div>
-              <RingProgress pct={pct} color={color}>
-                <span className="text-[8px] font-bold" style={{ color }}>{Math.round(pct)}%</span>
+              <RingProgress pct={pct} color={color} size={56} stroke={4}>
+                <span className="text-[10px] font-bold text-txt">{Math.round(pct)}%</span>
               </RingProgress>
             </div>
-            <div>
-              <div className="font-syne font-black text-2xl" style={{ color }}>
+            <div className="relative z-10">
+              <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
                 {display || <AnimNum target={val||0} />}
               </div>
-              <div className="text-xs text-white/40">{label}</div>
+              <div className="text-sm font-medium text-txt2">{label}</div>
+              <div className="text-xs font-medium mt-1 text-txt3">{sub}</div>
             </div>
-            <div className="text-[10px]" style={{ color:`${color}88` }}>{sub}</div>
           </motion.div>
         ))}
       </div>
 
       {/* Subject Progress + Right column */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
-          className="lg:col-span-2 glass border border-brand-border rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-syne font-bold text-sm flex items-center gap-2"><BarChart2 size={14} className="text-cyan" />Subject Progress</h2>
-            <Link to="/app/quiz" className="text-xs text-cyan hover:underline">Take quiz →</Link>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
+          className="xl:col-span-2 glass-card p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-jakarta font-bold text-lg flex items-center gap-2"><BarChart2 size={18} className="text-cyan" />Subject Mastery</h2>
+            <Link to="/app/quiz" onClick={() => audioSystem.playClick()} className="text-sm font-bold text-primary hover:text-primary-light transition-colors">Practice now →</Link>
           </div>
           {subjectProgress.length === 0 ? (
-            <div className="flex flex-col items-center py-6 text-center">
-              <div className="text-3xl mb-2">📚</div>
-              <p className="text-white/40 text-sm mb-3">Take a quiz to start tracking!</p>
-              <Link to="/app/quiz"><button className="btn-cyan text-xs py-2 px-5">Start Quiz</button></Link>
+            <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
+              <div className="w-20 h-20 bg-space-800 rounded-full flex items-center justify-center text-4xl mb-4 shadow-sm">📚</div>
+              <p className="text-txt font-medium mb-1">No data yet</p>
+              <p className="text-txt3 text-sm mb-5 max-w-xs">Take a quiz or complete a study session to see your subject mastery here.</p>
+              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-primary text-sm px-6 py-2.5">Start a Quiz</button></Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-5 flex-1">
               {subjectProgress.map(({ subject, averageScore, totalQuizzes }) => {
-                const c = averageScore>=80?'#34d399':averageScore>=60?'#00e5ff':'#ffb830';
+                const c = averageScore>=80?'#10B981':averageScore>=60?'#0EA5E9':'#F59E0B';
                 return (
                   <div key={subject}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="font-medium text-white/80 text-xs">{subject}</span>
-                      <span className="text-xs text-white/30">{totalQuizzes}q · <span className="font-bold" style={{ color:c }}>{averageScore}%</span></span>
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="font-bold text-txt">{subject}</span>
+                      <span className="text-xs font-semibold text-txt2"><span className="text-txt3 mr-2">{totalQuizzes} quizzes</span> <span style={{ color:c }}>{averageScore}% avg</span></span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-space-800 rounded-full overflow-hidden shadow-inner">
                       <motion.div initial={{ width:0 }} animate={{ width:`${averageScore}%` }} transition={{ duration:1, delay:0.3 }}
-                        className="h-full rounded-full" style={{ background:`linear-gradient(90deg,${c}70,${c})` }} />
+                         className="h-full rounded-full shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)] relative" style={{ background: c }}>
+                           <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                      </motion.div>
                     </div>
                   </div>
                 );
@@ -278,36 +282,39 @@ export default function DashboardPage() {
           )}
         </motion.div>
 
-        <div className="flex flex-col gap-4">
-          <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.25 }}
-            className="glass border border-brand-border rounded-2xl p-4">
-            <h2 className="font-syne font-bold text-sm mb-3 flex items-center gap-2"><Target size={13} className="text-neon-amber" />Daily Goal</h2>
-            <div className="flex items-center gap-3">
-              <RingProgress pct={goalPct} color="#ffb830" size={52} stroke={4}>
-                <span className="text-[9px] font-bold text-neon-amber">{Math.round(goalPct)}%</span>
+        <div className="flex flex-col gap-6">
+          <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.25 }}
+            className="glass-card p-6 flex-1 flex flex-col justify-center">
+            <h2 className="font-jakarta font-bold text-sm mb-5 flex items-center gap-2 text-txt2"><Target size={16} className="text-amber-500" />Daily Goal</h2>
+            <div className="flex items-center justify-center gap-6">
+              <RingProgress pct={goalPct} color="#F59E0B" size={80} stroke={6}>
+                <span className="text-sm font-black text-txt">{Math.round(goalPct)}%</span>
               </RingProgress>
               <div>
-                <p className="font-syne font-black text-xl text-neon-amber">{todayQ}<span className="text-sm text-white/30 font-normal"> / 5</span></p>
-                <p className="text-xs text-white/40">Quizzes today</p>
-                {todayQ>=5 ? <p className="text-[10px] text-neon-green mt-0.5 font-semibold">✅ Done!</p>
-                  : <p className="text-[10px] text-white/25 mt-0.5">{5-todayQ} more</p>}
+                <p className="font-jakarta font-black text-3xl text-txt">{todayQ}<span className="text-lg text-txt3 font-bold"> / 5</span></p>
+                <p className="text-sm font-medium text-txt2 mt-1">Quizzes today</p>
+                {todayQ>=5 ? <p className="text-xs text-green-500 mt-2 font-bold bg-green-500/10 inline-block px-2 py-1 rounded-md">✅ Goal Met!</p>
+                  : <p className="text-xs text-amber-500 mt-2 font-bold bg-amber-500/10 inline-block px-2 py-1 rounded-md">{5-todayQ} left to hit goal</p>}
               </div>
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
-            className="glass border border-brand-border rounded-2xl p-4 flex-1">
-            <h2 className="font-syne font-bold text-sm mb-3 flex items-center gap-2"><TrendingUp size={13} className="text-violet-400" />Weekly</h2>
-            <div className="flex items-end gap-1.5 h-10">
+          <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
+            className="glass-card p-6 flex-1 flex flex-col justify-end">
+            <h2 className="font-jakarta font-bold text-sm mb-5 flex items-center gap-2 text-txt2"><TrendingUp size={16} className="text-primary" />Weekly Activity</h2>
+            <div className="flex items-end gap-2 h-20 w-full">
               {weeklyData.map((v,i) => {
                 const max=Math.max(...weeklyData,1);
                 const days=['M','T','W','T','F','S','S'];
+                const isToday = i === 6;
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <motion.div initial={{ height:0 }} animate={{ height:`${Math.max(4,(v/max)*100)}%` }}
-                      transition={{ duration:0.8, delay:i*0.06 }}
-                      className="w-full rounded-t-sm min-h-[3px]" style={{ background:v>0?'#a78bfa':'rgba(255,255,255,0.07)' }} />
-                    <span className="text-[8px] text-white/20">{days[i]}</span>
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                    <div className="w-full relative flex items-end justify-center h-full">
+                      <motion.div initial={{ height:0 }} animate={{ height:`${Math.max(10,(v/max)*100)}%` }}
+                        transition={{ duration:0.8, delay:i*0.06 }}
+                        className={`w-full max-w-[20px] rounded-sm transition-all ${isToday ? 'bg-primary shadow-glow-primary' : 'bg-primary/30 group-hover:bg-primary/50'}`} />
+                    </div>
+                    <span className={`text-[10px] font-bold ${isToday ? 'text-txt' : 'text-txt3'}`}>{days[i]}</span>
                   </div>
                 );
               })}
@@ -316,34 +323,33 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Activity Calendar — compact, inline */}
-      <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
-        className="glass border border-brand-border rounded-2xl p-4">
+      {/* Activity Calendar */}
+      <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
+        className="glass-card p-6 overflow-hidden">
         <StreakCalendar />
       </motion.div>
 
       {/* Quick Actions + Tip */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.38 }}
-          className="lg:col-span-2 glass border border-brand-border rounded-2xl p-5">
-          <h2 className="font-syne font-bold text-sm mb-4 flex items-center gap-2"><Sparkles size={13} className="text-cyan" />Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.38 }}
+          className="xl:col-span-2 glass-card p-6">
+          <h2 className="font-jakarta font-bold text-lg mb-5 flex items-center gap-2"><Sparkles size={18} className="text-cyan" />Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { to:'/app/tutor',          icon:MessageSquare, label:'AI Tutor',      sub:'Ask anything',      color:'#00e5ff' },
-              { to:'/app/quiz',           icon:FileQuestion,  label:'Quick Quiz',    sub:'Test knowledge',    color:'#ffb830' },
-              { to:'/app/study-sessions', icon:BookMarked,    label:'Study Session', sub:'Learn then quiz',   color:'#a78bfa' },
-              { to:'/app/goals',          icon:Target,        label:'My Goals',      sub:'Track progress',    color:'#34d399' },
+              { to:'/app/tutor',          icon:MessageSquare, label:'AI Tutor',      sub:'Ask anything',      color:'#0EA5E9' },
+              { to:'/app/quiz',           icon:FileQuestion,  label:'Quick Quiz',    sub:'Test knowledge',    color:'#F59E0B' },
+              { to:'/app/study-sessions', icon:BookMarked,    label:'Study Session', sub:'Learn then quiz',   color:'#8B5CF6' },
+              { to:'/app/goals',          icon:Target,        label:'My Goals',      sub:'Track progress',    color:'#10B981' },
             ].map(({ to, icon:Icon, label, sub, color }) => (
-              <Link key={to} to={to} onClick={playClick}>
-                <motion.div whileHover={{ y:-2 }} whileTap={{ scale:0.97 }}
-                  className="flex flex-col gap-2 p-3 rounded-2xl border border-brand-border hover:border-brand-border2 cursor-pointer transition-all"
-                  style={{ background:`${color}08` }}>
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background:`${color}20` }}>
-                    <Icon size={15} style={{ color }} />
+              <Link key={to} to={to} onClick={() => audioSystem.playClick()}>
+                <motion.div whileHover={{ y:-4, scale:1.02, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} whileTap={{ scale:0.97 }}
+                  className="flex flex-col gap-3 p-4 rounded-2xl bg-space-800 border border-border hover:border-white/10 transition-all cursor-pointer h-full">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20` }}>
+                    <Icon size={18} style={{ color }} />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold" style={{ color }}>{label}</p>
-                    <p className="text-[10px] text-white/30">{sub}</p>
+                    <p className="text-sm font-bold text-txt">{label}</p>
+                    <p className="text-xs font-medium text-txt3 mt-0.5">{sub}</p>
                   </div>
                 </motion.div>
               </Link>
@@ -351,50 +357,56 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.42 }}
-          className="glass border border-cyan/10 rounded-2xl p-5 relative overflow-hidden">
-          <h2 className="font-syne font-bold text-sm mb-3 flex items-center gap-2"><Lightbulb size={13} className="text-neon-amber" />Study Tip</h2>
-          <div className="text-3xl mb-2">{tip.icon}</div>
-          <p className="text-sm text-white/60 leading-relaxed">{tip.tip}</p>
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.42 }}
+          className="glass-card p-6 relative overflow-hidden bg-gradient-to-br from-space-card to-space-900 flex flex-col justify-center">
+          <div className="absolute -right-6 -bottom-6 text-9xl opacity-5 pointer-events-none filter blur-[2px]">{tip.icon}</div>
+          <h2 className="font-jakarta font-bold text-sm mb-4 flex items-center gap-2 text-txt2"><Lightbulb size={16} className="text-amber-400" />Study Tip of the Day</h2>
+          <div className="flex items-start gap-4">
+            <div className="text-4xl drop-shadow-sm">{tip.icon}</div>
+            <p className="text-sm font-medium text-txt leading-relaxed">{tip.tip}</p>
+          </div>
         </motion.div>
       </div>
 
       {/* Start Studying + Recent Quizzes + Badges */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}
-          className="glass border border-brand-border rounded-2xl p-4">
-          <h2 className="font-syne font-bold text-sm mb-3 flex items-center gap-2"><BookOpen size={13} className="text-neon-green" />Start Studying</h2>
-          <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}
+          className="glass-card p-6">
+          <h2 className="font-jakarta font-bold text-lg mb-5 flex items-center gap-2"><BookOpen size={18} className="text-green-400" />Jump Back In</h2>
+          <div className="grid grid-cols-3 gap-3">
             {SUBJECTS.map(({ emoji, name, color }) => (
-              <Link key={name} to="/app/study-sessions" onClick={playClick}>
-                <motion.div whileHover={{ scale:1.05 }} className="flex flex-col items-center text-center p-2 rounded-xl border border-brand-border hover:border-brand-border2 cursor-pointer transition-all" style={{ background:`${color}08` }}>
-                  <span className="text-xl mb-1">{emoji}</span>
-                  <span className="text-[9px] text-white/50 leading-tight">{name}</span>
+              <Link key={name} to="/app/study-sessions" onClick={() => audioSystem.playClick()}>
+                <motion.div whileHover={{ scale:1.05 }} className="flex flex-col items-center justify-center p-3 rounded-xl bg-space-800 border border-border hover:border-white/10 cursor-pointer transition-all aspect-square">
+                  <span className="text-2xl mb-2 drop-shadow-sm">{emoji}</span>
+                  <span className="text-[10px] font-bold text-txt2 text-center leading-tight">{name}</span>
                 </motion.div>
               </Link>
             ))}
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.47 }}
-          className="glass border border-brand-border rounded-2xl p-4">
-          <h2 className="font-syne font-bold text-sm mb-3 flex items-center gap-2"><Clock size={13} className="text-violet-400" />Recent Quizzes</h2>
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.47 }}
+          className="glass-card p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-jakarta font-bold text-lg flex items-center gap-2"><Clock size={18} className="text-primary" />Recent Quizzes</h2>
+            <Link to="/app/quiz" className="text-xs font-bold text-primary hover:text-primary-light transition-colors">See all →</Link>
+          </div>
           {quizHistory.length === 0 ? (
-            <div className="flex flex-col items-center py-4 text-center">
-              <p className="text-3xl mb-2">📝</p>
-              <p className="text-xs text-white/40 mb-3">No quizzes yet!</p>
-              <Link to="/app/quiz"><button className="btn-cyan text-xs py-1.5 px-4">Take Quiz</button></Link>
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <p className="text-4xl mb-3 drop-shadow-sm">📝</p>
+              <p className="text-sm font-medium text-txt2 mb-4">No quizzes taken yet.</p>
+              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-primary text-xs py-2 px-5 shadow-sm">Take a Quiz</button></Link>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
               {quizHistory.slice(0,5).map(q => {
-                const c=q.score>=80?'#34d399':q.score>=60?'#00e5ff':'#ffb830';
+                const c=q.score>=80?'#10B981':q.score>=60?'#0EA5E9':'#F59E0B';
                 return (
-                  <div key={q.id} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/[0.03] transition-colors">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background:`${c}20`,color:c }}>{q.score}%</div>
+                  <div key={q.id} className="flex items-center gap-3 p-3 rounded-xl bg-space-800 border border-border hover:border-white/10 transition-colors">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0 shadow-sm" style={{ background:`${c}20`,color:c }}>{q.score}%</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{q.topic}</p>
-                      <p className="text-[10px] text-white/30">{q.subject}</p>
+                      <p className="text-sm font-bold text-txt truncate">{q.topic}</p>
+                      <p className="text-[11px] font-medium text-txt3 mt-0.5">{q.subject} • {new Date(q.timestamp).toLocaleDateString()}</p>
                     </div>
                   </div>
                 );
@@ -403,25 +415,25 @@ export default function DashboardPage() {
           )}
         </motion.div>
 
-        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.49 }}
-          className="glass border border-brand-border rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-syne font-bold text-sm flex items-center gap-2"><Trophy size={13} className="text-neon-amber" />Badges</h2>
-            <Link to="/app/achievements" className="text-xs text-cyan hover:underline">All →</Link>
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.49 }}
+          className="glass-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-jakarta font-bold text-lg flex items-center gap-2"><Trophy size={18} className="text-amber-500" />Badges</h2>
+            <Link to="/app/achievements" className="text-xs font-bold text-primary hover:text-primary-light transition-colors">Gallery →</Link>
           </div>
           {(profile?.badges||[]).length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-3xl mb-2">🔓</p>
-              <p className="text-xs text-white/40">Complete quizzes to earn badges!</p>
+            <div className="text-center py-6">
+              <div className="w-16 h-16 mx-auto bg-space-800 rounded-full flex items-center justify-center text-3xl mb-3 shadow-sm">🔓</div>
+              <p className="text-sm font-medium text-txt2">Complete quizzes to unlock your first badge!</p>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {(profile.badges||[]).slice(0,9).map((badge,i) => (
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-3">
+              {(profile.badges||[]).slice(0,12).map((badge,i) => (
                 <motion.div key={badge.id}
                   initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.05 }}
-                  whileHover={{ scale:1.15 }} title={badge.name}
-                  className="w-9 h-9 rounded-xl bg-cyan/10 border border-cyan/20 flex items-center justify-center text-xl cursor-pointer">
-                  {badge.icon}
+                  whileHover={{ scale:1.15, rotate:5 }} title={badge.name}
+                  className="aspect-square rounded-xl bg-space-800 border border-border flex items-center justify-center text-2xl cursor-pointer shadow-sm hover:border-primary/30 transition-colors">
+                  <span className="drop-shadow-md">{badge.icon}</span>
                 </motion.div>
               ))}
             </div>

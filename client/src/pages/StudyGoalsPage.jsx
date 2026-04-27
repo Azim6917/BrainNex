@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Plus, Trash2, CheckCircle, Circle, Zap, Trophy } from 'lucide-react';
+import { Target, Plus, Trash2, CheckCircle, Circle, Zap, Trophy, Clock } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useUserData } from '../context/UserDataContext';
 import { useAuth } from '../context/AuthContext';
-import { playCreate, playClick, playGoalComplete } from '../utils/soundEffects';
+import { audioSystem } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import toast from 'react-hot-toast';
 
@@ -54,14 +54,14 @@ function computeProgress(goal, profile, quizHistory) {
 function GoalCard({ goal, profile, quizHistory, onDelete, onToggle }) {
   const pct   = computeProgress(goal, profile, quizHistory);
   const done  = pct >= 100;
-  const color = done ? '#34d399' : pct >= 50 ? '#00e5ff' : '#ffb830';
-  const r = 22; const circ = 2*Math.PI*r;
+  const color = done ? '#10B981' : pct >= 50 ? 'var(--primary)' : '#F59E0B';
+  const r = 26; const circ = 2*Math.PI*r;
 
   // Fire celebration when newly completed
   const prevPct = React.useRef(pct);
   useEffect(() => {
     if (pct >= 100 && prevPct.current < 100) {
-      playGoalComplete();
+      audioSystem.playGoalComplete();
       triggerConfetti({ duration:2000, particleCount:60 });
       toast.success(`🎯 Goal completed: ${goal.title}!`, { duration:4000 });
     }
@@ -69,57 +69,58 @@ function GoalCard({ goal, profile, quizHistory, onDelete, onToggle }) {
   }, [pct]);
 
   return (
-    <motion.div whileHover={{ y:-2 }}
-      className={`glass border rounded-2xl p-5 relative group transition-all ${done ? 'border-neon-green/30 bg-neon-green/5' : 'border-brand-border hover:border-brand-border2'}`}>
-      <button onClick={() => { playClick(); onDelete(goal.id); }}
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center">
-        <Trash2 size={11} />
+    <motion.div whileHover={{ y:-4, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' }}
+      className={`glass-card p-6 relative group transition-all shadow-sm ${done ? 'border-green-500/30 bg-green-500/5' : 'border-transparent hover:border-white/10'}`}>
+      <button onClick={() => { audioSystem.playClick(); onDelete(goal.id); }}
+        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20">
+        <Trash2 size={16} />
       </button>
 
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-5 mb-5">
         {/* Ring */}
-        <div className="relative flex-shrink-0" style={{ width:52, height:52 }}>
-          <svg width={52} height={52} className="-rotate-90">
-            <circle cx={26} cy={26} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={4} />
-            <motion.circle cx={26} cy={26} r={r} fill="none" stroke={color} strokeWidth={4} strokeLinecap="round"
+        <div className="relative flex-shrink-0" style={{ width:60, height:60 }}>
+          <svg width={60} height={60} className="-rotate-90">
+            <circle cx={30} cy={30} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={5} />
+            <motion.circle cx={30} cy={30} r={r} fill="none" stroke={color} strokeWidth={5} strokeLinecap="round"
               strokeDasharray={circ}
               initial={{ strokeDashoffset:circ }}
               animate={{ strokeDashoffset: circ - (circ * pct / 100) }}
               transition={{ duration:1.2, delay:0.2 }} />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-xl">{goal.icon||'🎯'}</div>
+          <div className="absolute inset-0 flex items-center justify-center text-2xl drop-shadow-sm">{goal.icon||'🎯'}</div>
         </div>
-        <div className="flex-1 min-w-0 pr-6">
-          <p className="font-semibold text-sm leading-tight mb-1">{goal.title}</p>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40 capitalize">{goal.period}</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40 capitalize">{goal.type}</span>
+        <div className="flex-1 min-w-0 pr-8">
+          <p className={`font-jakarta font-bold text-base leading-tight mb-2 truncate ${done?'text-green-500':'text-txt'}`}>{goal.title}</p>
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-txt3">
+            <span className="px-2.5 py-1 rounded-md bg-space-800 border border-white/5">{goal.period}</span>
+            <span className="px-2.5 py-1 rounded-md bg-space-800 border border-white/5">{goal.type}</span>
           </div>
         </div>
       </div>
 
       <div>
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-white/40">{done ? '✅ Completed!' : `Progress: ${pct}%`}</span>
-          <span className="font-bold" style={{ color }}>{pct}%</span>
+        <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2">
+          <span className="text-txt3">{done ? '✅ Completed!' : `Progress: ${pct}%`}</span>
+          <span className="drop-shadow-sm" style={{ color }}>{pct}%</span>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <motion.div className="h-full rounded-full" style={{ background: color }}
+        <div className="h-2 bg-space-800 rounded-full overflow-hidden shadow-inner mb-3">
+          <motion.div className="h-full rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}80` }}
             initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration:1.2 }} />
         </div>
         {/* Show actual value for context */}
-        <p className="text-[10px] text-white/25 mt-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-txt3 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg w-fit">
+          <Clock size={10} className="text-txt3 opacity-60" />
           {goal.type==='quiz'   && `${quizHistory.filter(q => q.timestamp && (Date.now()-new Date(q.timestamp).getTime()) <= (goal.period==='week'?604800000:2592000000)).length} / ${goal.target} quizzes`}
           {goal.type==='streak' && `${profile?.streak||0} / ${goal.target} day streak`}
           {goal.type==='xp'     && `${(profile?.xp||0).toLocaleString()} / ${goal.target.toLocaleString()} XP`}
           {goal.type==='custom' && (goal.completed ? 'Marked complete' : 'Not marked yet')}
-        </p>
+        </div>
       </div>
 
       {goal.type === 'custom' && (
-        <button onClick={() => { playClick(); onToggle(goal.id); }}
-          className={`mt-3 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border transition-all ${goal.completed ? 'bg-neon-green/20 border-neon-green/30 text-neon-green' : 'border-brand-border text-white/40 hover:border-brand-border2'}`}>
-          {goal.completed ? <><CheckCircle size={11} />Completed!</> : <><Circle size={11} />Mark complete</>}
+        <button onClick={() => { audioSystem.playClick(); onToggle(goal.id); }}
+          className={`mt-4 flex items-center justify-center gap-2 text-xs font-bold w-full py-3 rounded-xl border transition-all shadow-sm ${goal.completed ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'bg-space-800 border-border text-txt2 hover:border-white/20 hover:text-txt'}`}>
+          {goal.completed ? <><CheckCircle size={16} />Completed!</> : <><Circle size={16} />Mark complete</>}
         </button>
       )}
     </motion.div>
@@ -148,14 +149,14 @@ export default function StudyGoalsPage() {
   useEffect(() => { saveGoals(goals); }, [goals]);
 
   const addTemplate = (t) => {
-    playCreate();
+    audioSystem.playCreate();
     setGoals(prev => [{ ...t, id:Date.now().toString(), createdAt:new Date().toISOString(), completed:false }, ...prev]);
     toast.success('Goal added!');
   };
 
   const createGoal = () => {
     if (!form.title.trim()) { toast.error('Enter a title'); return; }
-    playCreate();
+    audioSystem.playCreate();
     setGoals(prev => [{ ...form, id:Date.now().toString(), createdAt:new Date().toISOString(), completed:false }, ...prev]);
     setShowCreate(false);
     setForm({ title:'', type:'quiz', target:5, period:'week', icon:'🎯' });
@@ -163,75 +164,81 @@ export default function StudyGoalsPage() {
   };
 
   const deleteGoal = (id) => {
-    playClick();
+    audioSystem.playClick();
     setGoals(prev => prev.filter(g => g.id !== id));
   };
 
   const toggleGoal = (id) => {
-    playClick();
+    audioSystem.playClick();
     setGoals(prev => prev.map(g => g.id === id ? { ...g, completed:!g.completed } : g));
   };
 
   const completedCount = goals.filter(g => computeProgress(g, profile, quizHistory) >= 100).length;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-5xl">
-      <div className="flex items-center justify-between mb-6 pt-12 lg:pt-0">
+    <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pt-12 lg:pt-0 gap-4">
         <div>
-          <h1 className="font-syne font-black text-2xl md:text-3xl mb-1">Study Goals</h1>
-          <p className="text-white/40 text-sm">Set targets, track real progress automatically</p>
+          <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Study Goals</h1>
+          <p className="text-sm font-medium text-txt3">Set targets, track real progress automatically</p>
         </div>
-        <button onClick={() => { playClick(); setShowCreate(true); }} className="btn-cyan flex items-center gap-2 text-sm py-2.5">
-          <Plus size={15} />New Goal
+        <button onClick={() => { audioSystem.playClick(); setShowCreate(true); }} className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-6 shadow-glow-primary self-start md:self-auto">
+          <Plus size={18} />New Goal
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-10">
         {[
           { icon:'🎯', label:'Total',     val:goals.length },
           { icon:'⚡', label:'In Progress',val:goals.filter(g=>{ const p=computeProgress(g,profile,quizHistory); return p>0&&p<100; }).length },
           { icon:'✅', label:'Completed', val:completedCount },
         ].map(({ icon, label, val }) => (
-          <div key={label} className="glass border border-brand-border rounded-xl p-4 text-center">
-            <div className="text-xl mb-1">{icon}</div>
-            <div className="font-syne font-black text-xl text-cyan">{val}</div>
-            <div className="text-[10px] text-white/30">{label}</div>
+          <div key={label} className="glass-card p-6 text-center shadow-sm">
+            <div className="text-3xl mb-3 drop-shadow-sm">{icon}</div>
+            <div className="font-jakarta font-black text-4xl text-primary mb-1 drop-shadow-sm">{val}</div>
+            <div className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{label}</div>
           </div>
         ))}
       </div>
 
       {/* Goals grid */}
       {goals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-10">
           {goals.map(g => (
             <GoalCard key={g.id} goal={g} profile={profile} quizHistory={quizHistory} onDelete={deleteGoal} onToggle={toggleGoal} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 mb-8">
-          <div className="text-6xl mb-4">🎯</div>
-          <p className="font-syne font-bold text-xl mb-2">No goals yet</p>
-          <p className="text-white/40 text-sm mb-5">Set your first study goal to start tracking real progress.</p>
+        <div className="text-center py-20 mb-10 glass-card shadow-sm border-dashed border-border border-2">
+          <div className="text-6xl mb-6 drop-shadow-md">🎯</div>
+          <p className="font-jakarta font-black text-2xl mb-2 text-txt">No goals yet</p>
+          <p className="text-txt3 text-sm font-medium">Set your first study goal to start tracking real progress.</p>
         </div>
       )}
 
       {/* Templates */}
       <div>
-        <h2 className="font-syne font-bold text-base mb-3 flex items-center gap-2"><Zap size={15} className="text-cyan" />Quick Templates</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-cyan rounded-full shadow-[0_0_8px_rgba(0,229,255,0.6)]"/>
+          <h2 className="font-jakarta font-black text-xl text-txt flex items-center gap-2"><Zap size={20} className="text-cyan" />Quick Templates</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-8">
           {GOAL_TEMPLATES.map((t, i) => (
-            <motion.div key={i} whileHover={{ y:-2 }}
-              className="glass border border-brand-border rounded-xl p-4 cursor-pointer hover:border-brand-border2 transition-all"
+            <motion.div key={i} whileHover={{ y:-4, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' }}
+              className="glass-card p-5 cursor-pointer hover:border-cyan/30 transition-all group shadow-sm border-transparent"
               onClick={() => addTemplate(t)}>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{t.icon}</span>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="text-3xl drop-shadow-sm group-hover:scale-110 transition-transform">{t.icon}</span>
                 <div>
-                  <p className="text-xs font-semibold leading-tight">{t.title}</p>
-                  <p className="text-[10px] text-white/30 mt-0.5 capitalize">{t.period} · {t.type}</p>
+                  <p className="text-sm font-bold leading-tight text-txt">{t.title}</p>
+                  <p className="text-[10px] font-bold text-txt3 mt-1.5 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="bg-space-800 px-2 py-0.5 rounded-md border border-white/5">{t.period}</span>
+                    <span className="bg-space-800 px-2 py-0.5 rounded-md border border-white/5">{t.type}</span>
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-cyan font-semibold">+ Add goal</p>
+              <p className="text-xs text-cyan font-bold flex items-center gap-1 uppercase tracking-wider group-hover:text-cyan-light"><Plus size={14} /> Add goal</p>
             </motion.div>
           ))}
         </div>
@@ -241,46 +248,47 @@ export default function StudyGoalsPage() {
       <AnimatePresence>
         {showCreate && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-space-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
             onClick={() => setShowCreate(false)}>
-            <motion.div initial={{ scale:0.9, y:20 }} animate={{ scale:1, y:0 }} exit={{ scale:0.9 }}
+            <motion.div initial={{ scale:0.95, y:20, opacity:0 }} animate={{ scale:1, y:0, opacity:1 }} exit={{ scale:0.95, y:20, opacity:0 }}
               onClick={e => e.stopPropagation()}
-              className="glass border border-brand-border2 rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
-              <h2 className="font-syne font-bold text-xl mb-5">Create Goal</h2>
-              <div className="space-y-4">
+              className="glass-card p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto border-primary/20 relative custom-scrollbar">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-bl-full pointer-events-none" />
+              <h2 className="font-jakarta font-black text-2xl mb-6 text-txt relative z-10">Create Goal</h2>
+              <div className="space-y-6 relative z-10">
                 <div>
-                  <label className="text-xs font-medium text-white/50 mb-1.5 block">Goal Title</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Goal Title</label>
                   <input value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))}
-                    placeholder="e.g. Score 90% on 5 physics quizzes" className="input-dark w-full text-sm" autoFocus />
+                    placeholder="e.g. Score 90% on 5 physics quizzes" className="input-field w-full text-sm py-3" autoFocus />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-white/50 mb-1.5 block">Icon</label>
-                  <div className="flex gap-2 flex-wrap">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Icon</label>
+                  <div className="flex gap-2.5 flex-wrap">
                     {['🎯','📝','🔥','⚡','🏆','🧠','📚','💯','🌟','🎓'].map(e => (
-                      <button key={e} onClick={() => setForm(f=>({...f,icon:e}))}
-                        className={`w-9 h-9 rounded-xl text-xl transition-all ${form.icon===e ? 'bg-cyan/20 border border-cyan/40' : 'bg-white/[0.04] hover:bg-white/[0.08]'}`}>
+                      <button key={e} onClick={() => { audioSystem.playClick(); setForm(f=>({...f,icon:e})); }}
+                        className={`w-11 h-11 rounded-xl text-xl transition-all shadow-sm ${form.icon===e ? 'bg-primary/20 border border-primary/50 scale-110' : 'bg-space-800 border border-transparent hover:border-white/10 hover:bg-space-700'}`}>
                         {e}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-white/50 mb-1.5 block">Type</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Type</label>
+                  <div className="grid grid-cols-2 gap-3">
                     {TYPES.map(t => (
-                      <button key={t} onClick={() => setForm(f=>({...f,type:t}))}
-                        className={`py-2 rounded-xl text-xs capitalize border transition-all ${form.type===t ? 'bg-cyan/20 border-cyan/40 text-cyan' : 'border-brand-border text-white/40'}`}>
+                      <button key={t} onClick={() => { audioSystem.playClick(); setForm(f=>({...f,type:t})); }}
+                        className={`py-3 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all shadow-sm ${form.type===t ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-space-800 border-border text-txt3 hover:border-white/20'}`}>
                         {t==='quiz' ? '📝 Quizzes' : t==='streak' ? '🔥 Streak' : t==='xp' ? '⚡ XP' : '🎯 Custom'}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-white/50 mb-1.5 block">Period</label>
-                  <div className="flex gap-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Period</label>
+                  <div className="flex gap-3">
                     {PERIODS.map(p => (
-                      <button key={p} onClick={() => setForm(f=>({...f,period:p}))}
-                        className={`flex-1 py-2 rounded-xl text-xs capitalize border transition-all ${form.period===p ? 'bg-cyan/20 border-cyan/40 text-cyan' : 'border-brand-border text-white/40'}`}>
+                      <button key={p} onClick={() => { audioSystem.playClick(); setForm(f=>({...f,period:p})); }}
+                        className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all shadow-sm ${form.period===p ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-space-800 border-border text-txt3 hover:border-white/20'}`}>
                         {p}
                       </button>
                     ))}
@@ -288,15 +296,18 @@ export default function StudyGoalsPage() {
                 </div>
                 {form.type !== 'custom' && (
                   <div>
-                    <label className="text-xs font-medium text-white/50 mb-1.5 block">Target: <span className="text-cyan">{form.target}</span></label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-3 block flex justify-between">
+                      <span>Target Value</span>
+                      <span className="text-primary text-sm bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">{form.target}</span>
+                    </label>
                     <input type="range" min={1} max={form.type==='xp'?5000:form.type==='streak'?100:50} value={form.target}
-                      onChange={e => setForm(f=>({...f,target:+e.target.value}))} className="w-full accent-cyan" />
+                      onChange={e => setForm(f=>({...f,target:+e.target.value}))} className="w-full accent-primary h-2 bg-space-800 rounded-lg appearance-none cursor-pointer" />
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 mt-5">
-                <button onClick={() => setShowCreate(false)} className="flex-1 btn-outline py-2.5 text-sm">Cancel</button>
-                <button onClick={createGoal} className="flex-1 btn-cyan py-2.5 text-sm">Create Goal</button>
+              <div className="flex gap-4 mt-8 relative z-10">
+                <button onClick={() => { audioSystem.playClick(); setShowCreate(false); }} className="flex-1 btn-outline py-3.5 text-sm bg-space-800">Cancel</button>
+                <button onClick={createGoal} className="flex-1 btn-primary py-3.5 text-sm shadow-glow-primary">Create Goal</button>
               </div>
             </motion.div>
           </motion.div>
