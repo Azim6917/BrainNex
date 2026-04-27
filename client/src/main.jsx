@@ -14,3 +14,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+
+throw new Error("Sentry test");
