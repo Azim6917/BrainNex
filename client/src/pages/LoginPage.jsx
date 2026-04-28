@@ -77,7 +77,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-space-dark">
       {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900 border-r border-border">
+      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(124,58,237,0.15),transparent_50%)] pointer-events-none" />
         <div className="absolute w-[500px] h-[500px] rounded-full blur-[100px] -top-40 -left-40 bg-cyan/10 pointer-events-none" />
         <Link to="/" className="relative z-10"><BrainNexLogo size="lg" /></Link>
@@ -141,7 +141,7 @@ export default function LoginPage() {
           ) : (
             <motion.div key="login"
               initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, x:-30 }}
-              className="w-full max-w-md relative z-10">
+              className="w-full max-w-md relative z-10 glass-card p-8 md:p-10 shadow-2xl">
               <div className="lg:hidden mb-10 flex justify-center"><BrainNexLogo size="md" /></div>
               
               <div className="text-center mb-10">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                 <div className="flex-1 h-px bg-border" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5 bg-space-800/50 p-6 rounded-3xl border border-white/5 shadow-sm">
+              <form onSubmit={handleSubmit} className="space-y-5 mt-6">
                 <div>
                   <label className="text-[10px] font-bold text-txt3 uppercase tracking-widest mb-2 block">Email Address</label>
                   <div className="relative">

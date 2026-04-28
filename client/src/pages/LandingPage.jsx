@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
-import { MessageSquare, FileQuestion, BarChart3, Map, Users, Trophy, ArrowRight, Star, CheckCircle, Zap } from 'lucide-react';
+import { MessageSquare, FileQuestion, BarChart3, Map, Users, Trophy, ArrowRight, Star, CheckCircle, Zap, Target, BookOpen, Flame, Sparkles } from 'lucide-react';
 import BrainNexLogo from '../components/BrainNexLogo';
 
 // Dummy universities for marquee
-const universities = ['Stanford', 'MIT', 'Harvard', 'Oxford', 'Cambridge', 'Princeton', 'Yale', 'Columbia', 'Berkeley', 'UCLA'];
+const universities = ['Stanford', 'MIT', 'Harvard', 'Oxford', 'Cambridge', 'Yale', 'Columbia','UCLA', 'Amity University', 'Amity Institute of Technology'];
 
 const features = [
   { icon:MessageSquare, color:'linear-gradient(135deg, #7C3AED, #4F46E5)', title:'AI Chat Tutor', desc:'Real-time adaptive explanations.' },
@@ -17,15 +17,15 @@ const features = [
 
 const HOW_STEPS = [
   {
-    num:'1', icon:'🎯', title:'Set Your Goal',
+    num:'1', icon:<Target size={32} className="text-primary" />, title:'Set Your Goal',
     desc:'Tell BrainNex what you want to learn. Our AI tailors a curriculum just for you based on your grade and objectives.',
   },
   {
-    num:'2', icon:'📖', title:'Learn interactively',
+    num:'2', icon:<BookOpen size={32} className="text-primary" />, title:'Learn interactively',
     desc:'Study with AI-generated bite-sized cards. When you\'re stuck, simply chat with your personal AI tutor for deeper explanations.',
   },
   {
-    num:'3', icon:'📝', title:'Test & Master',
+    num:'3', icon:<FileQuestion size={32} className="text-primary" />, title:'Test & Master',
     desc:'Take personalized quizzes that adapt to your weaknesses. Earn XP, maintain your streak, and level up your knowledge.',
   },
 ];
@@ -46,16 +46,16 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-brand-bg text-white overflow-x-hidden font-inter selection:bg-primary selection:text-white">
+    <div className="landing-page min-h-screen bg-brand-bg text-white overflow-x-hidden selection:bg-primary selection:text-white">
 
       {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-brand-bg/80 backdrop-blur-xl border-b border-white/10 shadow-sm' : 'py-5 bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
           <BrainNexLogo size="md" />
           <div className="hidden md:flex items-center gap-8 font-medium text-sm text-txt2">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-white transition-colors">How it works</a>
-            <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
+            <a href="/#features" className="hover:text-white transition-colors">Features</a>
+            <a href="/#how-it-works" className="hover:text-white transition-colors">How it works</a>
+            <a href="/#testimonials" className="hover:text-white transition-colors">Testimonials</a>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm font-medium text-txt hover:text-primary-light transition-colors px-4 py-2">Log in</Link>
@@ -83,7 +83,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <Link to="/register" className="btn-primary text-base">Start Learning Free</Link>
-              <a href="#how-it-works" className="btn-ghost text-base">See how it works</a>
+              <a href="/#how-it-works" className="btn-ghost text-base">See how it works</a>
             </div>
             <div className="flex items-center gap-4 text-sm text-txt2">
               <div className="flex -space-x-2">
@@ -123,7 +123,7 @@ export default function LandingPage() {
                 {/* Content mock */}
                 <div className="flex-1 flex flex-col gap-4">
                   <div className="h-20 rounded-xl bg-gradient-to-r from-primary/20 to-cyan/10 border border-primary/20 p-4 flex flex-col justify-center shadow-inner">
-                    <div className="text-white font-bold text-sm">Welcome back, Student! 👋</div>
+                    <div className="text-white font-bold text-sm flex items-center gap-2">Welcome back, Student! <Sparkles size={16} className="text-amber-400" /></div>
                     <div className="text-txt-sec text-[10px] mt-1 font-medium">You have 2 upcoming study goals this week.</div>
                   </div>
                   <div className="flex gap-4 flex-1">
@@ -163,7 +163,7 @@ export default function LandingPage() {
                 <div><p className="text-xs font-bold text-white">Quiz Passed!</p><p className="text-[10px] text-txt-sec">+50 XP Earned</p></div>
               </motion.div>
               <motion.div animate={{ y: [10, -10, 10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="absolute -right-6 bottom-16 glass-card bg-brand-card p-3 flex items-center gap-3 shadow-lg border border-white/10">
-                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 font-bold text-sm">🔥</div>
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 font-bold text-sm"><Flame size={16} /></div>
                 <div><p className="text-xs font-bold text-white">12 Day Streak</p></div>
               </motion.div>
             </div>
@@ -175,8 +175,8 @@ export default function LandingPage() {
       <div className="py-8 border-y border-white/5 bg-white/[0.02] overflow-hidden">
         <p className="text-center text-xs font-semibold text-txt3 uppercase tracking-widest mb-6">Trusted by students from</p>
         <div className="flex gap-16 animate-marquee w-max opacity-40 hover:opacity-80 transition-opacity">
-          {[...universities, ...universities].map((uni, i) => (
-            <span key={i} className="text-xl font-jakarta font-bold text-white whitespace-nowrap">{uni}</span>
+          {[...universities, ...universities, ...universities].map((uni, i) => (
+            <span key={i} className="text-xl font-sans font-bold text-white whitespace-nowrap">{uni}</span>
           ))}
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function LandingPage() {
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16 max-w-2xl mx-auto">
-            <h2 className="font-jakarta font-black text-4xl lg:text-5xl tracking-tight mb-4 text-white">Unleash your potential</h2>
+            <h2 className="font-sans font-extrabold text-4xl lg:text-5xl tracking-tight mb-4 text-white">Unleash your potential</h2>
             <p className="text-lg text-txt-sec font-medium">Everything you need to master any topic, beautifully integrated into one platform.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-6">
@@ -196,7 +196,7 @@ export default function LandingPage() {
                 <div className="w-14 h-14 rounded-2xl mb-6 flex items-center justify-center text-white shadow-lg" style={{ background: f.color }}>
                   <f.icon size={24} />
                 </div>
-                <h3 className="font-jakarta font-black text-2xl mb-3 text-white">{f.title}</h3>
+                <h3 className="font-sans font-extrabold text-2xl mb-3 text-white">{f.title}</h3>
                 <p className="text-txt-sec font-medium text-sm leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
@@ -225,7 +225,7 @@ export default function LandingPage() {
                     <span className="relative z-10">{step.icon}</span>
                     <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold shadow-sm">{step.num}</div>
                   </div>
-                  <h3 className="font-jakarta font-bold text-2xl mb-3">{step.title}</h3>
+                  <h3 className="font-sans font-bold text-2xl mb-3">{step.title}</h3>
                   <p className="text-txt2 text-sm leading-relaxed">{step.desc}</p>
                 </motion.div>
               ))}
@@ -239,7 +239,7 @@ export default function LandingPage() {
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16 max-w-2xl mx-auto">
-            <h2 className="font-jakarta font-black text-4xl lg:text-5xl tracking-tight mb-4 text-white">Loved by Students</h2>
+            <h2 className="font-sans font-extrabold text-4xl lg:text-5xl tracking-tight mb-4 text-white">Loved by Students</h2>
             <p className="text-lg text-txt-sec font-medium">Join thousands who have already transformed their learning experience.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -272,11 +272,28 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto relative group cursor-pointer">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan to-primary rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
           <div className="relative glass-card bg-brand-bg2 p-12 sm:p-16 text-center overflow-hidden rounded-[30px] border border-white/10">
-            <h2 className="font-jakarta font-black text-4xl sm:text-5xl mb-4 text-white">Ready to ace your exams?</h2>
+            <h2 className="font-sans font-extrabold text-4xl sm:text-5xl mb-4 text-white">Ready to ace your exams?</h2>
             <p className="text-lg text-txt2 mb-10 max-w-xl mx-auto">Join BrainNex today and experience the future of personalized learning.</p>
             <Link to="/register" className="btn-primary text-lg px-12 py-5 shadow-glow-primary inline-flex">
               Get Started for Free
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING SECTION */}
+      <section id="pricing-section" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="glass-card bg-brand-bg2 p-8 md:p-12 rounded-3xl border border-white/10 shadow-lg text-center">
+            <h2 className="font-sans font-extrabold text-3xl md:text-4xl tracking-tight mb-4 text-white">Pricing plans coming soon</h2>
+            <p className="text-lg text-txt-sec font-medium mb-8 max-w-2xl mx-auto">I'm working on transparent and student-friendly pricing. Stay tuned!</p>
+            <div className="max-w-md mx-auto">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input type="email" placeholder="Enter your email to get notified" className="input-field py-3 px-4 text-sm flex-1 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary transition-colors" />
+                <button className="btn-primary py-3 px-6 text-sm rounded-xl font-bold whitespace-nowrap shadow-glow-primary">Subscribe</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -291,24 +308,23 @@ export default function LandingPage() {
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Product</h4>
             <ul className="space-y-3 text-txt2">
-              <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Testimonials</a></li>
+              <li><a href="/#features" className="hover:text-primary transition-colors">Features</a></li>
+              <li><button onClick={() => { document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-primary transition-colors text-left w-full">Pricing</button></li>
+              <li><a href="/#testimonials" className="hover:text-primary transition-colors">Testimonials</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Company</h4>
             <ul className="space-y-3 text-txt2">
-              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
+              <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Stay Updated</h4>
             <div className="flex gap-2">
-              <input type="email" placeholder="Email address" className="input-field py-2 px-3 text-sm" />
-              <button className="btn-primary py-2 px-4 text-sm rounded-xl">Subscribe</button>
+              <input type="email" placeholder="Email address" className="input-field py-2 px-3 text-sm bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:outline-none text-white w-full" />
+              <button className="btn-primary py-2 px-4 text-sm rounded-xl font-bold">Subscribe</button>
             </div>
           </div>
         </div>

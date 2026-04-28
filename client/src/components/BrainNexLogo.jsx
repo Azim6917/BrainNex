@@ -1,9 +1,6 @@
 import React from 'react';
 
-/**
- * Uses the actual BrainNex logo image from /public/images/BrainNex_logo.png
- * In Vite, files in /public are served at root — so path is /images/BrainNex_logo.png
- */
+
 export default function BrainNexLogo({ size = 'md', iconOnly = false }) {
   const imgSizes = { sm: 22, md: 28, lg: 36 };
   const textSizes = { sm: 'text-base', md: 'text-xl', lg: 'text-2xl' };

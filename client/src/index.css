@@ -52,7 +52,14 @@
   --cyan: #00b4d8;
   --amber: #f77f00;
   --green: #06d6a0;
+}
+/* font-size inflation scoped only to the dashboard/app pages */
+:root.kid-mode .app-page {
   font-size: 115%;
+}
+/* Landing page is always 16px base — immune to kid-mode rem inflation */
+.landing-page {
+  font-size: 16px;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -64,7 +71,7 @@
   body {
     background-color: var(--bg);
     color: var(--txt);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 16px;
     line-height: 1.7;
     overflow-x: hidden;
@@ -81,12 +88,32 @@
     letter-spacing: -0.03em;
   }
   
-  :root.kid-mode body {
+  :root.kid-mode .app-page body,
+  :root.kid-mode .app-page {
     font-family: 'Nunito', sans-serif;
   }
-  :root.kid-mode h1, :root.kid-mode h2, :root.kid-mode h3, :root.kid-mode h4, :root.kid-mode h5, :root.kid-mode h6 {
+  :root.kid-mode .app-page h1,
+  :root.kid-mode .app-page h2,
+  :root.kid-mode .app-page h3,
+  :root.kid-mode .app-page h4,
+  :root.kid-mode .app-page h5,
+  :root.kid-mode .app-page h6 {
     font-family: 'Nunito', sans-serif;
     font-weight: 900;
+  }
+
+  /* ── Landing page font protection (immune to kid-mode) ── */
+  .landing-page h1,
+  .landing-page h2,
+  .landing-page h3,
+  .landing-page h4,
+  .landing-page h5,
+  .landing-page h6,
+  .landing-page p,
+  .landing-page span,
+  .landing-page a,
+  .landing-page button {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
   }
 
   body, nav, aside, main, section, footer, header,
@@ -210,9 +237,9 @@
   :root.light .sidebar-item.active { color: var(--primary); }
 
   /* Section titles */
-  .page-title   { @apply font-jakarta font-black text-3xl md:text-5xl; color: var(--txt); letter-spacing: -0.03em; }
+  .page-title   { @apply font-sans font-extrabold text-3xl md:text-5xl; color: var(--txt); letter-spacing: -0.03em; }
   .page-sub     { @apply text-base md:text-lg mt-2; color: var(--txt2); }
-  .card-title   { @apply font-jakarta font-bold text-lg md:text-xl; color: var(--txt); letter-spacing: -0.02em; }
+  .card-title   { @apply font-sans font-bold text-lg md:text-xl; color: var(--txt); letter-spacing: -0.02em; }
 
   /* Chat prose */
   .chat-prose code {

@@ -16,10 +16,9 @@ export default {
         txt:         { pri: '#F8FAFC', sec: '#94A3B8', muted: '#475569' },
       },
       fontFamily: {
-        jakarta: ['Plus Jakarta Sans', 'sans-serif'],
-        inter:   ['Inter', 'sans-serif'],
-        mono:    ['JetBrains Mono', 'monospace'],
-        nunito:  ['Nunito', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        nunito: ['Nunito', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
         'glow-primary': '0 0 24px rgba(124,58,237,0.4)',

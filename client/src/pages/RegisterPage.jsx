@@ -57,7 +57,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex bg-space-dark">
       {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900 border-r border-border">
+      <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,229,255,0.15),transparent_50%)] pointer-events-none" />
         <div className="absolute w-[500px] h-[500px] rounded-full blur-[100px] -top-40 -left-40 bg-primary/10 pointer-events-none" />
         <Link to="/" className="relative z-10"><BrainNexLogo size="lg" /></Link>
@@ -85,7 +85,7 @@ export default function RegisterPage() {
       {/* Right form */}
       <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto custom-scrollbar">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.05),transparent_70%)] pointer-events-none" />
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="w-full max-w-md py-10 relative z-10">
+        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="w-full max-w-md p-8 md:p-10 relative z-10 glass-card shadow-2xl">
           <div className="lg:hidden mb-10 flex justify-center"><BrainNexLogo size="md" /></div>
           
           <div className="text-center mb-10">
@@ -116,7 +116,7 @@ export default function RegisterPage() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 bg-space-800/50 p-6 rounded-3xl border border-white/5 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-5 mt-6">
             <div>
               <label className="text-[10px] font-bold text-txt3 uppercase tracking-widest mb-2 block">Full Name</label>
               <div className="relative">
