@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../context/AuthContext';
 
-export default function StreakCalendar({ compact = false }) {
+export default function StreakCalendar() {
   const { user } = useAuth();
   const [dayMap, setDayMap] = useState({});
 
@@ -22,78 +21,120 @@ export default function StreakCalendar({ compact = false }) {
     }).catch(() => {});
   }, [user]);
 
-  // 13 weeks of 7 days = 91 days
-  const numDays = 91;
-  const days = Array.from({ length: numDays }, (_, i) => {
-    const d   = new Date();
-    d.setDate(d.getDate() - (numDays - 1 - i));
+  // Build last 90 days
+  const numDays = 90;
+  const today = new Date();
+  const allDays = Array.from({ length: numDays }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (numDays - 1 - i));
     const key = d.toDateString();
-    return { d, key, count: dayMap[key] || 0, isToday: key === new Date().toDateString() };
+    return { d, key, count: dayMap[key] || 0, isToday: key === today.toDateString() };
   });
 
-  const weeks = [];
-  for (let i = 0; i < 13; i++) weeks.push(days.slice(i * 7, i * 7 + 7));
+  // Pad so first column starts on Monday
+  const firstDayOfWeek = allDays[0].d.getDay(); // 0=Sun..6=Sat
+  const mondayOffset = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1);
+  const padded = [...Array(mondayOffset).fill(null), ...allDays];
+  while (padded.length % 7 !== 0) padded.push(null);
+  const numWeeks = padded.length / 7;
 
-  const color = (n) => {
-    if (n === 0) return 'var(--border2)'; // bg-space-800 or border2
-    if (n === 1) return 'rgba(124, 58, 237, 0.25)'; // primary with opacity
-    if (n === 2) return 'rgba(124, 58, 237, 0.50)';
-    if (n === 3) return 'rgba(124, 58, 237, 0.75)';
-    return 'var(--primary)'; // full primary
+  // Build columns (week = column of 7 days Mon-Sun)
+  const columns = [];
+  for (let w = 0; w < numWeeks; w++) {
+    columns.push(padded.slice(w * 7, w * 7 + 7));
+  }
+
+  const cellColor = (n) => {
+    if (!n || n === 0) return 'rgba(255,255,255,0.06)';
+    if (n === 1) return 'rgba(139,92,246,0.3)';
+    if (n === 2) return 'rgba(139,92,246,0.55)';
+    if (n === 3) return 'rgba(139,92,246,0.75)';
+    return 'rgb(139,92,246)';
   };
 
-  const totalActive = Object.keys(dayMap).length;
-  const totalQuizzes = Object.values(dayMap).reduce((a,b) => a+b, 0);
+  // Month labels: find first column index where month changes
+  const monthLabels = [];
+  let lastMonth = -1;
+  columns.forEach((col, wi) => {
+    const firstReal = col.find(c => c !== null);
+    if (firstReal) {
+      const m = firstReal.d.getMonth();
+      if (m !== lastMonth) {
+        monthLabels.push({ wi, label: firstReal.d.toLocaleString('default', { month: 'short' }) });
+        lastMonth = m;
+      }
+    }
+  });
 
-  const DAYS_LABEL = ['M','T','W','T','F','S','S'];
+  const DAY_LABELS = ['M', '', 'W', '', 'F', '', ''];
+  const totalQuizzes = Object.values(dayMap).reduce((a, b) => a + b, 0);
+  const totalActive = Object.keys(dayMap).length;
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="font-jakarta font-bold text-sm text-txt">Activity Calendar</h2>
-        <span className="text-[11px] font-medium text-txt3 bg-white/5 px-2 py-1 rounded-md">{totalQuizzes} quizzes in 90 days</span>
+        <span className="text-[11px] font-medium text-txt3 bg-white/5 px-2 py-1 rounded-md">
+          {totalQuizzes} quizzes · {totalActive} active days
+        </span>
       </div>
 
-      <div className="flex gap-2 items-start w-full overflow-x-auto pb-1 custom-scrollbar">
-        {/* Day labels on left */}
-        <div className="flex flex-col gap-[3px] mr-1 mt-0.5 flex-shrink-0">
-          {DAYS_LABEL.map((l, i) => (
-            <div key={i} className="text-[10px] font-bold text-txt3 h-3.5 flex items-center">{i % 2 === 0 ? l : ''}</div>
+      <div className="flex gap-1 items-start overflow-hidden">
+        {/* Day labels col */}
+        <div className="flex flex-col gap-[3px] mr-1 flex-shrink-0" style={{ marginTop: '20px' }}>
+          {DAY_LABELS.map((l, i) => (
+            <div key={i} style={{ width: 12, height: 12, fontSize: 9, lineHeight: '12px', color: 'var(--txt3)', fontWeight: 700, textAlign: 'right' }}>
+              {l}
+            </div>
           ))}
         </div>
 
-        {/* Grid — weeks as columns */}
-        <div className="flex gap-[3px] flex-1">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-[12px]">
-              {week.map(({ d, key, count, isToday }) => (
-                <motion.div
-                  key={key}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: wi * 0.02, duration: 0.15 }}
-                  title={`${d.toLocaleDateString('en-IN', { weekday:'short', month:'short', day:'numeric' })}: ${count} quiz${count !== 1 ? 'zes' : ''}`}
-                  className={`rounded-[3px] cursor-default transition-all hover:scale-125 hover:z-10 relative ${isToday ? 'ring-1 ring-primary ring-offset-1 ring-offset-space-dark' : ''}`}
-                  style={{
-                    background: color(count),
-                    width: '100%',
-                    aspectRatio: '1 / 1',
-                    minHeight: '12px'
-                  }}
-                />
-              ))}
-            </div>
-          ))}
+        {/* Calendar grid */}
+        <div className="flex-1 w-full">
+          {/* Month labels */}
+          <div className="flex justify-between mb-1 w-full" style={{ height: 16 }}>
+            {columns.map((_, wi) => {
+              const ml = monthLabels.find(m => m.wi === wi);
+              return (
+                <div key={wi} style={{ width: 12, flexShrink: 0, fontSize: 9, color: 'var(--txt3)', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'visible' }}>
+                  {ml ? ml.label : ''}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Grid columns */}
+          <div className="flex justify-between w-full">
+            {columns.map((col, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px]" style={{ flexShrink: 0 }}>
+                {col.map((day, di) => (
+                  <div
+                    key={di}
+                    title={day ? `${day.d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}: ${day.count} quiz${day.count !== 1 ? 'zes' : ''}` : ''}
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 2,
+                      background: day ? cellColor(day.count) : 'transparent',
+                      outline: day?.isToday ? '1.5px solid rgba(139,92,246,0.9)' : 'none',
+                      outlineOffset: 1,
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Legend */}
       <div className="flex items-center gap-1.5 mt-3 justify-end">
-        <span className="text-[10px] font-medium text-txt3">Less</span>
-        {[0,1,2,3,4].map(n => (
-          <div key={n} className="w-3 h-3 rounded-[3px]" style={{ background: color(n) }} />
+        <span style={{ fontSize: 9, color: 'var(--txt3)', fontWeight: 600 }}>Less</span>
+        {[0, 1, 2, 3, 4].map(n => (
+          <div key={n} style={{ width: 12, height: 12, borderRadius: 2, background: cellColor(n === 0 ? 0 : n) }} />
         ))}
-        <span className="text-[10px] font-medium text-txt3">More</span>
+        <span style={{ fontSize: 9, color: 'var(--txt3)', fontWeight: 600 }}>More</span>
       </div>
     </div>
   );

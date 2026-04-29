@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Send, LogOut, Plus, Trash2, FileQuestion,
-  BookOpen, MessageCircle, Wifi, WifiOff, X, CheckCircle, XCircle
+  BookOpen, MessageCircle, Wifi, WifiOff, X, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateQuiz } from '../utils/api';

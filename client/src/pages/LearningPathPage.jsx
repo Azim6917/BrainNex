@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown } from 'lucide-react';
+import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock } from 'lucide-react';
 import { generateLearningPath } from '../utils/api';
 import { useUserData } from '../context/UserDataContext';
 import { audioSystem } from '../utils/audio';

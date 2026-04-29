@@ -1,42 +1,46 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Lock, Zap, Star } from 'lucide-react';
+import {
+  Trophy, Lock, Zap, Star, FileText, BookOpen, GraduationCap, Crown,
+  Target, Brain, Timer, TrendingUp, Sparkles, Flame, Shield, Users,
+  Award, BookMarked, CheckCircle, FileQuestion
+} from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
 import { triggerConfetti } from '../utils/confetti';
 import { audioSystem } from '../utils/audio';
 
 export const ALL_BADGES = [
   // Milestone
-  { id:'first-quiz',      name:'First Quiz!',        icon:'📝', category:'Milestone',    desc:'Complete your first quiz' },
-  { id:'10-quizzes',      name:'Quiz Veteran',        icon:'🏆', category:'Milestone',    desc:'Complete 10 quizzes' },
-  { id:'25-quizzes',      name:'Quiz Master',         icon:'🎓', category:'Milestone',    desc:'Complete 25 quizzes' },
-  { id:'50-quizzes',      name:'Quiz Legend',         icon:'👑', category:'Milestone',    desc:'Complete 50 quizzes' },
+  { id:'first-quiz',      name:'First Quiz!',        Icon: FileText,      color: '#8B72FF', category:'Milestone',    desc:'Complete your first quiz' },
+  { id:'10-quizzes',      name:'Quiz Veteran',       Icon: BookOpen,      color: '#8B72FF', category:'Milestone',    desc:'Complete 10 quizzes' },
+  { id:'25-quizzes',      name:'Quiz Master',        Icon: GraduationCap, color: '#8B72FF', category:'Milestone',    desc:'Complete 25 quizzes' },
+  { id:'50-quizzes',      name:'Quiz Legend',        Icon: Crown,         color: '#8B72FF', category:'Milestone',    desc:'Complete 50 quizzes' },
   // Achievement
-  { id:'perfect-score',   name:'Perfect Score!',      icon:'💯', category:'Achievement',  desc:'Score 100% on any quiz' },
-  { id:'high-scorer',     name:'High Scorer',         icon:'🎯', category:'Achievement',  desc:'80%+ avg accuracy (5+ quizzes)' },
-  { id:'multi-subject',   name:'Polymath',            icon:'🧠', category:'Achievement',  desc:'Study 5 different subjects' },
-  { id:'speed-run',       name:'Speed Runner',        icon:'⚡', category:'Achievement',  desc:'Complete a quiz in under 90 seconds' },
-  { id:'comeback-kid',    name:'Comeback Kid',        icon:'💪', category:'Achievement',  desc:'Score 80%+ after scoring below 50%' },
+  { id:'perfect-score',   name:'Perfect Score!',     Icon: Star,          color: '#F59E0B', category:'Achievement',  desc:'Score 100% on any quiz' },
+  { id:'high-scorer',     name:'High Scorer',        Icon: Target,        color: '#F97316', category:'Achievement',  desc:'80%+ avg accuracy (5+ quizzes)' },
+  { id:'multi-subject',   name:'Polymath',           Icon: Brain,         color: '#EC4899', category:'Achievement',  desc:'Study 5 different subjects' },
+  { id:'speed-run',       name:'Speed Runner',       Icon: Timer,         color: '#06B6D4', category:'Achievement',  desc:'Complete a quiz in under 90 seconds' },
+  { id:'comeback-kid',    name:'Comeback Kid',       Icon: TrendingUp,    color: '#10B981', category:'Achievement',  desc:'Score 80%+ after scoring below 50%' },
   // XP
-  { id:'1k-xp',           name:'1000 XP Club',        icon:'⚡', category:'XP',           desc:'Earn 1,000 XP total' },
-  { id:'5k-xp',           name:'XP Champion',         icon:'🌟', category:'XP',           desc:'Earn 5,000 XP total' },
-  { id:'10k-xp',          name:'XP Legend',           icon:'💎', category:'XP',           desc:'Earn 10,000 XP total' },
+  { id:'1k-xp',           name:'1000 XP Club',       Icon: Zap,           color: '#EAB308', category:'XP',           desc:'Earn 1,000 XP total' },
+  { id:'5k-xp',           name:'XP Champion',        Icon: Sparkles,      color: '#EAB308', category:'XP',           desc:'Earn 5,000 XP total' },
+  { id:'10k-xp',          name:'XP Legend',          Icon: Trophy,        color: '#F59E0B', category:'XP',           desc:'Earn 10,000 XP total' },
   // Streak
-  { id:'streak-3',        name:'3-Day Streak',        icon:'🔥', category:'Streak',       desc:'Study 3 days in a row' },
-  { id:'streak-7',        name:'Week Warrior',        icon:'🔥', category:'Streak',       desc:'Study 7 days in a row' },
-  { id:'streak-14',       name:'Fortnight Fire',      icon:'🔥', category:'Streak',       desc:'Study 14 days in a row' },
-  { id:'streak-30',       name:'Month Master',        icon:'👑', category:'Streak',       desc:'Study 30 days in a row' },
-  { id:'streak-60',       name:'Dedication',          icon:'🏅', category:'Streak',       desc:'Study 60 days in a row' },
+  { id:'streak-3',        name:'3-Day Streak',       Icon: Flame,         color: '#F97316', category:'Streak',       desc:'Study 3 days in a row' },
+  { id:'streak-7',        name:'Week Warrior',       Icon: Flame,         color: '#F97316', category:'Streak',       desc:'Study 7 days in a row', size: 'large' },
+  { id:'streak-14',       name:'Fortnight Fire',     Icon: Flame,         color: '#EF4444', category:'Streak',       desc:'Study 14 days in a row' },
+  { id:'streak-30',       name:'Month Master',       Icon: Crown,         color: '#F59E0B', category:'Streak',       desc:'Study 30 days in a row' },
+  { id:'streak-60',       name:'Dedication',         Icon: Shield,        color: '#8B72FF', category:'Streak',       desc:'Study 60 days in a row' },
   // Social
-  { id:'study-room',      name:'Team Player',         icon:'👥', category:'Social',       desc:'Join your first study room' },
-  { id:'group-quiz',      name:'Group Champion',      icon:'🎮', category:'Social',       desc:'Complete a group quiz in study room' },
+  { id:'study-room',      name:'Team Player',        Icon: Users,         color: '#0EA5E9', category:'Social',       desc:'Join your first study room' },
+  { id:'group-quiz',      name:'Group Champion',     Icon: Award,         color: '#0EA5E9', category:'Social',       desc:'Complete a group quiz in study room' },
   // Session
-  { id:'first-session',   name:'First Lesson',        icon:'📖', category:'Learning',     desc:'Complete your first study session' },
-  { id:'5-sessions',      name:'Dedicated Learner',   icon:'📚', category:'Learning',     desc:'Complete 5 study sessions' },
-  { id:'session-perfect', name:'Session Star',        icon:'⭐', category:'Learning',     desc:'Score 100% on a session end quiz' },
+  { id:'first-session',   name:'First Lesson',       Icon: BookMarked,    color: '#06B6D4', category:'Learning',     desc:'Complete your first study session' },
+  { id:'5-sessions',      name:'Dedicated Learner',  Icon: BookOpen,      color: '#06B6D4', category:'Learning',     desc:'Complete 5 study sessions' },
+  { id:'session-perfect', name:'Session Star',       Icon: Star,          color: '#F59E0B', category:'Learning',     desc:'Score 100% on a session end quiz', filled: true },
   // Goals
-  { id:'first-goal',      name:'Goal Setter',         icon:'🎯', category:'Goals',        desc:'Create your first study goal' },
-  { id:'goal-complete',   name:'Goal Crusher',        icon:'✅', category:'Goals',        desc:'Complete a study goal' },
+  { id:'first-goal',      name:'Goal Setter',        Icon: Target,        color: '#10B981', category:'Goals',        desc:'Create your first study goal' },
+  { id:'goal-complete',   name:'Goal Crusher',       Icon: CheckCircle,   color: '#10B981', category:'Goals',        desc:'Complete a study goal' },
 ];
 
 const CAT_COLORS = {
@@ -126,14 +130,16 @@ export default function AchievementsPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
-          { icon:'🏆', label:'Badges',       val:`${earnedMap.size}/${ALL_BADGES.length}` },
-          { icon:'🔥', label:'Streak',        val:`${profile?.streak||0} days` },
-          { icon:'⚡', label:'Total XP',      val:totalXP.toLocaleString() },
-          { icon:'📝', label:'Total Quizzes', val:profile?.totalQuizzes||0 },
-        ].map(({ icon, label, val }) => (
+          { Icon:Trophy,   color:'#F59E0B', label:'Badges',       val:`${earnedMap.size}/${ALL_BADGES.length}` },
+          { Icon:Flame,    color:'#F97316', label:'Streak',        val:`${profile?.streak||0} days` },
+          { Icon:Zap,      color:'#EAB308', label:'Total XP',      val:totalXP.toLocaleString() },
+          { Icon:FileText, color:'#8B72FF', label:'Total Quizzes', val:profile?.totalQuizzes||0 },
+        ].map(({ Icon: StatIcon, color, label, val }) => (
           <motion.div key={label} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-            className="glass-card p-6 text-center shadow-sm">
-            <div className="text-3xl mb-3 drop-shadow-sm">{icon}</div>
+            className="glass-card p-6 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="mb-3">
+              <StatIcon size={32} style={{ color }} className="drop-shadow-sm" />
+            </div>
             <div className="font-jakarta font-black text-2xl text-primary mb-1 drop-shadow-sm">{val}</div>
             <div className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{label}</div>
           </motion.div>
@@ -150,18 +156,20 @@ export default function AchievementsPage() {
             </h2>
           </div>
           <div className="flex flex-wrap gap-4">
-            {[...(profile?.badges||[])].reverse().slice(0,6).map((badge, i) => {
-              const colors = CAT_COLORS[badge.category] || CAT_COLORS.Achievement;
+            {[...(profile?.badges||[])].reverse().slice(0,6).map((b, i) => {
+              const badge = ALL_BADGES.find(ab => ab.id === b.id) || ALL_BADGES[0];
+              badge.earnedAt = b.earnedAt;
               return (
                 <motion.div key={badge.id}
                   initial={{ scale:0, rotate:-10 }} animate={{ scale:1, rotate:0 }}
                   transition={{ delay:i*0.08, type:'spring', stiffness:300 }}
                   whileHover={{ scale:1.05, rotate:2, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' }}
                   onClick={() => handleBadgeClick(badge)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer shadow-sm ${colors.bg} ${colors.border}`}>
-                  <span className="text-3xl drop-shadow-sm">{badge.icon}</span>
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer shadow-sm"
+                  style={{ background: badge.color + '15', border: `1px solid ${badge.color}4D` }}>
+                  <badge.Icon size={28} style={{ color: badge.color }} fill={badge.filled ? badge.color : 'none'} className="drop-shadow-sm" />
                   <div>
-                    <p className={`text-sm font-bold ${colors.text}`}>{badge.name}</p>
+                    <p className="text-sm font-bold" style={{ color: badge.color }}>{badge.name}</p>
                     <p className="text-[10px] font-bold text-txt3 uppercase tracking-widest mt-0.5">{badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : ''}</p>
                   </div>
                 </motion.div>
@@ -189,24 +197,39 @@ export default function AchievementsPage() {
                 initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.02 }}
                 whileHover={earned ? { y:-4, scale:1.02, boxShadow:'0 10px 25px -5px rgba(0,0,0,0.2)' } : {}}
                 onClick={() => handleBadgeClick(badge)}
-                className={`rounded-2xl p-5 border text-center transition-all relative glass-card shadow-sm ${earned ? `${colors.bg} ${colors.border} cursor-pointer` : 'bg-space-800 border-border opacity-60 cursor-default'}`}>
-                {!earned && <div className="absolute top-3 right-3 p-1.5 bg-space-900 rounded-lg text-txt3 shadow-sm border border-white/5"><Lock size={12} /></div>}
+                className="rounded-2xl p-5 border text-center transition-all relative flex flex-col items-center shadow-sm"
+                style={{ 
+                  background: earned ? badge.color + '1A' : 'var(--space-800)', 
+                  borderColor: earned ? badge.color + '4D' : 'var(--border)',
+                  cursor: earned ? 'pointer' : 'default',
+                  opacity: earned ? 1 : 0.8
+                }}>
+                {!earned && <div className="absolute inset-0 bg-space-900/40 rounded-2xl z-0 pointer-events-none" />}
+                {!earned && <div className="absolute top-3 right-3 p-1.5 bg-space-900 rounded-lg text-txt3 shadow-sm border border-white/5 z-10"><Lock size={12} /></div>}
+                
                 {earned && (
                   <motion.div
                     initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.02+0.2, type:'spring' }}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm border-2 border-space-900">
-                    <span className="text-[10px] text-white font-black">✓</span>
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm border-2 border-space-900 z-10">
+                    <CheckCircle size={14} className="text-white" />
                   </motion.div>
                 )}
-                <div className={`text-4xl mb-3 mt-2 drop-shadow-sm ${!earned ? 'grayscale opacity-50' : ''}`}>{badge.icon}</div>
-                <p className={`font-jakarta font-bold text-sm mb-1.5 ${earned ? colors.text : 'text-txt3'}`}>{badge.name}</p>
-                <p className="text-[10px] font-medium text-txt2 leading-relaxed">{badge.desc}</p>
-                {earned && info?.earnedAt && (
-                  <p className="text-[9px] font-bold text-txt3 mt-2 uppercase tracking-widest">{new Date(info.earnedAt).toLocaleDateString()}</p>
-                )}
-                <div className={`mt-3 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md inline-block shadow-sm ${earned ? colors.bg : 'bg-space-900 border border-white/5'} ${earned ? colors.text : 'text-txt3'}`}>
-                  {badge.category}
+                
+                <div className="mb-4 mt-2 relative z-10">
+                  <badge.Icon 
+                    size={badge.size === 'large' ? 48 : 40} 
+                    style={{ color: earned ? badge.color : '#888' }} 
+                    fill={badge.filled && earned ? badge.color : 'none'}
+                    className={`drop-shadow-sm ${!earned ? 'opacity-30' : ''}`} 
+                  />
                 </div>
+                
+                <p className="font-jakarta font-bold text-sm mb-1.5 relative z-10" style={{ color: earned ? badge.color : 'var(--txt3)' }}>{badge.name}</p>
+                <p className="text-[10px] font-medium text-txt2 leading-relaxed relative z-10">{badge.desc}</p>
+                
+                {earned && info?.earnedAt && (
+                  <p className="text-[9px] font-bold text-txt3 mt-2 uppercase tracking-widest relative z-10">{new Date(info.earnedAt).toLocaleDateString()}</p>
+                )}
               </motion.div>
             );
           })}
@@ -256,8 +279,8 @@ export default function AchievementsPage() {
               onClick={e => e.stopPropagation()}
               className="glass-card border-primary/20 rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full pointer-events-none" />
-              <motion.div animate={{ rotate:[0,10,-10,0], scale:[1,1.1,1] }} transition={{ delay:0.1, duration:0.5 }} className="text-7xl mb-6 drop-shadow-lg relative z-10">
-                {selected.icon}
+              <motion.div animate={{ rotate:[0,10,-10,0], scale:[1,1.1,1] }} transition={{ delay:0.1, duration:0.5 }} className="flex justify-center mb-6 relative z-10">
+                <selected.Icon size={72} style={{ color: selected.color }} fill={selected.filled ? selected.color : 'none'} className="drop-shadow-lg" />
               </motion.div>
               <h3 className="font-jakarta font-black text-2xl mb-2 text-txt relative z-10">{selected.name}</h3>
               <p className="text-txt2 font-medium text-base mb-6 relative z-10">{selected.desc}</p>

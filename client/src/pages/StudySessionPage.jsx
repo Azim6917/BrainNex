@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, CheckCircle,
@@ -18,8 +19,11 @@ const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Scienc
 /* ─── PHASE: Setup ─────────────────────────────────────────────────────────── */
 function SessionSetup({ onStart }) {
   const { profile } = useUserData();
-  const [subject, setSubject] = useState(SUBJECTS[0]);
-  const [topic,   setTopic]   = useState('');
+  const [searchParams] = useSearchParams();
+  const initialSubject = searchParams.get('subject') || SUBJECTS[0];
+  const initialTopic   = searchParams.get('topic')   || '';
+  const [subject, setSubject] = useState(SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
+  const [topic,   setTopic]   = useState(initialTopic);
   const [level,   setLevel]   = useState('intermediate');
   const [loading, setLoading] = useState(false);
 

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft } from 'lucide-react';
+import {
+  LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
+  LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
+  Users, Target, Trophy
+} from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
 import { useTheme }    from '../context/ThemeContext';
@@ -9,14 +13,14 @@ import BrainNexLogo    from './BrainNexLogo';
 import { audioSystem } from '../utils/audio';
 
 const NAV = [
-  { to:'/app/dashboard',      emoji:'📊', label:'Dashboard'      },
-  { to:'/app/tutor',          emoji:'🤖', label:'AI Tutor',       badge:'LIVE' },
-  { to:'/app/study-sessions', emoji:'📚', label:'Study Sessions' },
-  { to:'/app/quiz',           emoji:'📝', label:'Quiz'           },
-  { to:'/app/learning-path',  emoji:'🗺️', label:'Learning Path'  },
-  { to:'/app/study-rooms',    emoji:'👥', label:'Study Rooms'    },
-  { to:'/app/goals',          emoji:'🎯', label:'Study Goals'    },
-  { to:'/app/achievements',   emoji:'🏆', label:'Achievements'   },
+  { to:'/app/dashboard',      icon: LayoutDashboard, label:'Dashboard'      },
+  { to:'/app/tutor',          icon: Bot,             label:'AI Tutor',       badge:'LIVE' },
+  { to:'/app/study-sessions', icon: BookOpen,        label:'Study Sessions' },
+  { to:'/app/quiz',           icon: FileQuestion,    label:'Quiz'           },
+  { to:'/app/learning-path',  icon: Map,             label:'Learning Path'  },
+  { to:'/app/study-rooms',    icon: Users,           label:'Study Rooms'    },
+  { to:'/app/goals',          icon: Target,          label:'Study Goals'    },
+  { to:'/app/achievements',   icon: Trophy,          label:'Achievements'   },
 ];
 
 function XPBar({ xp, level }) {
@@ -55,7 +59,13 @@ function SidebarInner({ onClose }) {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-5 border-b" style={{ borderColor:'var(--border)' }}>
-        <BrainNexLogo size="md" />
+        <Link
+          to="/app/dashboard"
+          onClick={() => { audioSystem.playClick(); onClose?.(); }}
+          className="hover:opacity-80 transition-opacity"
+        >
+          <BrainNexLogo size="md" />
+        </Link>
         <div className="flex items-center gap-2">
           {/* Theme toggle */}
           <button onClick={() => { audioSystem.playClick(); toggleTheme(); }}
@@ -104,11 +114,13 @@ function SidebarInner({ onClose }) {
 
       {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
-        {NAV.map(({ to, emoji, label, badge }) => (
+        {NAV.map(({ to, icon: Icon, label, badge }) => (
           <NavLink key={to} to={to} onClick={() => { audioSystem.playClick(); onClose?.(); }}>
             {({ isActive }) => (
               <div className={`sidebar-item ${isActive ? 'active' : ''} ${kidMode ? 'py-3' : 'py-2.5'}`}>
-                <span className={`flex-shrink-0 flex items-center justify-center w-8 ${kidMode ? 'text-xl' : 'text-lg'}`}>{emoji}</span>
+                <span className="flex-shrink-0 flex items-center justify-center w-8">
+                  <Icon size={kidMode ? 20 : 18} />
+                </span>
                 <span className={`truncate ${kidMode ? 'font-bold' : 'font-medium'}`}>{label}</span>
                 {badge && (
                   <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 shadow-sm"

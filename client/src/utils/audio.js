@@ -101,14 +101,103 @@ class AudioSystem {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.02);
-    
     gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
-    
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start();
     osc.stop(this.ctx.currentTime + 0.02);
+  }
+
+  // Quiz complete — satisfying two-tone ding
+  playQuizComplete() {
+    this.init();
+    this.playTone(659, 'sine', 0.15, 0.14, 0);
+    this.playTone(784, 'sine', 0.2,  0.16, 0.12);
+  }
+
+  // Create / save — soft ascending confirm
+  playCreate() {
+    this.init();
+    this.playTone(440, 'sine', 0.07, 0.1, 0);
+    this.playTone(550, 'sine', 0.1,  0.1, 0.06);
+  }
+
+  // Goal completed — triumphant double tone
+  playGoalComplete() {
+    this.init();
+    this.playTone(659, 'sine', 0.15, 0.14, 0);
+    this.playTone(988, 'sine', 0.25, 0.18, 0.15);
+  }
+
+  // Room join — ascending three-note chime
+  playRoomJoin() {
+    this.init();
+    this.playTone(523, 'sine', 0.1,  0.1,  0);
+    this.playTone(659, 'sine', 0.1,  0.1,  0.08);
+    this.playTone(784, 'sine', 0.15, 0.12, 0.16);
+  }
+
+  // Delete / remove — short descending tone
+  playDelete() {
+    this.init();
+    this.playTone(300, 'sawtooth', 0.1, 0.08, 0);
+  }
+
+  // Message send — soft whoosh
+  playMessageSend() {
+    this.init();
+    this.playTone(700, 'sine', 0.06, 0.07, 0);
+  }
+
+  // Card advance / flip — soft swoosh
+  playCardFlip() {
+    this.init();
+    this.playTone(400, 'sine', 0.08, 0.08, 0);
+    this.playTone(600, 'sine', 0.06, 0.06, 0.06);
+  }
+
+  // Checkpoint passed — affirmative beep
+  playCheckpointPass() {
+    this.init();
+    this.playTone(659, 'sine', 0.08, 0.12, 0);
+    this.playTone(784, 'sine', 0.1,  0.14, 0.07);
+  }
+
+  // Streak milestone
+  playStreak() {
+    this.init();
+    [300, 350, 280, 400, 320].forEach((freq, i) =>
+      this.playTone(freq, 'square', 0.05, 0.05, i * 0.04)
+    );
+  }
+
+  // Session complete — warm chord
+  playSessionComplete() {
+    this.init();
+    [523, 659, 784, 1047].forEach(freq =>
+      this.playTone(freq, 'sine', 0.7, 0.09, 0)
+    );
+  }
+
+  // Flashcard flip
+  playFlashcardFlip() {
+    this.init();
+    this.playTone(350, 'sine', 0.06, 0.08, 0);
+    this.playTone(500, 'sine', 0.04, 0.06, 0.06);
+  }
+
+  // Timer warning (last 10s)
+  playTimerWarning() {
+    this.init();
+    this.playTone(440, 'square', 0.06, 0.06, 0);
+  }
+
+  // Onboarding next step
+  playOnboardingStep() {
+    this.init();
+    this.playTone(523, 'sine', 0.08, 0.1,  0);
+    this.playTone(659, 'sine', 0.1,  0.12, 0.07);
   }
 }
 
