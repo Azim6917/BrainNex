@@ -333,7 +333,7 @@ export default function ChatTutorPage() {
             </motion.button>
           </div>
           <p className="text-[10px] font-bold text-center mt-3 text-txt3 uppercase tracking-widest">
-            Powered by Claude AI · {junior ? 'Specially designed for young learners 🌟' : 'Responses may not always be perfect'}
+            Powered By BrainNex · {junior ? 'Specially designed for young learners 🌟' : 'Responses may not always be perfect'}
           </p>
         </div>
       </div>
