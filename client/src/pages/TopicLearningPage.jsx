@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, BookOpen, CheckCircle, AlertTriangle, Lightbulb,
-  Star, ChevronRight, ExternalLink, Zap, RotateCcw, LayoutTemplate
+  Star, ChevronRight, ExternalLink, Zap, RotateCcw, LayoutTemplate, Clock
 } from 'lucide-react';
 import {
   doc, getDoc, setDoc, updateDoc, serverTimestamp,
