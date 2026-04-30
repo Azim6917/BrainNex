@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import BrainNexLogo from '../components/BrainNexLogo';
 
 export default function RegisterPage() {
-  const { register, loginWithGoogle, user } = useAuth();
+  const { register, loginWithGoogle, user, logout } = useAuth();
   const navigate = useNavigate();
   const [form, setForm]           = useState({ name:'', email:'', password:'', confirm:'' });
   const [loading, setLoading]     = useState(false);
@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw]       = useState(false);
   const [showCf, setShowCf]       = useState(false);
 
-  if (user) return <Navigate to="/app/dashboard" replace />;
+
 
   const checks = [
     { label:'At least 8 characters',  ok: form.password.length >= 8 },

@@ -15,6 +15,7 @@ import { db } from '../utils/firebase';
 import { getWeeklyReport } from '../utils/api';
 import { ALL_BADGES } from './AchievementsPage';
 import StreakCalendar from '../components/StreakCalendar';
+import StreakPopup    from '../components/StreakPopup';
 import { audioSystem } from '../utils/audio';
 
 function AnimNum({ target }) {
@@ -80,8 +81,10 @@ export default function DashboardPage() {
   const [reportLoading, setReportLoading]            = useState(false);
   const [showReport,    setShowReport]               = useState(false);
   const [spacedTopics,  setSpacedTopics]             = useState([]);
-  const [showStreak,    setShowStreak]               = useState(true);
-  const [showSpaced,    setShowSpaced]               = useState(true);
+  const [showStreak,    setShowStreak]               = useState(sessionStorage.getItem('streakBannerDismissed') !== 'true');
+  const [showSpaced,    setShowSpaced]               = useState(sessionStorage.getItem('needsReviewDismissed') !== 'true');
+  const [showStreakPopup, setShowStreakPopup]         = useState(false);
+  const [activeDays,    setActiveDays]               = useState(new Set());
 
   const tip   = TIPS[new Date().getDay()   % TIPS.length];
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
@@ -113,10 +116,27 @@ export default function DashboardPage() {
           return avg < 65 && daysSince >= 2;
         }).slice(0,3);
         setSpacedTopics(reminders);
+
+        // Build active days Set for streak popup
+        const actSet = new Set();
+        history.forEach(q => { if (q.timestamp) actSet.add(new Date(q.timestamp).toDateString()); });
+        setActiveDays(actSet);
       } catch (err) { console.error('Dashboard quiz load:', err.message); }
     };
     loadHistory();
   }, [user, profile?.totalQuizzes]);
+
+  /* ── Streak popup: show 1.5s after load, once per session ── */
+  useEffect(() => {
+    if (!profile) return;
+    const already = sessionStorage.getItem('streakPopupShown') === 'true';
+    if (already || (profile.streak || 0) < 2) return;
+    const t = setTimeout(() => {
+      setShowStreakPopup(true);
+      sessionStorage.setItem('streakPopupShown', 'true');
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [profile]);
 
   useEffect(() => { if (profile?.totalQuizzes > 0) refreshProfile(); }, [profile?.totalQuizzes]);
 
@@ -150,6 +170,15 @@ export default function DashboardPage() {
 
   return (
     <div className="p-5 md:p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+
+      {/* Streak popup */}
+      {showStreakPopup && (
+        <StreakPopup
+          streak={profile?.streak || 0}
+          activeDays={activeDays}
+          onClose={() => setShowStreakPopup(false)}
+        />
+      )}
 
       {/* Header */}
       <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
@@ -207,7 +236,7 @@ export default function DashboardPage() {
               </motion.div>
             ))}
           </div>
-          <button onClick={() => setShowStreak(false)} className="z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center hover:bg-amber-500/10 transition-colors text-amber-500/60 hover:text-amber-500">
+          <button onClick={() => { setShowStreak(false); sessionStorage.setItem('streakBannerDismissed', 'true'); }} className="z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center hover:bg-amber-500/10 transition-colors text-amber-500/60 hover:text-amber-500">
             <X size={16} />
           </button>
         </motion.div>
@@ -219,7 +248,7 @@ export default function DashboardPage() {
           className="glass-card border-red-500/20 p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-bold text-red-400 flex items-center gap-2"><AlertTriangle size={16} />Needs Review (Spaced Repetition)</p>
-            <button onClick={() => setShowSpaced(false)} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500/10 transition-colors text-red-400/60 hover:text-red-400">
+            <button onClick={() => { setShowSpaced(false); sessionStorage.setItem('needsReviewDismissed', 'true'); }} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500/10 transition-colors text-red-400/60 hover:text-red-400">
               <X size={14} />
             </button>
           </div>

@@ -126,25 +126,25 @@ export default function LearningPathPage() {
   const completedCount = pathData?.nodes.filter(n => n.status === 'completed').length || 0;
 
   return (
-    <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
-      <div className="mb-8 pt-12 lg:pt-0">
-        <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Learning Path Visualizer</h1>
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto w-full">
+      <div className="mb-6 md:mb-8 pt-2 lg:pt-0">
+        <h1 className="font-jakarta font-black text-2xl md:text-4xl text-txt mb-2">Learning Path Visualizer</h1>
         <p className="text-sm font-medium text-txt3">AI-generated visual roadmap of topics to master — in the right order</p>
       </div>
 
       {/* Controls */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-6 mb-8 flex flex-wrap gap-5 items-end shadow-sm">
-        <div className="flex-1 min-w-[200px]">
+        className="glass-card p-4 md:p-6 mb-6 md:mb-8 flex flex-col sm:flex-row flex-wrap gap-4 md:gap-5 items-start sm:items-end shadow-sm">
+        <div className="w-full sm:flex-1 sm:min-w-[200px]">
           <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Subject</label>
           <DarkSelect value={subject} onChange={setSubject} options={SUBJECTS} />
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Level</label>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             {LEVELS.map(l => (
               <button key={l} onClick={() => { audioSystem.playClick(); setLevel(l); }}
-                className={`text-sm px-5 py-3 rounded-xl border capitalize font-bold transition-all shadow-sm
+                className={`flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl border capitalize font-bold transition-all shadow-sm
                   ${l === level ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-space-800 border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
                 {l}
               </button>
@@ -152,7 +152,7 @@ export default function LearningPathPage() {
           </div>
         </div>
         <button onClick={generate} disabled={loading}
-          className="btn-primary flex items-center justify-center gap-2 py-3 px-8 text-sm shadow-glow-primary min-w-[180px]">
+          className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-8 text-sm shadow-glow-primary">
           {loading
             ? <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Generating...</>
             : <><Map size={18} /> Generate Path</>}

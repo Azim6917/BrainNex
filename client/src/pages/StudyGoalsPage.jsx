@@ -176,10 +176,10 @@ export default function StudyGoalsPage() {
   const completedCount = goals.filter(g => computeProgress(g, profile, quizHistory) >= 100).length;
 
   return (
-    <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pt-12 lg:pt-0 gap-4">
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 pt-2 lg:pt-0 gap-4">
         <div>
-          <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Study Goals</h1>
+          <h1 className="font-jakarta font-black text-2xl md:text-4xl text-txt mb-2">Study Goals</h1>
           <p className="text-sm font-medium text-txt3">Set targets, track real progress automatically</p>
         </div>
         <button onClick={() => { audioSystem.playClick(); setShowCreate(true); }} className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-6 shadow-glow-primary self-start md:self-auto">
@@ -188,16 +188,16 @@ export default function StudyGoalsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-10">
         {[
           { icon:'🎯', label:'Total',     val:goals.length },
           { icon:'⚡', label:'In Progress',val:goals.filter(g=>{ const p=computeProgress(g,profile,quizHistory); return p>0&&p<100; }).length },
           { icon:'✅', label:'Completed', val:completedCount },
         ].map(({ icon, label, val }) => (
-          <div key={label} className="glass-card p-6 text-center shadow-sm">
-            <div className="text-3xl mb-3 drop-shadow-sm">{icon}</div>
-            <div className="font-jakarta font-black text-4xl text-primary mb-1 drop-shadow-sm">{val}</div>
-            <div className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{label}</div>
+          <div key={label} className="glass-card p-4 md:p-6 text-center shadow-sm">
+            <div className="text-2xl md:text-3xl mb-2 md:mb-3 drop-shadow-sm">{icon}</div>
+            <div className="font-jakarta font-black text-3xl md:text-4xl text-primary mb-1 drop-shadow-sm">{val}</div>
+            <div className="text-[9px] md:text-[10px] font-bold text-txt3 uppercase tracking-wider">{label}</div>
           </div>
         ))}
       </div>

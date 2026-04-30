@@ -75,11 +75,10 @@ function OnboardingGate({ children }) {
 }
 
 function AppLayout({ children }) {
-  const { desktopSidebarOpen } = { desktopSidebarOpen: true }; // managed inside Sidebar
   return (
     <div className="flex min-h-screen relative" style={{ background:'var(--bg)' }}>
       <Sidebar />
-      <main className="flex-1 min-h-screen overflow-y-auto w-full lg:ml-[220px]" id="main-content">
+      <main className="flex-1 min-h-screen overflow-y-auto w-full lg:ml-[220px] pt-16 lg:pt-0" id="main-content">
         {children}
       </main>
       <MascotOverlay />

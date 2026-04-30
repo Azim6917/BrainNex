@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
   LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
-  Users, Target, Trophy
+  Users, Target, Trophy, Flame
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
@@ -86,7 +86,9 @@ function SidebarInner({ onClose }) {
       </div>
 
       {/* ── User card ── */}
-      <div className="px-4 py-4 border-b" style={{ borderColor:'var(--border)' }}>
+      <div onClick={() => { audioSystem.playClick(); onClose?.(); navigate('/app/settings'); }}
+           className="px-4 py-4 border-b cursor-pointer hover:bg-white/5 transition-colors" 
+           style={{ borderColor:'var(--border)' }}>
         <div className="flex items-center gap-3">
           {photoSrc ? (
             <img src={photoSrc} alt="avatar"
@@ -103,10 +105,17 @@ function SidebarInner({ onClose }) {
             <p className="text-sm font-bold truncate" style={{ color:'var(--txt)' }}>
               {user?.displayName || 'Student'}
             </p>
-            <span className="inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded"
-              style={{ background:'rgba(124,58,237,0.15)', color:'var(--primary-light)' }}>
-              {profile?.grade ? profile.grade : `Level ${level}`}
-            </span>
+            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background:'rgba(124,58,237,0.15)', color:'var(--primary-light)' }}>
+                {profile?.grade ? profile.grade : `Level ${level}`}
+              </span>
+              {(profile?.streak > 0) && (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
+                  <Flame size={12} fill="currentColor" /> {profile.streak} day streak
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <XPBar xp={xp} level={level} />
