@@ -36,6 +36,8 @@ import StudyGoalsPage     from './pages/StudyGoalsPage';
 import StudySessionPage   from './pages/StudySessionPage';
 import AboutPage          from './pages/AboutPage';
 import ContactPage        from './pages/ContactPage';
+import TopicLearningPage  from './pages/TopicLearningPage';
+import SavedPathsPage     from './pages/SavedPathsPage';
 
 /* Apply theme classes to <html> on mount */
 function ThemeApplier() {
@@ -132,6 +134,8 @@ export default function App() {
               <Route path="/app/goals"            element={<AppPage><StudyGoalsPage /></AppPage>} />
               <Route path="/app/achievements"     element={<AppPage><AchievementsPage /></AppPage>} />
               <Route path="/app/settings"         element={<AppPage><SettingsPage /></AppPage>} />
+              <Route path="/app/learn/:pathId/:topicIndex" element={<AppPage><TopicLearningPage /></AppPage>} />
+              <Route path="/app/my-paths"          element={<AppPage><SavedPathsPage /></AppPage>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </UserDataProvider>

@@ -132,20 +132,20 @@ Only topics below 65%. Priority: high<50%, medium 50-64%.`;
   } catch { res.status(500).json({ error:'Analysis failed.' }); }
 });
 
-/* ─── Learning Path ─────────────────────────────────────────────── */
+/* ─── Learning Path ─────────────────────────────────────────── */
 router.post('/learning-path', verifyToken, async (req, res) => {
-  const { subject, currentLevel, completedTopics } = req.body;
-  const prompt = `Create a learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',')||'none'}.
+  const { subject, currentLevel, completedTopics, goal } = req.body;
+  const prompt = `Create a learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',') || 'none'}. Student goal: ${goal || 'Master the Basics'}. Tailor topic sequence accordingly.
 Return ONLY JSON (10 nodes):
 {"subject":"${subject}","totalTopics":10,"nodes":[{"id":"1","title":"Topic","description":"One sentence","level":"beginner","status":"completed","prerequisites":[],"estimatedMinutes":30,"xpReward":50}],"connections":[{"from":"1","to":"2"}]}
 Status: completed=done, current=next logical, locked=rest.`;
 
   try {
-    const r = await client.messages.create({ model:MODEL, max_tokens:QUIZ_TOKENS, messages:[{ role:'user', content:prompt }] });
+    const r = await client.messages.create({ model: MODEL, max_tokens: QUIZ_TOKENS, messages: [{ role: 'user', content: prompt }] });
     const m = r.content[0].text.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Invalid');
     res.json(JSON.parse(m[0]));
-  } catch { res.status(500).json({ error:'Failed to generate path.' }); }
+  } catch { res.status(500).json({ error: 'Failed to generate path.' }); }
 });
 
 /* ─── Adaptive Difficulty (no AI — pure logic) ──────────────────── */
@@ -261,6 +261,83 @@ Quiz results: ${JSON.stringify(quizHistory.slice(0,10))}.
     const r = await client.messages.create({ model:MODEL, max_tokens:200, messages:[{ role:'user', content:prompt }] });
     res.json({ report: r.content[0].text.trim() });
   } catch { res.status(500).json({ error:'Report failed.' }); }
+});
+
+/* ─── Topic Lesson ──────────────────────────────────────────────────────────── */
+router.post('/topic-lesson', verifyToken, async (req, res) => {
+  const { subject, topic, level, goal } = req.body;
+  const prompt = `Create a structured lesson for topic "${topic}" in ${subject} at ${level} level. Goal: ${goal || 'Master the Basics'}.
+Return ONLY valid JSON:
+{
+  "title": "${topic}",
+  "subject": "${subject}",
+  "level": "${level}",
+  "sections": [
+    { "id": 1, "heading": "Introduction", "content": "3-4 sentence explanation", "type": "text" },
+    { "id": 2, "heading": "Core Concept", "content": "Explanation with example", "type": "text" },
+    { "id": 3, "heading": "Key Formula / Rule", "content": "The formula or rule", "type": "highlight" },
+    { "id": 4, "heading": "Real World Example", "content": "Practical application", "type": "example" },
+    { "id": 5, "heading": "Common Mistakes", "content": "What to avoid", "type": "warning" }
+  ],
+  "keyTakeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
+  "estimatedMinutes": 15
+}`;
+
+  try {
+    const r = await client.messages.create({ model: MODEL, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+    const m = r.content[0].text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Invalid JSON');
+    res.json(JSON.parse(m[0]));
+  } catch { res.status(500).json({ error: 'Failed to generate lesson.' }); }
+});
+
+/* ─── Topic Quiz ─────────────────────────────────────────────────────────────── */
+router.post('/topic-quiz', verifyToken, async (req, res) => {
+  const { subject, topic, level } = req.body;
+  const prompt = `Generate a ${level} quiz on "${topic}" in ${subject}. 5 questions.
+Return ONLY valid JSON:
+{
+  "title": "${topic} Quiz",
+  "subject": "${subject}",
+  "topic": "${topic}",
+  "difficulty": "${level}",
+  "questions": [{
+    "id": 1,
+    "question": "Question?",
+    "options": ["A", "B", "C", "D"],
+    "correctIndex": 0,
+    "explanation": "Clear 2-sentence explanation.",
+    "hint": "Helpful hint"
+  }]
+}`;
+
+  try {
+    const r = await client.messages.create({ model: MODEL, max_tokens: 1200, messages: [{ role: 'user', content: prompt }] });
+    const m = r.content[0].text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Invalid JSON');
+    res.json(JSON.parse(m[0]));
+  } catch { res.status(500).json({ error: 'Quiz generation failed.' }); }
+});
+
+/* ─── Topic Resources ────────────────────────────────────────────────────────── */
+router.post('/topic-resources', verifyToken, async (req, res) => {
+  const { subject, topic } = req.body;
+  const prompt = `Suggest 4 real, accurate learning resources for "${topic}" in ${subject}.
+Return ONLY valid JSON:
+{
+  "resources": [
+    { "title": "Resource name", "url": "https://actual-url.com/relevant-page", "type": "documentation", "description": "One sentence about this resource", "platform": "MDN" }
+  ]
+}
+Use real URLs that actually exist. Prefer W3Schools, MDN, freeCodeCamp, Khan Academy, official documentation.
+Type must be one of: documentation, tutorial, video, course.`;
+
+  try {
+    const r = await client.messages.create({ model: MODEL, max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
+    const m = r.content[0].text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Invalid JSON');
+    res.json(JSON.parse(m[0]));
+  } catch { res.status(500).json({ error: 'Resource generation failed.' }); }
 });
 
 module.exports = router;

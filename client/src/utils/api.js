@@ -28,8 +28,17 @@ export const generateQuiz = (subject, topic, difficulty, numQuestions = 5, grade
 export const detectWeakTopics = (quizHistory) =>
   api.post('/ai/detect-weak-topics', { quizHistory });
 
-export const generateLearningPath = (subject, currentLevel, completedTopics) =>
-  api.post('/ai/learning-path', { subject, currentLevel, completedTopics });
+export const generateLearningPath = (subject, currentLevel, completedTopics, goal) =>
+  api.post('/ai/learning-path', { subject, currentLevel, completedTopics, goal });
+
+export const generateTopicLesson    = (subject, topic, level, goal) =>
+  api.post('/ai/topic-lesson',    { subject, topic, level, goal });
+
+export const generateTopicQuiz      = (subject, topic, level) =>
+  api.post('/ai/topic-quiz',      { subject, topic, level });
+
+export const generateTopicResources = (subject, topic) =>
+  api.post('/ai/topic-resources', { subject, topic });
 
 export const getAdaptiveDifficulty = (recentScores, currentDifficulty) =>
   api.post('/ai/adaptive-difficulty', { recentScores, currentDifficulty });

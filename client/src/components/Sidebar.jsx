@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
   LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
-  Users, Target, Trophy, Flame
+  Users, Target, Trophy, Flame, Bookmark
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
@@ -18,6 +18,7 @@ const NAV = [
   { to:'/app/study-sessions', icon: BookOpen,        label:'Study Sessions' },
   { to:'/app/quiz',           icon: FileQuestion,    label:'Quiz'           },
   { to:'/app/learning-path',  icon: Map,             label:'Learning Path'  },
+  { to:'/app/my-paths',       icon: Bookmark,        label:'My Paths'       },
   { to:'/app/study-rooms',    icon: Users,           label:'Study Rooms'    },
   { to:'/app/goals',          icon: Target,          label:'Study Goals'    },
   { to:'/app/achievements',   icon: Trophy,          label:'Achievements'   },

@@ -1,13 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock, X } from 'lucide-react';
+import {
+  collection, addDoc, getDocs, query, where, doc, getDoc, serverTimestamp,
+} from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import { generateLearningPath } from '../utils/api';
 import { useUserData } from '../context/UserDataContext';
+import { useAuth } from '../context/AuthContext';
 import { audioSystem } from '../utils/audio';
 import toast from 'react-hot-toast';
 
-const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Science','History','Economics','Geography','Literature','Psychology'];
-const LEVELS   = ['beginner','intermediate','advanced'];
+const SUBJECTS = [
+  'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science',
+  'History', 'Economics', 'Geography', 'Literature', 'Psychology', 'Other',
+];
+const LEVELS = ['beginner', 'intermediate', 'advanced'];
+
+const GOALS = [
+  '🎯 Master the Basics',
+  '🚀 Quick Overview',
+  '📚 Deep Understanding',
+  '🏆 Exam Preparation',
+  '💼 Project-Based',
+];
 
 const statusStyles = {
   completed: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-500', Icon: CheckCircle },
@@ -16,6 +33,7 @@ const statusStyles = {
 };
 const levelColors = { beginner: '#10B981', intermediate: '#0EA5E9', advanced: '#8B5CF6' };
 
+/* ── Node Card ── */
 function NodeCard({ node, onClick }) {
   const { bg, border, text, Icon } = statusStyles[node.status] || statusStyles.locked;
   return (
@@ -61,11 +79,12 @@ function NodeCard({ node, onClick }) {
 function DarkSelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative">
+    <div className="relative" style={{ zIndex: 100 }}>
       <button
         type="button"
         onClick={() => { audioSystem.playClick(); setOpen(o => !o); }}
         className="w-full flex items-center justify-between input-field text-sm py-3 px-4 shadow-sm"
+        style={{ border: '1px solid rgba(139, 92, 246, 0.25)', background: 'var(--bg2)' }}
       >
         <span className="text-txt font-semibold">{value}</span>
         <ChevronDown size={16} className={`text-txt3 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -73,15 +92,27 @@ function DarkSelect({ value, onChange, options }) {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-space-800 border border-border rounded-xl py-1 z-50 shadow-2xl max-h-56 overflow-y-auto custom-scrollbar"
+            className="absolute top-full left-0 right-0 mt-2 rounded-xl py-1 z-[200] max-h-56 overflow-y-auto custom-scrollbar"
+            style={{
+              background: 'var(--bg2)',
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              position: 'absolute',
+            }}
           >
             {options.map(opt => (
               <button key={opt} type="button"
                 onClick={() => { audioSystem.playClick(); onChange(opt); setOpen(false); }}
-                className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/5 font-medium
-                  ${opt === value ? 'text-primary bg-primary/5' : 'text-txt2'}`}>
+                className={`w-full text-left px-4 py-2.5 text-sm transition-colors font-medium
+                  ${opt === value ? 'text-primary bg-primary/5' : 'text-txt2'}`}
+                style={{ background: opt === value ? 'rgba(139, 92, 246, 0.08)' : undefined }}
+                onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.08)'; }}
+                onMouseLeave={e => { if (opt !== value) e.currentTarget.style.background = ''; }}
+              >
                 {opt}
               </button>
             ))}
@@ -92,26 +123,171 @@ function DarkSelect({ value, onChange, options }) {
   );
 }
 
+/* ── Duplicate Modal ── */
+function DuplicateModal({ subject, level, onLoad, onGenerateNew, onClose }) {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-space-dark/80 backdrop-blur-md z-[300] flex items-center justify-center p-4"
+      onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.95, y: 20, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.95, y: 20, opacity: 0 }}
+        onClick={e => e.stopPropagation()}
+        className="glass-card p-8 max-w-md w-full relative overflow-hidden shadow-2xl"
+        style={{ border: '1px solid rgba(139, 92, 246, 0.3)' }}
+      >
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-bl-full pointer-events-none" />
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-txt3 hover:text-txt transition-colors">
+          <X size={18} />
+        </button>
+        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-5">
+          <Map size={22} className="text-amber-500" />
+        </div>
+        <h2 className="font-jakarta font-black text-xl mb-2 text-txt">Path Already Exists</h2>
+        <p className="text-txt2 text-sm leading-relaxed mb-6">
+          You already have a saved path for <span className="font-bold text-primary">{level} {subject}</span>. 
+          Would you like to load the existing path or generate a new one?
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onLoad}
+            className="flex-1 btn-outline py-3 text-sm"
+            style={{ background: 'var(--bg2)' }}>
+            Load Existing
+          </button>
+          <button onClick={onGenerateNew} className="flex-1 btn-primary py-3 text-sm">
+            Generate New
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ── Main Page ── */
 export default function LearningPathPage() {
   const { subjectProgress } = useUserData();
-  const [subject,  setSubject]  = useState('Mathematics');
-  const [level,    setLevel]    = useState('intermediate');
-  const [pathData, setPathData] = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [selected, setSelected] = useState(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const generate = async () => {
+  const [subject,       setSubject]       = useState('Mathematics');
+  const [customSubject, setCustomSubject] = useState('');
+  const [level,         setLevel]         = useState('intermediate');
+  const [goal,          setGoal]          = useState('🎯 Master the Basics');
+  const [pathData,      setPathData]      = useState(null);
+  const [savedPathId,   setSavedPathId]   = useState(null);
+  const [loading,       setLoading]       = useState(false);
+  const [showDupModal,  setShowDupModal]  = useState(false);
+  const [dupDoc,        setDupDoc]        = useState(null); // existing Firestore doc
+
+  /* Load path from SavedPathsPage navigation */
+  useEffect(() => {
+    if (location.state?.loadedPath) {
+      setPathData(location.state.loadedPath);
+      setSavedPathId(location.state.pathId || null);
+      // Clear state so refresh doesn't re-load
+      window.history.replaceState({}, '');
+    }
+  }, []);
+
+  const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
+
+  /* ── Check duplicate ── */
+  const checkDuplicate = async () => {
+    if (!user?.uid || !actualSubject) return null;
+    const q = query(
+      collection(db, 'users', user.uid, 'savedPaths'),
+      where('subject', '==', actualSubject),
+      where('level', '==', level)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0];
+    return null;
+  };
+
+  /* ── Save path to Firestore ── */
+  const savePath = async (data) => {
+    if (!user?.uid) return null;
+    try {
+      const ref = await addDoc(collection(db, 'users', user.uid, 'savedPaths'), {
+        subject: actualSubject,
+        level,
+        goal,
+        nodes: data.nodes,
+        totalTopics: data.totalTopics,
+        createdAt: serverTimestamp(),
+      });
+      setSavedPathId(ref.id);
+      return ref.id;
+    } catch (err) {
+      console.error('Save path error:', err);
+      return null;
+    }
+  };
+
+  /* ── Generate flow ── */
+  const generate = async (forceNew = false) => {
     audioSystem.playClick();
+    if (!actualSubject) { toast.error('Please enter a subject name.'); return; }
+
+    if (!forceNew) {
+      setLoading(true);
+      try {
+        const existing = await checkDuplicate();
+        if (existing) {
+          setDupDoc(existing);
+          setShowDupModal(true);
+          setLoading(false);
+          return;
+        }
+      } catch { /* continue */ }
+    }
+
     setLoading(true);
     setPathData(null);
+    setSavedPathId(null);
     try {
-      const completedTopics = subjectProgress
-        .filter(s => s.subject === subject && s.averageScore >= 70)
+      const completedTopics = (subjectProgress || [])
+        .filter(s => s.subject === actualSubject && s.averageScore >= 70)
         .map(s => s.subject);
-      const res = await generateLearningPath(subject, level, completedTopics);
-      setPathData(res.data);
-    } catch { toast.error('Failed to generate path. Please try again.'); }
-    finally { setLoading(false); }
+      const res = await generateLearningPath(actualSubject, level, completedTopics, goal);
+      const data = res.data;
+      setPathData(data);
+      await savePath(data);
+      toast.success('Learning path generated & saved!');
+    } catch {
+      toast.error('Failed to generate path. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadExisting = () => {
+    if (!dupDoc) return;
+    audioSystem.playClick();
+    setShowDupModal(false);
+    const data = dupDoc.data();
+    setPathData({ nodes: data.nodes, totalTopics: data.totalTopics, subject: data.subject });
+    setSavedPathId(dupDoc.id);
+    toast.success('Existing path loaded!');
+  };
+
+  const handleGenerateNew = () => {
+    audioSystem.playClick();
+    setShowDupModal(false);
+    generate(true);
+  };
+
+  /* ── Click node → navigate ── */
+  const handleNodeClick = async (node) => {
+    const nodeIndex = pathData.nodes.indexOf(node);
+    let pid = savedPathId;
+    if (!pid) {
+      pid = await savePath(pathData);
+    }
+    if (!pid) { toast.error('Could not save path. Try again.'); return; }
+    navigate(`/app/learn/${pid}/${nodeIndex}`);
   };
 
   const rows = pathData
@@ -134,24 +310,62 @@ export default function LearningPathPage() {
 
       {/* Controls */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-4 md:p-6 mb-6 md:mb-8 flex flex-col sm:flex-row flex-wrap gap-4 md:gap-5 items-start sm:items-end shadow-sm">
-        <div className="w-full sm:flex-1 sm:min-w-[200px]">
-          <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Subject</label>
-          <DarkSelect value={subject} onChange={setSubject} options={SUBJECTS} />
+        className="glass-card p-4 md:p-6 mb-6 md:mb-8 shadow-sm"
+        style={{ position: 'relative', zIndex: 100 }}>
+
+        {/* Row 1: Subject + Level */}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 md:gap-5 items-start sm:items-end mb-5">
+          <div className="w-full sm:flex-1 sm:min-w-[200px]">
+            <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Subject</label>
+            <DarkSelect value={subject} onChange={val => { setSubject(val); setCustomSubject(''); }} options={SUBJECTS} />
+            {subject === 'Other' && (
+              <input
+                type="text"
+                value={customSubject}
+                onChange={e => setCustomSubject(e.target.value)}
+                placeholder="e.g. Web Development, Chess Strategy, Quantum Physics"
+                className="mt-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40"
+                style={{
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  background: 'var(--bg2)',
+                  color: 'var(--txt)',
+                }}
+              />
+            )}
+          </div>
+          <div className="w-full sm:w-auto">
+            <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Level</label>
+            <div className="flex gap-2">
+              {LEVELS.map(l => (
+                <button key={l} onClick={() => { audioSystem.playClick(); setLevel(l); }}
+                  className={`flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl border capitalize font-bold transition-all shadow-sm
+                    ${l === level ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-space-800 border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="w-full sm:w-auto">
-          <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Level</label>
-          <div className="flex gap-2">
-            {LEVELS.map(l => (
-              <button key={l} onClick={() => { audioSystem.playClick(); setLevel(l); }}
-                className={`flex-1 sm:flex-none text-xs sm:text-sm px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl border capitalize font-bold transition-all shadow-sm
-                  ${l === level ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-space-800 border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
-                {l}
+
+        {/* Row 2: Goal */}
+        <div className="mb-5">
+          <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Learning Goal</label>
+          <div className="flex flex-wrap gap-2">
+            {GOALS.map(g => (
+              <button key={g} onClick={() => { audioSystem.playClick(); setGoal(g); }}
+                className="text-xs font-bold px-3 py-2 rounded-xl border transition-all"
+                style={g === goal
+                  ? { border: '1px solid rgba(139, 92, 246, 0.5)', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--primary-light)' }
+                  : { border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--txt3)' }
+                }>
+                {g}
               </button>
             ))}
           </div>
         </div>
-        <button onClick={generate} disabled={loading}
+
+        {/* Generate Button */}
+        <button onClick={() => generate(false)} disabled={loading}
           className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-8 text-sm shadow-glow-primary">
           {loading
             ? <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Generating...</>
@@ -165,10 +379,10 @@ export default function LearningPathPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
-              { label: 'Total Topics',  val: pathData.totalTopics,                                           color: '#0EA5E9' },
-              { label: 'Completed',     val: completedCount,                                                  color: '#10B981' },
-              { label: 'In Progress',   val: 1,                                                               color: '#F59E0B' },
-              { label: 'XP Available',  val: pathData.nodes.reduce((a, b) => a + b.xpReward, 0),             color: '#8B5CF6' },
+              { label: 'Total Topics', val: pathData.totalTopics,                                          color: '#0EA5E9' },
+              { label: 'Completed',    val: completedCount,                                                 color: '#10B981' },
+              { label: 'In Progress',  val: 1,                                                              color: '#F59E0B' },
+              { label: 'XP Available', val: pathData.nodes.reduce((a, b) => a + b.xpReward, 0),            color: '#8B5CF6' },
             ].map(({ label, val, color }) => (
               <div key={label} className="glass-card p-5 group hover:-translate-y-1 transition-transform">
                 <div className="font-jakarta font-black text-3xl mb-1 drop-shadow-sm" style={{ color }}>{val}</div>
@@ -192,7 +406,7 @@ export default function LearningPathPage() {
                 initial={{ width: 0 }}
                 animate={{ width: `${(completedCount / pathData.nodes.length) * 100}%` }}
                 transition={{ duration: 1 }}>
-                 <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
               </motion.div>
             </div>
           </div>
@@ -205,13 +419,13 @@ export default function LearningPathPage() {
                 {rowIdx > 0 && (
                   <div className="flex justify-center my-6 md:hidden">
                     <div className="flex flex-col items-center gap-1.5">
-                      {[0,1,2].map(i => <div key={i} className="w-1 h-3 bg-border rounded-full" />)}
+                      {[0, 1, 2].map(i => <div key={i} className="w-1 h-3 bg-border rounded-full" />)}
                       <ChevronDown size={16} className="text-txt3 mt-1" />
                     </div>
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {row.map(node => <NodeCard key={node.id} node={node} onClick={setSelected} />)}
+                  {row.map(node => <NodeCard key={node.id} node={node} onClick={handleNodeClick} />)}
                 </div>
               </div>
             ))}
@@ -233,49 +447,22 @@ export default function LearningPathPage() {
             <Map size={32} className="text-primary opacity-80" />
           </div>
           <p className="font-jakarta font-black text-2xl mb-2 text-txt">Generate Your Learning Path</p>
-          <p className="text-sm text-txt3 font-medium max-w-md mx-auto leading-relaxed">Select a subject and level, then click Generate to get your AI-powered roadmap to mastery.</p>
+          <p className="text-sm text-txt3 font-medium max-w-md mx-auto leading-relaxed">
+            Select a subject and level, then click Generate to get your AI-powered roadmap to mastery.
+          </p>
         </div>
       )}
 
-      {/* Node detail modal */}
+      {/* Duplicate detection modal */}
       <AnimatePresence>
-        {selected && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-space-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
-            onClick={() => setSelected(null)}>
-            <motion.div initial={{ scale: 0.95, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 20, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="glass-card border-primary/20 p-8 max-w-lg w-full relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-bl-full pointer-events-none" />
-              <button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-2 text-txt3 hover:text-txt transition-colors">
-                ✕
-              </button>
-              
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg mb-5 shadow-sm"
-                style={{ background: `${levelColors[selected.level]}15`, color: levelColors[selected.level], border: `1px solid ${levelColors[selected.level]}30` }}>
-                {selected.level}
-              </div>
-              
-              <h2 className="font-jakarta font-black text-2xl mb-3 text-txt pr-8">{selected.title}</h2>
-              <p className="text-txt2 text-sm leading-relaxed mb-6 font-medium">{selected.description}</p>
-              
-              <div className="flex gap-4 text-sm mb-8 bg-space-800 p-4 rounded-xl border border-white/5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-white/5 rounded-md"><Zap size={14} className="text-amber-500" /></div>
-                  <span className="font-bold text-amber-500">+{selected.xpReward} XP</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-white/5 rounded-md"><Clock size={14} className="text-txt2" /></div>
-                  <span className="font-bold text-txt2">{selected.estimatedMinutes} min est.</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <button onClick={() => { audioSystem.playClick(); setSelected(null); }} className="flex-1 btn-outline py-3.5 text-sm bg-space-800 shadow-sm">Close</button>
-                <button onClick={() => { audioSystem.playClick(); setSelected(null); }} className="flex-1 btn-primary py-3.5 text-sm shadow-glow-primary">Start Topic →</button>
-              </div>
-            </motion.div>
-          </motion.div>
+        {showDupModal && (
+          <DuplicateModal
+            subject={actualSubject}
+            level={level}
+            onLoad={handleLoadExisting}
+            onGenerateNew={handleGenerateNew}
+            onClose={() => setShowDupModal(false)}
+          />
         )}
       </AnimatePresence>
     </div>
