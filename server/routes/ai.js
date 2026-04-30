@@ -135,9 +135,10 @@ Only topics below 65%. Priority: high<50%, medium 50-64%.`;
 /* ─── Learning Path ─────────────────────────────────────────── */
 router.post('/learning-path', verifyToken, async (req, res) => {
   const { subject, currentLevel, completedTopics, goal } = req.body;
-  const prompt = `Create a learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',') || 'none'}. Student goal: ${goal || 'Master the Basics'}. Tailor topic sequence accordingly.
+  const prompt = `Create a highly detailed, comprehensive learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',') || 'none'}. Student goal: ${goal || 'Master the Basics'}.
+Break down the subject into specific, deeply focused sub-topics rather than broad categories. Ensure it forms a complete step-by-step curriculum.
 Return ONLY JSON (10 nodes):
-{"subject":"${subject}","totalTopics":10,"nodes":[{"id":"1","title":"Topic","description":"One sentence","level":"beginner","status":"completed","prerequisites":[],"estimatedMinutes":30,"xpReward":50}],"connections":[{"from":"1","to":"2"}]}
+{"subject":"${subject}","totalTopics":10,"nodes":[{"id":"1","title":"Specific Topic Name","description":"Detailed explanation of what this covers","level":"beginner","status":"completed","prerequisites":[],"estimatedMinutes":30,"xpReward":50}],"connections":[{"from":"1","to":"2"}]}
 Status: completed=done, current=next logical, locked=rest.`;
 
   try {
@@ -266,21 +267,22 @@ Quiz results: ${JSON.stringify(quizHistory.slice(0,10))}.
 /* ─── Topic Lesson ──────────────────────────────────────────────────────────── */
 router.post('/topic-lesson', verifyToken, async (req, res) => {
   const { subject, topic, level, goal } = req.body;
-  const prompt = `Create a structured lesson for topic "${topic}" in ${subject} at ${level} level. Goal: ${goal || 'Master the Basics'}.
+  const prompt = `Create a highly detailed, comprehensive lesson for topic "${topic}" in ${subject} at ${level} level. Goal: ${goal || 'Master the Basics'}.
+Make the content rich, in-depth, and highly relevant to the specific topic.
 Return ONLY valid JSON:
 {
   "title": "${topic}",
   "subject": "${subject}",
   "level": "${level}",
   "sections": [
-    { "id": 1, "heading": "Introduction", "content": "3-4 sentence explanation", "type": "text" },
-    { "id": 2, "heading": "Core Concept", "content": "Explanation with example", "type": "text" },
-    { "id": 3, "heading": "Key Formula / Rule", "content": "The formula or rule", "type": "highlight" },
-    { "id": 4, "heading": "Real World Example", "content": "Practical application", "type": "example" },
-    { "id": 5, "heading": "Common Mistakes", "content": "What to avoid", "type": "warning" }
+    { "id": 1, "heading": "Introduction", "content": "Detailed 2-3 paragraph introduction covering the fundamentals.", "type": "text" },
+    { "id": 2, "heading": "In-Depth Core Concept", "content": "Comprehensive explanation diving deep into the mechanics.", "type": "text" },
+    { "id": 3, "heading": "Key Principles & Rules", "content": "Crucial rules, formulas, or standards to memorize.", "type": "highlight" },
+    { "id": 4, "heading": "Real World Application", "content": "Detailed practical application and use cases.", "type": "example" },
+    { "id": 5, "heading": "Common Pitfalls", "content": "What to avoid, why, and best practices.", "type": "warning" }
   ],
-  "keyTakeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
-  "estimatedMinutes": 15
+  "keyTakeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4"],
+  "estimatedMinutes": 25
 }`;
 
   try {
@@ -322,14 +324,19 @@ Return ONLY valid JSON:
 /* ─── Topic Resources ────────────────────────────────────────────────────────── */
 router.post('/topic-resources', verifyToken, async (req, res) => {
   const { subject, topic } = req.body;
-  const prompt = `Suggest 4 real, accurate learning resources for "${topic}" in ${subject}.
+  const prompt = `Suggest 4 highly relevant learning resources for "${topic}" in ${subject}.
+To avoid broken links, YOU MUST ONLY RETURN SEARCH URLs or guaranteed working URLs.
+For YouTube: https://www.youtube.com/results?search_query=YOUR+SEARCH+QUERY
+For MDN: https://developer.mozilla.org/en-US/search?q=YOUR+SEARCH+QUERY
+For Khan Academy: https://www.khanacademy.org/search?page_search_query=YOUR+SEARCH+QUERY
+For freeCodeCamp: https://www.freecodecamp.org/news/search/?query=YOUR+SEARCH+QUERY
+
 Return ONLY valid JSON:
 {
   "resources": [
-    { "title": "Resource name", "url": "https://actual-url.com/relevant-page", "type": "documentation", "description": "One sentence about this resource", "platform": "MDN" }
+    { "title": "Resource name", "url": "Search URL from above formats", "type": "documentation|tutorial|video|course", "description": "One sentence about what they will learn", "platform": "Platform Name" }
   ]
 }
-Use real URLs that actually exist. Prefer W3Schools, MDN, freeCodeCamp, Khan Academy, official documentation.
 Type must be one of: documentation, tutorial, video, course.`;
 
   try {
