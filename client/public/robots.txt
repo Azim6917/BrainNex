@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /contact
+Disallow: /app/
+Disallow: /api/
+Sitemap: https://brainnex.app/sitemap.xml

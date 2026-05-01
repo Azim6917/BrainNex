@@ -4,13 +4,75 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/images/BrainNex_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BrainNex — AI-Powered Learning Platform</title>
-    <meta name="description" content="BrainNex: Your personal AI tutor. Chat, quiz, track progress, and learn smarter with adaptive AI technology." />
+
+    <!-- Primary SEO -->
+    <title>BrainNex — AI-Powered Study Platform for Students</title>
+    <meta name="description" content="BrainNex is an AI-powered study platform for students. Get a personal AI tutor, generate quizzes, build learning paths, join study rooms and track your progress." />
+    <meta name="keywords" content="BrainNex, AI study platform, AI tutor for students, online learning, quiz generator, learning path, study rooms, adaptive learning, student productivity" />
+    <meta name="author" content="BrainNex" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://brainnex.app" />
+    <meta name="theme-color" content="#7C3AED" />
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn previews) -->
+    <meta property="og:title" content="BrainNex — AI-Powered Study Platform for Students" />
+    <meta property="og:description" content="Study smarter with AI. Personal tutoring, quiz generation, learning paths and live study rooms — all in one place. Free for students." />
+    <meta property="og:url" content="https://brainnex.app" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BrainNex" />
+    <meta property="og:image" content="https://brainnex.app/images/BrainNex_logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BrainNex — AI-Powered Study Platform for Students" />
+    <meta name="twitter:description" content="Study smarter with AI tutoring, quizzes, learning paths and live study rooms. Free for students." />
+    <meta name="twitter:image" content="https://brainnex.app/images/BrainNex_logo.png" />
+    <meta name="twitter:site" content="@brainnex" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "BrainNex",
+      "url": "https://brainnex.app",
+      "description": "BrainNex is an AI-powered study platform for students featuring an AI tutor, quiz generator, learning path visualizer, and live study rooms.",
+      "applicationCategory": "EducationApplication",
+      "operatingSystem": "Web",
+      "browserRequirements": "Requires JavaScript",
+      "inLanguage": "en",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "BrainNex",
+        "url": "https://brainnex.app"
+      },
+      "featureList": [
+        "AI Tutor",
+        "Quiz Generator",
+        "Learning Path Visualizer",
+        "Study Rooms",
+        "Study Sessions",
+        "Progress Tracking",
+        "Achievements"
+      ]
+    }
+    </script>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Theme (prevent flash) -->
     <script>
-      // Apply saved theme before React loads to prevent flash
       (function() {
         var t = localStorage.getItem('bn-theme') || 'dark';
         document.documentElement.classList.toggle('light', t === 'light');
