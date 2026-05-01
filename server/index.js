@@ -210,8 +210,72 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('whiteboard-draw', ({ roomId, data }) => {
-    socket.to(roomId).emit('whiteboard-update', data);
+  // ─── Study Room Features ───
+  socket.on('whiteboard-draw', (data) => {
+    socket.to(data.roomId).emit('whiteboard-draw', data);
+  });
+
+  socket.on('whiteboard-clear', (data) => {
+    io.to(data.roomId).emit('whiteboard-clear', data);
+  });
+
+  socket.on('raise-hand', (data) => {
+    socket.to(data.roomId).emit('raise-hand', data);
+  });
+
+  socket.on('focus-mode-toggle', (data) => {
+    socket.to(data.roomId).emit('focus-mode-toggle', data);
+  });
+
+  socket.on('group-quiz-start', (data) => {
+    socket.to(data.roomId).emit('group-quiz-start', data);
+  });
+
+  socket.on('group-quiz-answer', (data) => {
+    socket.to(data.roomId).emit('group-quiz-answered', data);
+  });
+
+  // ─── Host Privilege Features ───
+  socket.on('kick-user', (data) => {
+    const room = rooms.get(data.roomId);
+    if (room) {
+      for (const [socketId, user] of room.participants.entries()) {
+        if (user.uid === data.targetUid) {
+          const s = io.sockets.sockets.get(socketId);
+          if (s) {
+            s.emit('you-were-kicked');
+            s.leave(data.roomId);
+          }
+          room.participants.delete(socketId);
+        }
+      }
+      const participantsList = Array.from(room.participants.values());
+      io.to(data.roomId).emit('room-update', { participants: participantsList });
+    }
+  });
+
+  socket.on('transfer-host', (data) => {
+    io.to(data.roomId).emit('host-transferred', data);
+  });
+
+  socket.on('chat-lock-toggle', (data) => {
+    io.to(data.roomId).emit('chat-lock-toggle', data);
+  });
+
+  socket.on('room-timer-start', (data) => {
+    io.to(data.roomId).emit('room-timer-start', data);
+  });
+
+  socket.on('room-timer-end', (data) => {
+    io.to(data.roomId).emit('room-timer-end', data);
+  });
+
+  socket.on('room-announcement', (data) => {
+    io.to(data.roomId).emit('room-announcement', data);
+  });
+
+  socket.on('room-ended', (data) => {
+    io.to(data.roomId).emit('room-ended', data);
   });
 
   socket.on('leave-room', ({ roomId, displayName }) => {
