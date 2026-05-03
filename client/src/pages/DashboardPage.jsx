@@ -228,37 +228,61 @@ export default function DashboardPage() {
 
 
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {[
-          { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',       sub:`Level ${level}`,          pct:xpPct },
-          { icon:Flame,    color:'#F59E0B', val:profile?.streak||0,       label:'Day Streak',     sub:'Keep going!',           pct:Math.min(100,(profile?.streak||0)*10) },
-          { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',      sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!', pct:avgScore, display:`${avgScore}%` },
-          { icon:BookOpen, color:'#8B5CF6', val:profile?.totalQuizzes||0, label:'Quizzes Taken',  sub:`${profile?.subjects?.length||0} subjects`, pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
-        ].map(({ icon:Icon, color, val, label, sub, pct, display }, i) => (
-          <motion.div key={label}
-            initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*0.07 }}
-            whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
-            className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom left, ${color}20, transparent)` }} />
-            <div className="flex items-center justify-between relative z-10">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20`, color }}>
-                <Icon size={24} />
-              </div>
-              <RingProgress pct={pct} color={color} size={56} stroke={4}>
-                <span className="text-[10px] font-bold text-txt">{Math.round(pct)}%</span>
-              </RingProgress>
-            </div>
-            <div className="relative z-10">
-              <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
-                {display || <AnimNum target={val||0} />}
-              </div>
-              <div className="text-sm font-medium text-txt2">{label}</div>
-              <div className="text-xs font-medium mt-1 text-txt3">{sub}</div>
-            </div>
-          </motion.div>
-        ))}
+{/* Stat cards */}
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+
+  {/* Streak card — custom, no percentage */}
+  <motion.div
+    initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.07 }}
+    whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
+    className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
+    <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to bottom left, #F59E0B20, transparent)' }} />
+    <div className="flex items-center justify-between relative z-10">
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:'#F59E0B20', color:'#F59E0B' }}>
+        <Flame size={24} />
       </div>
+    </div>
+    <div className="relative z-10">
+      <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
+        <AnimNum target={profile?.streak||0} />
+      </div>
+      <div className="text-sm font-medium text-txt2">Day Streak</div>
+      <div className="text-xs font-medium mt-1 text-amber-500">
+        {(profile?.streak||0) >= 30 ? '🔥 Legendary!' : (profile?.streak||0) >= 7 ? '🔥 On fire!' : '💪 Keep going!'}
+      </div>
+    </div>
+  </motion.div>
+
+  {/* Other 3 stat cards */}
+  {[
+    { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',      sub:`Level ${level}`,                                          pct:xpPct },
+    { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',     sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!',    pct:avgScore, display:`${avgScore}%` },
+    { icon:BookOpen, color:'#8B5CF6', val:profile?.totalQuizzes||0, label:'Quizzes Taken', sub:`${profile?.subjects?.length||0} subjects`,                pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
+  ].map(({ icon:Icon, color, val, label, sub, pct, display }, i) => (
+    <motion.div key={label}
+      initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:(i+2)*0.07 }}
+      whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
+      className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom left, ${color}20, transparent)` }} />
+      <div className="flex items-center justify-between relative z-10">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20`, color }}>
+          <Icon size={24} />
+        </div>
+        <RingProgress pct={pct} color={color} size={56} stroke={4}>
+          <span className="text-[10px] font-bold text-txt">{Math.round(pct)}%</span>
+        </RingProgress>
+      </div>
+      <div className="relative z-10">
+        <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
+          {display || <AnimNum target={val||0} />}
+        </div>
+        <div className="text-sm font-medium text-txt2">{label}</div>
+        <div className="text-xs font-medium mt-1 text-txt3">{sub}</div>
+      </div>
+    </motion.div>
+  ))}
+
+</div>
 
       {/* Subject Progress + Right column */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

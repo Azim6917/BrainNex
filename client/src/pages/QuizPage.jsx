@@ -9,8 +9,8 @@ import { audioSystem } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import toast from 'react-hot-toast';
 
-const SENIOR_SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Science','History','Geography','Literature','Economics','Psychology'];
-const JUNIOR_SUBJECTS = ['Maths','Science','English','Social Studies','Art'];
+const SENIOR_SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Science','History','Geography','Literature','Economics','Psychology','Other'];
+const JUNIOR_SUBJECTS = ['Maths','Science','English','Social Studies','Art','Other'];
 const DIFFICULTIES    = ['beginner','intermediate','advanced'];
 const TIMER_OPTIONS   = [
   { label:'No Timer 😊',   seconds:0,  desc:'Relaxed — take your time' },
@@ -26,6 +26,7 @@ function QuizSetup({ onStart, currentDifficulty, grade }) {
   const subjects = junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS;
   const [subject,    setSubject]    = useState(subjects[0]);
   const [topic,      setTopic]      = useState('');
+  const [customSubject, setCustomSubject] = useState('');
   const [difficulty, setDifficulty] = useState(junior ? 'beginner' : currentDifficulty||'intermediate');
   const [numQ,       setNumQ]       = useState(5);
   const [timerIdx,   setTimerIdx]   = useState(1);
@@ -35,7 +36,9 @@ function QuizSetup({ onStart, currentDifficulty, grade }) {
     if (!topic.trim()) { toast.error(junior ? 'What do you want to learn about? 😊' : 'Please enter a topic'); return; }
     setLoading(true);
     try {
-      const res = await generateQuiz(subject, topic, difficulty, numQ, grade);
+      const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
+if (subject === 'Other' && !customSubject.trim()) { toast.error('Please type a subject first'); setLoading(false); return; }
+const res = await generateQuiz(actualSubject, topic, difficulty, numQ, grade);
       audioSystem.playClick();
       onStart(res.data, TIMER_OPTIONS[timerIdx].seconds);
     } catch (err) {
@@ -72,14 +75,30 @@ function QuizSetup({ onStart, currentDifficulty, grade }) {
             <label className="text-xs font-bold uppercase tracking-widest mb-3 block text-txt2">
               {junior ? 'Pick a Subject 📚' : 'Subject'}
             </label>
-            <div className="flex flex-wrap gap-2.5">
-              {subjects.map(s => (
-                <button key={s} onClick={() => { audioSystem.playClick(); setSubject(s); }}
-                  className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all border ${s===subject ? 'bg-primary/10 border-primary/50 text-primary shadow-sm' : 'bg-transparent border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
-                  {s}
-                </button>
-              ))}
-            </div>
+           <div
+  className="flex flex-wrap gap-2.5 lg:overflow-visible lg:max-h-none overflow-y-auto"
+  style={{ maxHeight: typeof window !== 'undefined' && window.innerWidth < 1024 ? '180px' : 'none' }}
+>
+  {subjects.map(s => (
+    <button key={s} onClick={() => { audioSystem.playClick(); setSubject(s); if (s !== 'Other') setCustomSubject(''); }}
+      className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all border ${s===subject ? 'bg-primary/10 border-primary/50 text-primary shadow-sm' : 'bg-transparent border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
+      {s}
+    </button>
+  ))}
+</div>
+
+{subject === 'Other' && (
+  <div className="mt-3">
+    <input
+      value={customSubject}
+      onChange={e => setCustomSubject(e.target.value)}
+      onKeyDown={e => e.key === 'Enter' && e.target.blur()}
+      placeholder="Type subject or topic e.g. Python, UPSC..."
+      className="input-field text-sm"
+      autoFocus
+    />
+  </div>
+)}
           </div>
 
           <div>

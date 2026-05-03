@@ -1,20 +1,55 @@
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import BrainNexLogo from '../components/BrainNexLogo';
 
 export default function PrivacyPolicyPage() {
+  const navigate = useNavigate();
+  useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
+
   return (
     <div className="min-h-screen bg-[#0d0d1a] text-white font-jakarta">
+
       {/* Header */}
-      <div className="border-b border-white/10 px-6 py-4 flex items-center gap-3">
-        <img src="/images/BrainNex_logo.png" alt="BrainNex" className="w-8 h-8" />
-        <span className="text-lg font-bold text-white">BrainNex</span>
+      <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
+        <Link to="/">
+          <BrainNexLogo size="md" />
+        </Link>
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-3xl mx-auto px-6 py-16"
+        className="max-w-3xl mx-auto px-6 py-12"
       >
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'rgba(255,255,255,0.60)',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            padding: '8px 0',
+            marginBottom: '24px',
+            background: 'none',
+            border: 'none',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'white'}
+          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.60)'}
+        >
+          <ArrowLeft size={18} />
+          Back
+        </button>
+
         <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-white/40 mb-10">Last updated: May 1, 2026</p>
 
@@ -37,7 +72,7 @@ export default function PrivacyPolicyPage() {
           },
           {
             title: "5. Cookies and Local Storage",
-            content: `BrainNex uses browser local storage to save your theme preference (dark/light mode) and session information. We do not use third-party tracking cookies or advertising cookies of any kind.`
+            content: `BrainNex uses browser local storage to save your theme preference and session information. We do not use third-party tracking cookies or advertising cookies of any kind.`
           },
           {
             title: "6. Study Rooms",
@@ -49,7 +84,7 @@ export default function PrivacyPolicyPage() {
           },
           {
             title: "8. Your Rights",
-            content: `You have the right to access, update, or delete your personal data at any time. You can update your profile information in Settings. To request complete account deletion, contact us at the email below and we will remove your data from our systems within 30 days.`
+            content: `You have the right to access, update, or delete your personal data at any time. You can update your profile information in Settings. To request complete account deletion, contact us through the Contact page and we will remove your data from our systems within 30 days.`
           },
           {
             title: "9. Changes to This Policy",
@@ -57,7 +92,7 @@ export default function PrivacyPolicyPage() {
           },
           {
             title: "10. Contact Us",
-            content: `If you have any questions about this Privacy Policy, please contact us at: brainnex.app — You can also reach us through the Contact page on our website.`
+            content: `If you have any questions about this Privacy Policy, please contact us through the Contact page at brainnex.app.`
           }
         ].map((section, i) => (
           <motion.div
