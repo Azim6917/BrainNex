@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Zap, Flame, Target, BookOpen, AlertTriangle, ArrowRight, X,
+  Zap, Flame, Target, BookOpen, ArrowRight, X,
   MessageSquare, FileQuestion, TrendingUp, Lightbulb,
   Clock, Brain, BarChart2, Trophy,
   Calculator, FlaskConical, Microscope, Monitor, Globe,
@@ -80,9 +80,7 @@ export default function DashboardPage() {
   const [weeklyReport,  setWeeklyReport]             = useState('');
   const [reportLoading, setReportLoading]            = useState(false);
   const [showReport,    setShowReport]               = useState(false);
-  const [spacedTopics,  setSpacedTopics]             = useState([]);
   const [showStreak,    setShowStreak]               = useState(sessionStorage.getItem('streakBannerDismissed') !== 'true');
-  const [showSpaced,    setShowSpaced]               = useState(sessionStorage.getItem('needsReviewDismissed') !== 'true');
   const [showStreakPopup, setShowStreakPopup]         = useState(false);
   const [activeDays,    setActiveDays]               = useState(new Set());
 
@@ -101,23 +99,9 @@ export default function DashboardPage() {
         }));
         setQuizHistory(history);
 
-        // Spaced repetition: topics below 65% not revisited in 2+ days
-        const topicMap = {};
-        history.forEach(q => {
-          const key = `${q.subject}:${q.topic}`;
-          if (!topicMap[key]) topicMap[key] = { subject:q.subject, topic:q.topic, scores:[], lastDate:null };
-          topicMap[key].scores.push(q.score);
-          const d = q.timestamp ? new Date(q.timestamp) : null;
-          if (d && (!topicMap[key].lastDate || d > topicMap[key].lastDate)) topicMap[key].lastDate = d;
-        });
-        const reminders = Object.values(topicMap).filter(t => {
-          const avg     = t.scores.reduce((a,b)=>a+b,0)/t.scores.length;
-          const daysSince = t.lastDate ? (Date.now()-t.lastDate.getTime())/86400000 : 999;
-          return avg < 65 && daysSince >= 2;
-        }).slice(0,3);
-        setSpacedTopics(reminders);
 
-        // Build active days Set for streak popup
+
+          // Build active days Set for streak popup
         const actSet = new Set();
         history.forEach(q => { if (q.timestamp) actSet.add(new Date(q.timestamp).toDateString()); });
         setActiveDays(actSet);
@@ -242,29 +226,7 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Spaced repetition */}
-      {spacedTopics.length > 0 && showSpaced && (
-        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
-          className="glass-card border-red-500/20 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-red-400 flex items-center gap-2"><AlertTriangle size={16} />Needs Review (Spaced Repetition)</p>
-            <button onClick={() => { setShowSpaced(false); sessionStorage.setItem('needsReviewDismissed', 'true'); }} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500/10 transition-colors text-red-400/60 hover:text-red-400">
-              <X size={14} />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {spacedTopics.map((t,i) => (
-              <Link key={i} to={`/app/study-sessions?subject=${encodeURIComponent(t.subject)}&topic=${encodeURIComponent(t.topic)}`}>
-                <div className="flex items-center gap-2 text-sm font-medium bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 hover:bg-red-500/20 hover:border-red-500/40 transition-all cursor-pointer shadow-sm">
-                  <Clock size={13} className="text-red-400 flex-shrink-0" />
-                  <span className="text-txt">{t.topic}</span>
-                  <ArrowRight size={14} className="text-red-400" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-      )}
+
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

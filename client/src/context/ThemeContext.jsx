@@ -4,20 +4,14 @@ const ThemeContext = createContext(null);
 export const useTheme = () => useContext(ThemeContext);
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme]   = useState(() => localStorage.getItem('bn-theme') || 'dark');
   const [kidMode, setKidMode] = useState(() => localStorage.getItem('bn-kid-mode') === 'true');
 
+  // Always force dark mode
   useEffect(() => {
-    localStorage.setItem('bn-theme', theme);
-    const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    } else {
-      root.classList.remove('light');
-      root.classList.add('dark');
-    }
-  }, [theme]);
+    localStorage.setItem('bn-theme', 'dark');
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('bn-kid-mode', kidMode);
@@ -28,10 +22,8 @@ export function ThemeProvider({ children }) {
     }
   }, [kidMode]);
 
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, kidMode, setKidMode, isLight: theme === 'light' }}>
+    <ThemeContext.Provider value={{ theme: 'dark', toggleTheme: () => {}, kidMode, setKidMode, isLight: false }}>
       {children}
     </ThemeContext.Provider>
   );

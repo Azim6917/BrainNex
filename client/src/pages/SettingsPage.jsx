@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   User, Mail, Lock, Camera, Save, CheckCircle, AlertCircle,
   Palette, Shield, Trophy, Eye, EyeOff, Phone, GraduationCap,
-  School, Sun, Moon, Smile
+  School, Bell, Layout, Clock
 } from 'lucide-react';
 import {
   updateProfile, updateEmail, updatePassword,
@@ -362,75 +362,113 @@ function SecurityTab({ user }) {
 
 /* ─────────────────── PREFERENCES TAB ─────────────────── */
 function PrefsTab() {
-  const { theme, toggleTheme, kidMode, setKidMode } = useTheme();
   const K = 'brainnex-prefs';
-  const [prefs, setPrefs] = useState(() => { try { return JSON.parse(localStorage.getItem(K)||'{}'); } catch { return {}; } });
+  const [prefs, setPrefs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(K) || '{}'); }
+    catch { return {}; }
+  });
 
-  const toggle = key => {
+  const toggle = (key, label) => {
     audioSystem.playClick();
-    const u = { ...prefs, [key]:!prefs[key] };
-    setPrefs(u); localStorage.setItem(K, JSON.stringify(u));
-    toast.success(`${u[key]?'Enabled':'Disabled'} ${key.replace(/([A-Z])/g,' $1').toLowerCase()}`);
+    const u = { ...prefs, [key]: prefs[key] === false ? true : prefs[key] === undefined ? false : !prefs[key] };
+    // For soundEffects default is true, so undefined = true, toggling to false
+    setPrefs(u);
+    localStorage.setItem(K, JSON.stringify(u));
+    toast.success(`${(u[key] === false ? 'Disabled' : 'Enabled')} ${label}`);
   };
 
+  const isOn = (key) => {
+    // soundEffects, notificationSounds, studyReminders default to true
+    // compactView defaults to false
+    if (key === 'compactView') return prefs[key] === true;
+    return prefs[key] !== false;
+  };
+
+  const handleStudyReminders = async (val) => {
+    audioSystem.playClick();
+    if (val && 'Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.error('Please allow notifications in your browser settings');
+        return;
+      }
+    }
+    const u = { ...prefs, studyReminders: val };
+    setPrefs(u);
+    localStorage.setItem(K, JSON.stringify(u));
+    if (val) {
+      localStorage.setItem('brainnex-last-visit', Date.now().toString());
+      toast.success('Study reminders enabled!');
+    } else {
+      toast.success('Study reminders disabled');
+    }
+  };
+
+  // Update last visit timestamp on every load
+  useEffect(() => {
+    localStorage.setItem('brainnex-last-visit', Date.now().toString());
+  }, []);
+
   const options = [
-    { key:'soundEffects',    label:'Sound Effects',         desc:'Sounds for correct/wrong answers, XP, and navigation' },
-    { key:'autoSaveChat',    label:'Auto-save Chat History',desc:'Save AI tutor conversations on your device' },
-    { key:'showHints',       label:'Show Quiz Hints',       desc:'Show hint button during quizzes' },
-    { key:'showXPAnimation', label:'XP Gain Toasts',        desc:'Show notification when you earn XP' },
+    {
+      key: 'soundEffects',
+      label: 'Sound Effects',
+      desc: 'Navigation clicks, answer feedback, and UI interaction sounds',
+      icon: <div className="p-1.5 bg-primary/20 text-primary rounded-md border border-primary/30"><Bell size={14} /></div>
+    },
+    {
+      key: 'notificationSounds',
+      label: 'Notification Sounds',
+      desc: 'Sounds specifically for quiz completion and achievement unlocks',
+      icon: <div className="p-1.5 bg-cyan/20 text-cyan rounded-md border border-cyan/30"><Bell size={14} /></div>
+    },
+    {
+      key: 'compactView',
+      label: 'Compact View',
+      desc: 'Reduces padding and spacing for a denser information display',
+      icon: <div className="p-1.5 bg-amber-500/20 text-amber-500 rounded-md border border-amber-500/30"><Layout size={14} /></div>
+    },
   ];
 
   return (
     <div className="max-w-xl space-y-6">
-      {/* Theme row */}
-      <div className="glass-card p-6 md:p-8">
-        <h3 className="font-jakarta font-black text-lg mb-6 text-txt">Appearance</h3>
-        <div className="space-y-6">
-          {/* Dark / Light toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-txt flex items-center gap-2 mb-1">
-                {theme==='dark' ? <><div className="p-1.5 bg-cyan/20 text-cyan rounded-md border border-cyan/30"><Moon size={14} /></div> Dark Mode</> : <><div className="p-1.5 bg-amber-500/20 text-amber-500 rounded-md border border-amber-500/30"><Sun size={14} /></div> Light Mode</>}
-              </p>
-              <p className="text-xs font-medium text-txt3">Switch between dark and light themes</p>
-            </div>
-            <button onClick={() => { audioSystem.playClick(); toggleTheme(); }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-sm bg-space-800 border-border text-txt2 hover:border-white/20 hover:text-txt uppercase tracking-widest">
-              {theme==='dark' ? <><Sun size={14}/> Light</> : <><Moon size={14}/> Dark</>}
-            </button>
-          </div>
-
-          <div className="w-full h-px bg-border" />
-
-          {/* Kid mode */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-txt flex items-center gap-2 mb-1">
-                <div className="p-1.5 bg-violet-500/20 text-violet-500 rounded-md border border-violet-500/30"><Smile size={14} /></div> Kid-Friendly Mode
-              </p>
-              <p className="text-xs font-medium text-txt3">Playful UI, simpler language, fun emojis — for Class 1–5</p>
-            </div>
-            <Toggle on={kidMode} onChange={v => { setKidMode(v); audioSystem.playClick(); toast.success(v?'Kid mode ON 🌟':'Kid mode OFF'); }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Other prefs */}
+      {/* Sound & Display */}
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-6 text-txt">App Settings</h3>
         <div className="space-y-6">
-          {options.map(({ key, label, desc }, i) => (
+          {options.map(({ key, label, desc, icon }, i) => (
             <React.Fragment key={key}>
               <div className="flex items-center justify-between">
                 <div className="flex-1 pr-6">
-                  <p className="text-sm font-bold text-txt mb-1">{label}</p>
+                  <p className="text-sm font-bold text-txt flex items-center gap-2 mb-1">
+                    {icon} {label}
+                  </p>
                   <p className="text-xs font-medium text-txt3">{desc}</p>
                 </div>
-                <Toggle on={!!prefs[key]} onChange={() => toggle(key)} />
+                <Toggle on={isOn(key)} onChange={(v) => toggle(key, label)} />
               </div>
               {i < options.length - 1 && <div className="w-full h-px bg-border" />}
             </React.Fragment>
           ))}
+        </div>
+      </div>
+
+      {/* Study Reminders — separate because async permission */}
+      <div className="glass-card p-6 md:p-8">
+        <h3 className="font-jakarta font-black text-lg mb-6 text-txt">Reminders</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex-1 pr-6">
+            <p className="text-sm font-bold text-txt flex items-center gap-2 mb-1">
+              <div className="p-1.5 bg-green-500/20 text-green-500 rounded-md border border-green-500/30">
+                <Clock size={14} />
+              </div>
+              Study Reminders
+            </p>
+            <p className="text-xs font-medium text-txt3">
+              Get a browser notification if you haven't studied in over 24 hours
+            </p>
+          </div>
+          <Toggle on={isOn('studyReminders')} onChange={(v) => handleStudyReminders(v)} />
         </div>
       </div>
 

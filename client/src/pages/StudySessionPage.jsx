@@ -468,6 +468,7 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
   const { updateProfileLocal, refreshProfile } = useUserData();
   const [flashcards, setFlashcards]      = useState([]);
   const [fcLoading,  setFcLoading]       = useState(false);
+  const [wrongQs,    setWrongQs]         = useState([]);
   const [currentFc,  setCurrentFc]       = useState(0);
   const [showBack,   setShowBack]        = useState(false);
   const [saved,      setSaved]           = useState(false);
@@ -494,15 +495,10 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
       setSaved(true);
 
       // Auto-generate flashcards for wrong answers
-      const wrongQs = quizResult.quiz.questions
-        .filter((_, i) => !quizResult.answers[i]?.correct)
-        .map(q => q.question);
-      if (wrongQs.length > 0) {
-        setFcLoading(true);
-        generateFlashcards(session.subject, session.topic, wrongQs, session.grade)
-          .then(r => { setFlashcards(r.data.flashcards || []); setFcLoading(false); })
-          .catch(() => setFcLoading(false));
-      }
+     const wq = quizResult.quiz.questions
+  .filter((_, i) => !quizResult.answers[i]?.correct)
+  .map(q => q.question);
+setWrongQs(wq);
     };
     save();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -544,20 +540,41 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
           ))}
         </div>
 
-        <div className="flex gap-4">
-          <button onClick={() => { audioSystem.playClick(); onRestart(); }}
-            className="flex-1 btn-outline py-3.5 text-sm flex items-center justify-center gap-2 bg-space-800 shadow-sm">
-            <RotateCcw size={16} />Retry Quiz
-          </button>
-          <button onClick={() => { audioSystem.playClick(); onNewSession(); }}
-            className="flex-1 btn-primary py-3.5 text-sm shadow-glow-primary">
-            New Session →
-          </button>
-        </div>
+        <div className="flex gap-3 flex-wrap">
+  <button onClick={() => { audioSystem.playClick(); onRestart(); }}
+    className="flex-1 btn-outline py-3.5 text-sm flex items-center justify-center gap-2 bg-space-800 shadow-sm">
+    <RotateCcw size={16} />Retry Quiz
+  </button>
+  <button onClick={() => { audioSystem.playClick(); onNewSession(); }}
+    className="flex-1 btn-primary py-3.5 text-sm shadow-glow-primary">
+    New Session →
+  </button>
+  {wrongQs.length > 0 && (
+    <button
+      onClick={async () => {
+        if (flashcards.length > 0) return;
+        audioSystem.playClick();
+        setFcLoading(true);
+        try {
+          const r = await generateFlashcards(session.subject, session.topic, wrongQs, session.grade);
+          setFlashcards(r.data.flashcards || []);
+        } catch { }
+        setFcLoading(false);
+      }}
+      disabled={fcLoading}
+      className="btn-outline w-full py-3.5 text-sm flex items-center justify-center gap-2 bg-space-800 border-primary/30 text-primary hover:border-primary/60"
+    >
+      {fcLoading
+        ? <><div className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin"/>Generating flashcards...</>
+        : <><Layers size={16}/>Review Flashcards</>
+      }
+    </button>
+  )}
+</div>
       </motion.div>
 
       {/* Flashcards for wrong answers */}
-      {(fcLoading || flashcards.length > 0) && (
+      {flashcards.length > 0 && (
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
           className="glass-card p-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-center gap-3 mb-2">

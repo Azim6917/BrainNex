@@ -45,7 +45,7 @@ function XPBar({ xp, level }) {
 function SidebarInner({ onClose }) {
   const { logout, user } = useAuth();
   const { profile }      = useUserData();
-  const { theme, toggleTheme, kidMode } = useTheme();
+  const { kidMode } = useTheme();
   const navigate         = useNavigate();
 
   const handleLogout = async () => { audioSystem.playClick(); await logout(); navigate('/'); };
@@ -68,13 +68,7 @@ function SidebarInner({ onClose }) {
           <BrainNexLogo size="md" />
         </Link>
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
-          <button onClick={() => { audioSystem.playClick(); toggleTheme(); }}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-opacity-80"
-            style={{ background:'var(--card)', color:'var(--txt2)' }}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
+
           {/* Mobile close */}
           {onClose && (
             <button onClick={onClose}

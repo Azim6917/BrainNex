@@ -319,38 +319,34 @@ function QuizResults({ result, quiz, onRetry, onNew, grade }) {
   const [fcLoad,     setFcLoad]     = useState(false);
   const [fcIdx,      setFcIdx]      = useState(0);
   const [showBack,   setShowBack]   = useState(false);
+  const [wrongQs,    setWrongQs]    = useState([]);
   const junior = isJuniorGrade(grade);
 
   const score    = result.total>0 ? Math.round((result.correct/result.total)*100) : 0;
   const xpEarned = result.correct*10 + (score===100?50:score>=80?25:10);
   const emoji    = score===100 ? '🏆' : score>=80 ? '🎉' : score>=60 ? '👍' : '📚';
 
-  useEffect(() => {
-    if (saved) return;
-    const save = async () => {
-      if (score===100) { triggerConfetti(); audioSystem.playPerfect(); }
-      else if (score>=60) { audioSystem.playQuizComplete(); }
-      else audioSystem.playXP();
+useEffect(() => {
+  if (saved) return;
+  const save = async () => {
+    if (score===100) { triggerConfetti(); audioSystem.playPerfect(); }
+    else if (score>=60) { audioSystem.playQuizComplete(); }
+    else audioSystem.playXP();
 
-      const res = await saveQuizResultToFirestore(user?.uid, {
-        subject:quiz.subject, topic:quiz.topic, score,
-        totalQuestions:result.total, correctAnswers:result.correct, difficulty:quiz.difficulty,
-      });
-      if (res?.newBadges?.length>0) res.newBadges.forEach(b => toast.success(`🏆 ${b.name}!`, { duration:4000 }));
-      if (res) { updateProfileLocal({ xp:res.newXp, level:res.newLevel }); await refreshProfile(); }
-      setSaved(true);
+    const res = await saveQuizResultToFirestore(user?.uid, {
+      subject:quiz.subject, topic:quiz.topic, score,
+      totalQuestions:result.total, correctAnswers:result.correct, difficulty:quiz.difficulty,
+    });
+    if (res?.newBadges?.length>0) res.newBadges.forEach(b => toast.success(`🏆 ${b.name}!`, { duration:4000 }));
+    if (res) { updateProfileLocal({ xp:res.newXp, level:res.newLevel }); await refreshProfile(); }
+    setSaved(true);
 
-      const wrongQs = quiz.questions.filter((_,i) => !result.answers[i]?.correct).map(q => q.question);
-      if (wrongQs.length>0 && !junior) {
-        setFcLoad(true);
-        generateFlashcards(quiz.subject, quiz.topic, wrongQs, grade)
-          .then(r => { setFlashcards(r.data.flashcards||[]); setFcLoad(false); })
-          .catch(() => setFcLoad(false));
-      }
-    };
-    save();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const wq = quiz.questions.filter((_,i) => !result.answers[i]?.correct).map(q => q.question);
+    setWrongQs(wq);
+  };
+  save();
+
+}, []);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -390,18 +386,39 @@ function QuizResults({ result, quiz, onRetry, onNew, grade }) {
           })}
         </div>
 
-        <div className="flex gap-4">
-          <button onClick={() => { audioSystem.playClick(); onRetry(); }} className="btn-outline flex-1 py-3.5 text-base flex items-center justify-center gap-2 shadow-sm bg-space-800">
-            <RotateCcw size={16}/>{junior?'Try Again! 🔄':'Retry Quiz'}
-          </button>
-          <button onClick={() => { audioSystem.playClick(); onNew(); }} className="btn-primary flex-1 py-3.5 text-base shadow-glow-primary">
-            {junior?'New Quiz! 🎮':'Create New Quiz'}
-          </button>
-        </div>
+<div className="flex gap-3 flex-wrap">
+  <button onClick={() => { audioSystem.playClick(); onRetry(); }} className="btn-outline flex-1 py-3.5 text-base flex items-center justify-center gap-2 shadow-sm bg-space-800">
+    <RotateCcw size={16}/>{junior?'Try Again! 🔄':'Retry Quiz'}
+  </button>
+  <button onClick={() => { audioSystem.playClick(); onNew(); }} className="btn-primary flex-1 py-3.5 text-base shadow-glow-primary">
+    {junior?'New Quiz! 🎮':'Create New Quiz'}
+  </button>
+  {!junior && wrongQs.length > 0 && (
+    <button
+      onClick={async () => {
+        if (flashcards.length > 0) return;
+        audioSystem.playClick();
+        setFcLoad(true);
+        try {
+          const r = await generateFlashcards(quiz.subject, quiz.topic, wrongQs, grade);
+          setFlashcards(r.data.flashcards || []);
+        } catch { }
+        setFcLoad(false);
+      }}
+      disabled={fcLoad}
+      className="btn-outline w-full py-3.5 text-base flex items-center justify-center gap-2 shadow-sm bg-space-800 border-primary/30 text-primary hover:border-primary/60"
+    >
+      {fcLoad
+        ? <><div className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full animate-spin"/>Generating flashcards...</>
+        : <><Layers size={16}/>Review Flashcards</>
+      }
+    </button>
+  )}
+</div>
       </motion.div>
 
       {/* Flashcards — senior only */}
-      {!junior && (fcLoad||flashcards.length>0) && (
+      {!junior && flashcards.length>0 && (
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
           className="glass-card p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <div className="flex items-center gap-3 mb-2">
@@ -475,7 +492,7 @@ export default function QuizPage() {
       <div className="mb-8 pt-12 lg:pt-0">
         <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">{junior ? 'Quiz Time! 🎮' : 'AI Quiz Generator'}</h1>
         <p className="text-sm font-medium text-txt3">
-          {junior ? 'Let\'s test what you know! 🌟' : 'Custom quizzes · Keyboard shortcuts · AI explanations · Auto flashcards'}
+          {junior ? 'Let\'s test what you know! 🌟' : 'Custom quizzes · Keyboard shortcuts · AI explanations · Flashcards'}
         </p>
       </div>
       {phase==='setup'   && <QuizSetup   onStart={(q,t)=>{ setQuiz(q); setTimer(t); setPhase('active'); }} currentDifficulty={profile?.currentDifficulty} grade={grade} />}
