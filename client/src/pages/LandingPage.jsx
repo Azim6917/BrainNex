@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { MessageSquare, FileQuestion, BarChart3, Map, Users, Trophy, ArrowRight, Star, CheckCircle, Zap, Target, BookOpen, Flame, Sparkles } from 'lucide-react';
 import BrainNexLogo from '../components/BrainNexLogo';
+import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { db } from '../utils/firebase';
+import toast from 'react-hot-toast';
 
 // Dummy universities for marquee
 const universities = ['Stanford', 'MIT', 'Harvard', 'Oxford', 'Cambridge', 'Yale', 'Columbia','UCLA', 'Amity University', 'Amity Institute of Technology'];
@@ -39,11 +42,51 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
 
+  // Pricing section waitlist
+  const [waitlistEmail,   setWaitlistEmail]   = useState('');
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
+  // Footer subscribe
+  const [footerEmail,   setFooterEmail]   = useState('');
+  const [footerLoading, setFooterLoading] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleWaitlist = async (e, email, setEmail, setLoading, source) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'waitlistEmails'), where('email', '==', trimmed));
+      const existing = await getDocs(q);
+      if (!existing.empty) {
+        toast("You're already on the list! 🎉", { icon: '✅' });
+        setEmail('');
+        setLoading(false);
+        return;
+      }
+      await addDoc(collection(db, 'waitlistEmails'), {
+        email: trimmed,
+        subscribedAt: serverTimestamp(),
+        source,
+      });
+      toast.success("You're on the list! We'll notify you when pricing launches.");
+      setEmail('');
+    } catch (err) {
+      console.error('Waitlist error:', err);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="landing-page min-h-screen bg-brand-bg text-white overflow-x-hidden selection:bg-primary selection:text-white">
@@ -112,7 +155,7 @@ export default function LandingPage() {
                 <div className="h-5 w-32 bg-white/5 rounded text-center text-[10px] font-bold text-txt-muted flex items-center justify-center tracking-widest uppercase">BrainNex.app</div>
                 <div className="flex-1" />
               </div>
-              
+
               {/* App Window Body (CSS Mockup) */}
               <div className="h-[400px] bg-brand-bg flex p-4 gap-4 relative overflow-hidden">
                 {/* Sidebar mock */}
@@ -129,10 +172,10 @@ export default function LandingPage() {
                   <div className="flex gap-4 flex-1">
                     <div className="flex-1 bg-white/5 rounded-xl border border-white/5 p-4 flex flex-col gap-2 shadow-sm">
                       <div className="text-white text-xs font-bold mb-1">Recent Study Sessions</div>
-                      {[ 
-                        { title: 'Algebra Fundamentals', type: 'Math', pct: '85%' }, 
-                        { title: 'Cellular Biology', type: 'Science', pct: '92%' }, 
-                        { title: 'World War II', type: 'History', pct: '64%' } 
+                      {[
+                        { title: 'Algebra Fundamentals', type: 'Math', pct: '85%' },
+                        { title: 'Cellular Biology', type: 'Science', pct: '92%' },
+                        { title: 'World War II', type: 'History', pct: '64%' }
                       ].map((item, i) => (
                         <div key={i} className="w-full bg-black/20 border border-white/5 rounded-lg p-2.5 flex items-center justify-between shadow-sm">
                           <div className="flex items-center gap-2.5">
@@ -152,12 +195,12 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Subtle overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
               </div>
-              
-              {/* Floating elements to make it dynamic */}
+
+              {/* Floating elements */}
               <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -left-6 top-24 glass-card bg-brand-card p-3 flex items-center gap-3 shadow-lg border border-white/10">
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-500"><CheckCircle size={16}/></div>
                 <div><p className="text-xs font-bold text-white">Quiz Passed!</p><p className="text-[10px] text-txt-sec">+50 XP Earned</p></div>
@@ -181,7 +224,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* FEATURES (Dark Theme) */}
+      {/* FEATURES */}
       <section id="features" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative z-10">
@@ -211,11 +254,9 @@ export default function LandingPage() {
             <h2 className="page-title mb-4">How BrainNex works</h2>
             <p className="text-lg text-txt2 max-w-2xl mx-auto">A seamless loop designed to optimize retention and understanding.</p>
           </div>
-          
+
           <div className="relative">
-            {/* Dashed line connecting steps (desktop) */}
             <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 border-t-2 border-dashed border-white/10" />
-            
             <div className="grid md:grid-cols-3 gap-12 relative z-10">
               {HOW_STEPS.map((step, i) => (
                 <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.2 }}
@@ -289,10 +330,26 @@ export default function LandingPage() {
             <h2 className="font-sans font-extrabold text-3xl md:text-4xl tracking-tight mb-4 text-white">Pricing plans coming soon</h2>
             <p className="text-lg text-txt-sec font-medium mb-8 max-w-2xl mx-auto">I'm working on transparent and student-friendly pricing. Stay tuned!</p>
             <div className="max-w-md mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input type="email" placeholder="Enter your email to get notified" className="input-field py-3 px-4 text-sm flex-1 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary transition-colors" />
-                <button className="btn-primary py-3 px-6 text-sm rounded-xl font-bold whitespace-nowrap shadow-glow-primary">Subscribe</button>
-              </div>
+              <form
+                onSubmit={e => handleWaitlist(e, waitlistEmail, setWaitlistEmail, setWaitlistLoading, 'pricing-page')}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <input
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={e => setWaitlistEmail(e.target.value)}
+                  placeholder="Enter your email to get notified"
+                  className="input-field py-3 px-4 text-sm flex-1 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={waitlistLoading}
+                  className={`btn-primary py-3 px-6 text-sm rounded-xl font-bold whitespace-nowrap shadow-glow-primary ${waitlistLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {waitlistLoading ? 'Saving...' : 'Subscribe'}
+                </button>
+              </form>
+              <p className="text-xs text-white/30 mt-4">Free to start · Premium plans coming soon</p>
             </div>
           </div>
         </div>
@@ -322,18 +379,32 @@ export default function LandingPage() {
           </div>
           <div>
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Stay Updated</h4>
-            <div className="flex gap-2">
-              <input type="email" placeholder="Email address" className="input-field py-2 px-3 text-sm bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:outline-none text-white w-full" />
-              <button className="btn-primary py-2 px-4 text-sm rounded-xl font-bold">Subscribe</button>
-            </div>
+            <form
+              onSubmit={e => handleWaitlist(e, footerEmail, setFooterEmail, setFooterLoading, 'footer')}
+              className="flex gap-2"
+            >
+              <input
+                type="email"
+                value={footerEmail}
+                onChange={e => setFooterEmail(e.target.value)}
+                placeholder="Email address"
+                className="input-field py-2 px-3 text-sm bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:outline-none text-white w-full"
+              />
+              <button
+                type="submit"
+                disabled={footerLoading}
+                className={`btn-primary py-2 px-4 text-sm rounded-xl font-bold whitespace-nowrap ${footerLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {footerLoading ? '...' : 'Subscribe'}
+              </button>
+            </form>
           </div>
         </div>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-txt3 text-xs pt-8 border-t border-white/5">
-          <p>© 2026 BrainNex Inc. All rights reserved.</p>
+          <p>© 2026 BrainNex. All rights reserved.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/privacy-policy"   className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
-
           </div>
         </div>
       </footer>

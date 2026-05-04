@@ -79,7 +79,7 @@ export default function RegisterPage() {
             ))}
           </div>
         </div>
-        <p className="relative z-10 text-[10px] font-bold text-txt3 uppercase tracking-widest">Free forever · No credit card required</p>
+        <p className="relative z-10 text-[10px] font-bold text-txt3 uppercase tracking-widest">FREE TO START · NO CREDIT CARD REQUIRED</p>
       </div>
 
       {/* Right form */}

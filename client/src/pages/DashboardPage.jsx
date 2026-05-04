@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { getWeeklyReport } from '../utils/api';
 import { ALL_BADGES } from './AchievementsPage';
@@ -99,9 +99,7 @@ export default function DashboardPage() {
         }));
         setQuizHistory(history);
 
-
-
-          // Build active days Set for streak popup
+        // Build active days Set for streak popup
         const actSet = new Set();
         history.forEach(q => { if (q.timestamp) actSet.add(new Date(q.timestamp).toDateString()); });
         setActiveDays(actSet);
@@ -110,17 +108,28 @@ export default function DashboardPage() {
     loadHistory();
   }, [user, profile?.totalQuizzes]);
 
-  /* ── Streak popup: show 1.5s after load, once per session ── */
+  /* ── Streak popup: show only when streak increases to new number ── */
   useEffect(() => {
-    if (!profile) return;
-    const already = sessionStorage.getItem('streakPopupShown') === 'true';
-    if (already || (profile.streak || 0) < 2) return;
-    const t = setTimeout(() => {
-      setShowStreakPopup(true);
-      sessionStorage.setItem('streakPopupShown', 'true');
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [profile]);
+    if (!profile || !user?.uid) return;
+    const currentStreak = profile.streak || 0;
+    if (currentStreak < 2) return;
+    const checkAndShow = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const lastShown = userDoc.data()?.lastStreakPopupShown || 0;
+        if (currentStreak > lastShown) {
+          setTimeout(() => setShowStreakPopup(true), 1500);
+        }
+      } catch (e) {
+        // fallback to sessionStorage
+        const already = sessionStorage.getItem('streakPopupShown') === 'true';
+        if (!already) {
+          setTimeout(() => { setShowStreakPopup(true); sessionStorage.setItem('streakPopupShown','true'); }, 1500);
+        }
+      }
+    };
+    checkAndShow();
+  }, [profile, user]);
 
   useEffect(() => { if (profile?.totalQuizzes > 0) refreshProfile(); }, [profile?.totalQuizzes]);
 
@@ -143,9 +152,8 @@ export default function DashboardPage() {
   const hour          = new Date().getHours();
   const greeting      = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
   const firstName     = (user?.displayName||'Student').split(' ')[0];
-  // Mon=0 .. Sun=6 of current week
-  const todayWeekday = new Date().getDay(); // 0=Sun
-  const mondayOffset = todayWeekday === 0 ? 6 : todayWeekday - 1;
+  const todayWeekday  = new Date().getDay();
+  const mondayOffset  = todayWeekday === 0 ? 6 : todayWeekday - 1;
   const weeklyData    = [0,0,0,0,0,0,0].map((_,i) => {
     const d=new Date(); d.setDate(d.getDate()-mondayOffset+i);
     const cnt = quizHistory.filter(q => q.timestamp && new Date(q.timestamp).toDateString()===d.toDateString()).length;
@@ -160,7 +168,14 @@ export default function DashboardPage() {
         <StreakPopup
           streak={profile?.streak || 0}
           activeDays={activeDays}
-          onClose={() => setShowStreakPopup(false)}
+          onClose={async () => {
+            setShowStreakPopup(false);
+            try {
+              await updateDoc(doc(db, 'users', user.uid), {
+                lastStreakPopupShown: profile?.streak || 0,
+              });
+            } catch (e) { console.error('streak popup save:', e); }
+          }}
         />
       )}
 
@@ -226,63 +241,60 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
+        {/* Streak card — custom, no percentage */}
+        <motion.div
+          initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.07 }}
+          whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
+          className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to bottom left, #F59E0B20, transparent)' }} />
+          <div className="flex items-center justify-between relative z-10">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:'#F59E0B20', color:'#F59E0B' }}>
+              <Flame size={24} />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
+              <AnimNum target={profile?.streak||0} />
+            </div>
+            <div className="text-sm font-medium text-txt2">Day Streak</div>
+            <div className="text-xs font-medium mt-1 text-amber-500">
+              {(profile?.streak||0) >= 30 ? '🔥 Legendary!' : (profile?.streak||0) >= 7 ? '🔥 On fire!' : '💪 Keep going!'}
+            </div>
+          </div>
+        </motion.div>
 
-{/* Stat cards */}
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-
-  {/* Streak card — custom, no percentage */}
-  <motion.div
-    initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.07 }}
-    whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
-    className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
-    <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to bottom left, #F59E0B20, transparent)' }} />
-    <div className="flex items-center justify-between relative z-10">
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:'#F59E0B20', color:'#F59E0B' }}>
-        <Flame size={24} />
+        {/* Other 3 stat cards */}
+        {[
+          { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',      sub:`Level ${level}`,                                       pct:xpPct },
+          { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',     sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!', pct:avgScore, display:`${avgScore}%` },
+          { icon:BookOpen, color:'#8B5CF6', val:profile?.totalQuizzes||0, label:'Quizzes Taken', sub:`${profile?.subjects?.length||0} subjects`,             pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
+        ].map(({ icon:Icon, color, val, label, sub, pct, display }, i) => (
+          <motion.div key={label}
+            initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:(i+2)*0.07 }}
+            whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
+            className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom left, ${color}20, transparent)` }} />
+            <div className="flex items-center justify-between relative z-10">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20`, color }}>
+                <Icon size={24} />
+              </div>
+              <RingProgress pct={pct} color={color} size={56} stroke={4}>
+                <span className="text-[10px] font-bold text-txt">{Math.round(pct)}%</span>
+              </RingProgress>
+            </div>
+            <div className="relative z-10">
+              <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
+                {display || <AnimNum target={val||0} />}
+              </div>
+              <div className="text-sm font-medium text-txt2">{label}</div>
+              <div className="text-xs font-medium mt-1 text-txt3">{sub}</div>
+            </div>
+          </motion.div>
+        ))}
       </div>
-    </div>
-    <div className="relative z-10">
-      <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
-        <AnimNum target={profile?.streak||0} />
-      </div>
-      <div className="text-sm font-medium text-txt2">Day Streak</div>
-      <div className="text-xs font-medium mt-1 text-amber-500">
-        {(profile?.streak||0) >= 30 ? '🔥 Legendary!' : (profile?.streak||0) >= 7 ? '🔥 On fire!' : '💪 Keep going!'}
-      </div>
-    </div>
-  </motion.div>
-
-  {/* Other 3 stat cards */}
-  {[
-    { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',      sub:`Level ${level}`,                                          pct:xpPct },
-    { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',     sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!',    pct:avgScore, display:`${avgScore}%` },
-    { icon:BookOpen, color:'#8B5CF6', val:profile?.totalQuizzes||0, label:'Quizzes Taken', sub:`${profile?.subjects?.length||0} subjects`,                pct:Math.min(100,(profile?.totalQuizzes||0)*4) },
-  ].map(({ icon:Icon, color, val, label, sub, pct, display }, i) => (
-    <motion.div key={label}
-      initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:(i+2)*0.07 }}
-      whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
-      className="glass-card p-5 flex flex-col gap-4 relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ backgroundImage: `linear-gradient(to bottom left, ${color}20, transparent)` }} />
-      <div className="flex items-center justify-between relative z-10">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20`, color }}>
-          <Icon size={24} />
-        </div>
-        <RingProgress pct={pct} color={color} size={56} stroke={4}>
-          <span className="text-[10px] font-bold text-txt">{Math.round(pct)}%</span>
-        </RingProgress>
-      </div>
-      <div className="relative z-10">
-        <div className="font-jakarta font-black text-3xl tracking-tight text-txt drop-shadow-sm mb-1">
-          {display || <AnimNum target={val||0} />}
-        </div>
-        <div className="text-sm font-medium text-txt2">{label}</div>
-        <div className="text-xs font-medium mt-1 text-txt3">{sub}</div>
-      </div>
-    </motion.div>
-  ))}
-
-</div>
 
       {/* Subject Progress + Right column */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -346,7 +358,7 @@ export default function DashboardPage() {
               {weeklyData.map((v,i) => {
                 const max=Math.max(...weeklyData,1);
                 const days=['M','T','W','T','F','S','S'];
-                const isToday = i === 6;
+                const isToday = i === mondayOffset;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                     <div className="w-full relative flex items-end justify-center h-full">
@@ -363,46 +375,46 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Activity Calendar */}
+      {/* Activity Calendar — full width standalone */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
         className="glass-card p-6 overflow-hidden">
         <StreakCalendar />
       </motion.div>
 
-      {/* Quick Actions + Tip */}
+      {/* Quick Actions + Study Tip */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.38 }}
           className="xl:col-span-2 glass-card p-6">
-          <h2 className="font-jakarta font-bold text-lg mb-5 flex items-center gap-2"><Zap size={18} className="text-cyan" />Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { to:'/app/tutor',          icon:MessageSquare, label:'AI Tutor',      sub:'Ask anything',      color:'#8B5CF6' },
-              { to:'/app/quiz',           icon:FileQuestion,  label:'Quick Quiz',    sub:'Test knowledge',    color:'#F59E0B' },
-              { to:'/app/study-sessions', icon:BookOpen,      label:'Study Session', sub:'Learn then quiz',   color:'#14B8A6' },
-              { to:'/app/goals',          icon:Target,        label:'My Goals',      sub:'Track progress',    color:'#10B981' },
-            ].map(({ to, icon:Icon, label, sub, color }) => (
-              <Link key={to} to={to} onClick={() => audioSystem.playClick()}>
-                <motion.div whileHover={{ y:-4, scale:1.02, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} whileTap={{ scale:0.97 }}
-                  className="flex flex-col gap-3 p-4 rounded-2xl bg-space-800 transition-all cursor-pointer h-full"
-                  style={{ border: `1px solid rgba(255,255,255,0.06)`, boxShadow: 'none' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = color + '4D'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background:`${color}20` }}>
-                    <Icon size={18} style={{ color }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-txt">{label}</p>
-                    <p className="text-xs font-medium text-txt3 mt-0.5">{sub}</p>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
+            <h2 className="font-jakarta font-bold text-lg mb-5 flex items-center gap-2"><Zap size={18} className="text-cyan" />Quick Actions</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { to:'/app/tutor',          icon:MessageSquare, label:'AI Tutor',      sub:'Ask anything',    color:'#8B5CF6' },
+                { to:'/app/quiz',           icon:FileQuestion,  label:'Quick Quiz',    sub:'Test knowledge',  color:'#F59E0B' },
+                { to:'/app/study-sessions', icon:BookOpen,      label:'Study Session', sub:'Learn then quiz', color:'#14B8A6' },
+                { to:'/app/goals',          icon:Target,        label:'My Goals',      sub:'Track progress',  color:'#10B981' },
+              ].map(({ to, icon:Icon, label, sub, color }) => (
+                <Link key={to} to={to} onClick={() => audioSystem.playClick()}>
+                  <motion.div
+                    whileHover={{ y:-2, scale:1.02 }} whileTap={{ scale:0.97 }}
+                    className="flex flex-col gap-2 p-3 rounded-xl bg-space-800 transition-all cursor-pointer h-full"
+                    style={{ border:'1px solid rgba(255,255,255,0.06)' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = color + '4D'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:`${color}20` }}>
+                      <Icon size={15} style={{ color }} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-txt">{label}</p>
+                      <p className="text-[10px] font-medium text-txt3 mt-0.5">{sub}</p>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
         </motion.div>
 
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.42 }}
           className="glass-card p-6 relative overflow-hidden bg-gradient-to-br from-space-card to-space-900 flex flex-col justify-center">
-
           <h2 className="font-jakarta font-bold text-sm mb-4 flex items-center gap-2 text-txt2"><Lightbulb size={16} className="text-amber-400" />Study Tip of the Day</h2>
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center flex-shrink-0"><Lightbulb size={20} className="text-amber-400" /></div>
@@ -482,15 +494,15 @@ export default function DashboardPage() {
                   initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.05 }}
                   whileHover={earned ? { scale:1.1 } : {}} title={badge.name}
                   className="aspect-square rounded-xl flex items-center justify-center relative"
-                  style={{ 
-                    background: earned ? badge.color + '1E' : 'var(--space-800)', 
+                  style={{
+                    background: earned ? badge.color + '1E' : 'var(--space-800)',
                     border: '1px solid rgba(255,255,255,0.06)',
                     cursor: earned ? 'pointer' : 'default'
                   }}>
-                  <BI size={badge.size === 'large' ? 24 : 20} 
-                    style={{ color: earned ? badge.color : '#888' }} 
+                  <BI size={badge.size === 'large' ? 24 : 20}
+                    style={{ color: earned ? badge.color : '#888' }}
                     fill={badge.filled && earned ? badge.color : 'none'}
-                    className={!earned ? 'grayscale opacity-35' : ''} 
+                    className={!earned ? 'grayscale opacity-35' : ''}
                   />
                   {earned ? (
                     <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-space-900 flex items-center justify-center">
@@ -507,6 +519,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+
     </div>
   );
 }
