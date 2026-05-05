@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock, X } from 'lucide-react';
+import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock, X, Trash2, BookOpen, ChevronRight, Layers } from 'lucide-react';
 import {
-  collection, addDoc, getDocs, query, where, doc, getDoc, serverTimestamp,
+  collection, addDoc, getDocs, query, where, orderBy, doc, getDoc,
+  serverTimestamp, deleteDoc, updateDoc,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { generateLearningPath } from '../utils/api';
 import { useUserData } from '../context/UserDataContext';
 import { useAuth } from '../context/AuthContext';
 import { audioSystem } from '../utils/audio';
+import { awardBadgeToFirestore } from '../utils/firestoreUtils';
 import toast from 'react-hot-toast';
 
 const SUBJECTS = [
@@ -32,6 +34,80 @@ const statusStyles = {
   locked:    { bg: 'bg-space-800',    border: 'border-border',       text: 'text-txt3',      Icon: Lock },
 };
 const levelColors = { beginner: '#10B981', intermediate: '#0EA5E9', advanced: '#8B5CF6' };
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* ── Inline saved path row ── */
+function SavedPathRow({ path, onLoad, onDelete }) {
+  const lc = levelColors[path.level] || '#8B5CF6';
+  const completed = path.nodes?.filter(n => n.status === 'completed').length || 0;
+  const total     = path.totalTopics || path.nodes?.length || 0;
+  const pct       = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="glass-card p-4 flex items-center gap-4 group hover:border-white/10 border-transparent transition-all">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${lc}18` }}>
+        <Map size={18} style={{ color: lc }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="font-bold text-sm text-txt truncate">{path.subject}</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded capitalize"
+            style={{ background: `${lc}18`, color: lc, border: `1px solid ${lc}30` }}>{path.level}</span>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] font-bold text-txt3">
+          <span className="flex items-center gap-1"><Layers size={9}/>{total} topics</span>
+          <span className="flex items-center gap-1"><CheckCircle size={9}/>{completed} done · {pct}%</span>
+          <span className="flex items-center gap-1"><Clock size={9}/>{formatDate(path.createdAt)}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button onClick={() => onLoad(path)}
+          className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all">
+          Load<ChevronRight size={12}/>
+        </button>
+        <button onClick={() => onDelete(path)}
+          className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100">
+          <Trash2 size={13}/>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Delete confirm ── */
+function DeleteConfirm({ onConfirm, onCancel }) {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(5,8,22,0.90)' }}
+      onClick={onCancel}>
+      <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.92, opacity: 0 }}
+        onClick={e => e.stopPropagation()}
+        className="glass-card p-7 max-w-sm w-full border-red-500/20 shadow-2xl text-center">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+          <Trash2 size={24} className="text-red-500" />
+        </div>
+        <h3 className="font-jakarta font-black text-lg text-txt mb-2">Delete Learning Path?</h3>
+        <p className="text-sm text-txt3 mb-6 leading-relaxed">
+          Are you sure you want to delete this learning path? This cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 btn-outline py-3 text-sm bg-space-800">No, keep it</button>
+          <button onClick={onConfirm}
+            className="flex-1 py-3 text-sm font-bold rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 transition-all">
+            Yes, delete
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 /* ── Node Card ── */
 function NodeCard({ node, onClick }) {
@@ -179,27 +255,46 @@ export default function LearningPathPage() {
   const [savedPathId,   setSavedPathId]   = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [showDupModal,  setShowDupModal]  = useState(false);
-  const [dupDoc,        setDupDoc]        = useState(null); // existing Firestore doc
+  const [dupDoc,        setDupDoc]        = useState(null);
+  const [savedPaths,    setSavedPaths]    = useState([]);
+  const [pathsLoading,  setPathsLoading]  = useState(true);
+  const [toDelete,      setToDelete]      = useState(null); // path object pending deletion
+  const [deleting,      setDeleting]      = useState(false);
+  const [showPaths,     setShowPaths]     = useState(true);
 
   /* Load path from SavedPathsPage navigation */
   useEffect(() => {
     if (location.state?.loadedPath) {
       setPathData(location.state.loadedPath);
       setSavedPathId(location.state.pathId || null);
-      // Clear state so refresh doesn't re-load
       window.history.replaceState({}, '');
     }
   }, []);
 
+  /* Load all saved paths */
+  const loadSavedPaths = async () => {
+    if (!user?.uid) return;
+    setPathsLoading(true);
+    try {
+      const q    = query(collection(db, 'users', user.uid, 'savedPaths'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      setSavedPaths(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error('loadSavedPaths:', e); }
+    finally { setPathsLoading(false); }
+  };
+
+  useEffect(() => { loadSavedPaths(); }, [user?.uid]);
+
   const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
 
-  /* ── Check duplicate ── */
+  /* ── Check duplicate (subject + level + goal) ── */
   const checkDuplicate = async () => {
     if (!user?.uid || !actualSubject) return null;
     const q = query(
       collection(db, 'users', user.uid, 'savedPaths'),
       where('subject', '==', actualSubject),
-      where('level', '==', level)
+      where('level',   '==', level),
+      where('goal',    '==', goal)
     );
     const snap = await getDocs(q);
     if (!snap.empty) return snap.docs[0];
@@ -255,6 +350,8 @@ export default function LearningPathPage() {
       const data = res.data;
       setPathData(data);
       await savePath(data);
+      await loadSavedPaths(); // refresh list
+      awardBadgeToFirestore(user.uid, 'learning-path-gen');
       toast.success('Learning path generated & saved!');
     } catch {
       toast.error('Failed to generate path. Please try again.');
@@ -270,6 +367,8 @@ export default function LearningPathPage() {
     const data = dupDoc.data();
     setPathData({ nodes: data.nodes, totalTopics: data.totalTopics, subject: data.subject });
     setSavedPathId(dupDoc.id);
+    // Update lastAccessedAt
+    updateDoc(doc(db, 'users', user.uid, 'savedPaths', dupDoc.id), { lastAccessedAt: serverTimestamp() }).catch(() => {});
     toast.success('Existing path loaded!');
   };
 
@@ -277,6 +376,30 @@ export default function LearningPathPage() {
     audioSystem.playClick();
     setShowDupModal(false);
     generate(true);
+  };
+
+  /* ── Load a saved path from the inline list ── */
+  const handleLoadSaved = (path) => {
+    audioSystem.playClick();
+    setPathData({ nodes: path.nodes, totalTopics: path.totalTopics, subject: path.subject });
+    setSavedPathId(path.id);
+    updateDoc(doc(db, 'users', user.uid, 'savedPaths', path.id), { lastAccessedAt: serverTimestamp() }).catch(() => {});
+    toast.success(`Loaded: ${path.subject}`);
+    // Scroll to path
+    setTimeout(() => document.getElementById('path-display')?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
+  /* ── Delete a saved path ── */
+  const handleDeleteConfirm = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'savedPaths', toDelete.id));
+      setSavedPaths(prev => prev.filter(p => p.id !== toDelete.id));
+      if (savedPathId === toDelete.id) { setPathData(null); setSavedPathId(null); }
+      toast.success('Path deleted.');
+    } catch { toast.error('Failed to delete.'); }
+    finally { setDeleting(false); setToDelete(null); }
   };
 
   /* ── Click node → navigate ── */
@@ -307,6 +430,42 @@ export default function LearningPathPage() {
         <h1 className="font-jakarta font-black text-2xl md:text-4xl text-txt mb-2">Learning Path Visualizer</h1>
         <p className="text-sm font-medium text-txt3">AI-generated visual roadmap of topics to master — in the right order</p>
       </div>
+
+      {/* ── My Learning Paths ── */}
+      {(savedPaths.length > 0 || pathsLoading) && (
+        <div className="mb-6">
+          <button
+            onClick={() => { audioSystem.playClick(); setShowPaths(p => !p); }}
+            className="flex items-center gap-2 mb-3 text-sm font-bold text-txt2 hover:text-txt transition-colors">
+            <BookOpen size={16} className="text-primary" />
+            My Learning Paths
+            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+              {savedPaths.length}
+            </span>
+            <ChevronRight size={14} className={`text-txt3 transition-transform ${showPaths ? 'rotate-90' : ''}`} />
+          </button>
+          <AnimatePresence>
+            {showPaths && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden">
+                {pathsLoading ? (
+                  <div className="space-y-2">
+                    {[1,2].map(i => <div key={i} className="glass-card p-4 animate-pulse h-16 rounded-xl" />)}
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                    {savedPaths.map(p => (
+                      <SavedPathRow key={p.id} path={p}
+                        onLoad={handleLoadSaved}
+                        onDelete={path => { audioSystem.playClick(); setToDelete(path); }} />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Controls */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -375,7 +534,7 @@ export default function LearningPathPage() {
 
       {/* Path */}
       {pathData && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div id="path-display" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
@@ -440,16 +599,34 @@ export default function LearningPathPage() {
         </motion.div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — show most recent saved path or generate CTA */}
       {!pathData && !loading && (
         <div className="text-center py-24 glass-card mt-8">
-          <div className="w-20 h-20 bg-space-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-border">
-            <Map size={32} className="text-primary opacity-80" />
-          </div>
-          <p className="font-jakarta font-black text-2xl mb-2 text-txt">Generate Your Learning Path</p>
-          <p className="text-sm text-txt3 font-medium max-w-md mx-auto leading-relaxed">
-            Select a subject and level, then click Generate to get your AI-powered roadmap to mastery.
-          </p>
+          {savedPaths.length > 0 ? (
+            <>
+              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-primary/20">
+                <Map size={32} className="text-primary" />
+              </div>
+              <p className="font-jakarta font-black text-2xl mb-2 text-txt">Continue where you left off</p>
+              <p className="text-sm text-txt3 font-medium max-w-md mx-auto leading-relaxed mb-6">
+                You have {savedPaths.length} saved path{savedPaths.length > 1 ? 's' : ''}. Load one above or generate a new path.
+              </p>
+              <button onClick={() => handleLoadSaved(savedPaths[0])}
+                className="btn-primary px-8 py-3 flex items-center gap-2 mx-auto">
+                <Map size={16} /> Load Latest: {savedPaths[0]?.subject}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="w-20 h-20 bg-space-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-border">
+                <Map size={32} className="text-primary opacity-80" />
+              </div>
+              <p className="font-jakarta font-black text-2xl mb-2 text-txt">Generate Your Learning Path</p>
+              <p className="text-sm text-txt3 font-medium max-w-md mx-auto leading-relaxed">
+                Select a subject and level, then click Generate to get your AI-powered roadmap to mastery.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -462,6 +639,16 @@ export default function LearningPathPage() {
             onLoad={handleLoadExisting}
             onGenerateNew={handleGenerateNew}
             onClose={() => setShowDupModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirmation */}
+      <AnimatePresence>
+        {toDelete && (
+          <DeleteConfirm
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setToDelete(null)}
           />
         )}
       </AnimatePresence>

@@ -352,25 +352,58 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }}
-            className="glass-card p-6 flex-1 flex flex-col justify-end">
-            <h2 className="font-jakarta font-bold text-sm mb-5 flex items-center gap-2 text-txt2"><TrendingUp size={16} className="text-primary" />Weekly Activity</h2>
-            <div className="flex items-end gap-2 h-20 w-full">
-              {weeklyData.map((v,i) => {
-                const max=Math.max(...weeklyData,1);
-                const days=['M','T','W','T','F','S','S'];
+            className="glass-card p-6 flex-1 flex flex-col">
+            <h2 className="font-jakarta font-bold text-sm mb-4 flex items-center gap-2 text-txt2">
+              <TrendingUp size={16} className="text-primary" />Weekly Activity
+            </h2>
+            {/* Bar chart */}
+            <div className="flex items-end gap-1.5 flex-1" style={{ minHeight: 80 }}>
+              {weeklyData.map((v, i) => {
+                const max     = Math.max(...weeklyData, 1);
+                const DAYS    = ['M','T','W','T','F','S','S'];
                 const isToday = i === mondayOffset;
+                const barPct  = v > 0 ? Math.max(12, Math.round((v / max) * 100)) : 0;
+                const BAR_H   = 72; // px of the chart area
+                const barPx   = v > 0 ? Math.max(12, Math.round((v / max) * BAR_H)) : 4;
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                    <div className="w-full relative flex items-end justify-center h-full">
-                      <motion.div initial={{ height:0 }} animate={{ height:`${Math.max(10,(v/max)*100)}%` }}
-                        transition={{ duration:0.8, delay:i*0.06 }}
-                        className={`w-full max-w-[20px] rounded-sm transition-all ${isToday ? 'bg-primary shadow-glow-primary' : 'bg-primary/30 group-hover:bg-primary/50'}`} />
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    {/* count label */}
+                    <span className="text-[9px] font-black" style={{ color: isToday ? '#8B72FF' : 'transparent', minHeight: 12 }}>
+                      {v > 0 ? v : ''}
+                    </span>
+                    {/* bar + today dot */}
+                    <div className="relative w-full flex flex-col items-center justify-end" style={{ height: BAR_H }}>
+                      {isToday && (
+                        <div className="absolute -top-1.5 w-2 h-2 rounded-full z-10"
+                          style={{ background: '#8B72FF', boxShadow: '0 0 6px #8B72FF' }} />
+                      )}
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: barPx }}
+                        transition={{ duration: 0.7, delay: i * 0.07 }}
+                        className="w-full rounded-t-sm"
+                        style={{
+                          maxWidth: 22,
+                          background: isToday
+                            ? 'linear-gradient(to top, rgba(139,92,246,0.8), #8B72FF)'
+                            : 'linear-gradient(to top, rgba(139,92,246,0.3), rgba(139,114,255,0.55))',
+                          boxShadow: isToday ? '0 0 8px rgba(139,114,255,0.5)' : 'none',
+                          minHeight: 4,
+                        }}
+                      />
                     </div>
-                    <span className={`text-[10px] font-bold ${isToday ? 'text-txt' : 'text-txt3'}`}>{days[i]}</span>
+                    <span className={`text-[10px] font-bold mt-1 ${isToday ? 'text-txt' : 'text-txt3'}`}>
+                      {DAYS[i]}
+                    </span>
                   </div>
                 );
               })}
             </div>
+            {/* Footer */}
+            <p className="text-[10px] font-bold text-txt3 uppercase tracking-wider mt-3">
+              {weeklyData.reduce((a, b) => a + b, 0)}
+              <span className="text-txt3 normal-case font-medium"> quizzes this week</span>
+            </p>
           </motion.div>
         </div>
       </div>
@@ -451,7 +484,7 @@ export default function DashboardPage() {
           className="glass-card p-6 flex flex-col">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-jakarta font-bold text-lg flex items-center gap-2"><Clock size={18} className="text-primary" />Recent Quizzes</h2>
-            <Link to="/app/quiz" className="text-xs font-bold text-primary hover:text-primary-light transition-colors">See all →</Link>
+            <Link to="/app/quiz-history" className="text-xs font-bold text-primary hover:text-primary-light transition-colors">See all →</Link>
           </div>
           {quizHistory.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center">

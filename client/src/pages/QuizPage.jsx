@@ -352,9 +352,19 @@ useEffect(() => {
     else if (score>=60) { audioSystem.playQuizComplete(); }
     else audioSystem.playXP();
 
+    // Build per-question detail for quiz history
+    const questionsDetail = quiz.questions.map((q, i) => ({
+      question:          q.question,
+      options:           q.options,
+      correctIndex:      q.correctIndex,
+      userSelectedIndex: result.answers[i]?.selectedIndex ?? -1,
+      explanation:       q.explanation || '',
+    }));
+
     const res = await saveQuizResultToFirestore(user?.uid, {
       subject:quiz.subject, topic:quiz.topic, score,
       totalQuestions:result.total, correctAnswers:result.correct, difficulty:quiz.difficulty,
+      questions: questionsDetail,
     });
     if (res?.newBadges?.length>0) res.newBadges.forEach(b => toast.success(`🏆 ${b.name}!`, { duration:4000 }));
     if (res) { updateProfileLocal({ xp:res.newXp, level:res.newLevel }); await refreshProfile(); }

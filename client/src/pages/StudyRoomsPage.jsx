@@ -3,17 +3,65 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Send, LogOut, Plus, Trash2, FileQuestion,
   BookOpen, MessageCircle, Wifi, WifiOff, X, CheckCircle, 
-  XCircle, Clock, Hand, Target, Palette, Eraser, Pen, Brush, Highlighter, Minus, Type, Info, Copy, Lock, Globe, Megaphone, Volume2, VolumeX, Settings, Timer
+  XCircle, Clock, Hand, Target, Palette, Eraser, Pen, Brush, Highlighter, Minus, Type, Info, Copy, Lock, Globe, Megaphone, Volume2, VolumeX, Settings, Timer, Smile
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateQuiz } from '../utils/api';
 import { audioSystem } from '../utils/audio';
 import toast from 'react-hot-toast';
 import {
-  collection, doc, setDoc, deleteDoc, onSnapshot, 
-  updateDoc, increment, query, serverTimestamp, orderBy, where, getDocs
+  collection, doc, setDoc, deleteDoc, onSnapshot, addDoc,
+  updateDoc, increment, query, serverTimestamp, orderBy, where, getDocs, limit,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
+import { awardBadgeToFirestore } from '../utils/firestoreUtils';
+
+/* ── Emoji picker data ── */
+const EMOJI_GROUPS = [
+  { label: 'Smileys', emojis: ['😀','😂','🥲','😊','😍','🤔','😅','😎','🥳','😤','😢','😡','🤯','🥺','😏'] },
+  { label: 'Hands',  emojis: ['👍','👎','👋','🙌','🤝','✌️','🤙','💪','🙏','👀','✅','❌','🔥','💡','⭐'] },
+  { label: 'Study',  emojis: ['📚','📖','✏️','📝','🎯','💻','🧠','⚡','🏆','🎉','❓','💯','🚀','⏰','🔬'] },
+];
+
+function EmojiPicker({ onSelect, onClose }) {
+  return (
+    <motion.div initial={{ opacity:0, scale:0.92, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.92, y:8 }}
+      className="absolute bottom-full mb-2 right-0 bg-space-800 border border-white/10 rounded-2xl p-3 shadow-2xl z-50 w-72">
+      {EMOJI_GROUPS.map(g => (
+        <div key={g.label} className="mb-2">
+          <p className="text-[9px] font-bold text-txt3 uppercase tracking-widest mb-1">{g.label}</p>
+          <div className="flex flex-wrap gap-1">
+            {g.emojis.map(e => (
+              <button key={e} onClick={() => onSelect(e)}
+                className="w-8 h-8 flex items-center justify-center text-lg rounded-lg hover:bg-white/10 transition-colors">{e}</button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
+
+/* ── Confirm modal ── */
+function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, onCancel }) {
+  return (
+    <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+      onClick={onCancel}>
+      <motion.div initial={{ scale:0.92, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.92, opacity:0 }}
+        onClick={e => e.stopPropagation()}
+        className="glass-card p-7 max-w-sm w-full text-center shadow-2xl border-white/10">
+        <h3 className="font-jakarta font-black text-lg text-txt mb-3">{title}</h3>
+        <p className="text-sm text-txt3 mb-6 leading-relaxed">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 btn-outline py-3 text-sm bg-space-800 border-white/10">Cancel</button>
+          <button onClick={onConfirm} className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${confirmClass}`}>{confirmLabel}</button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 const SUBJECTS   = ['Mathematics','Physics','Chemistry','Biology','Computer Science','General','History','Economics'];
 
@@ -118,6 +166,10 @@ function GroupQuiz({ room, user, onClose, socket, activeQuiz, onStartQuiz }) {
     if (current + 1 >= quiz.questions.length) {
       audioSystem.playQuizComplete();
       setPhase('results');
+      const finalScore = Math.round((answers.filter(a=>a.correct).length / quiz.questions.length)*100);
+      if (finalScore >= 80) {
+        awardBadgeToFirestore(user.uid, 'group-quiz-win');
+      }
     } else {
       setSelected(null);
       setCurrent(c => c+1);
@@ -130,7 +182,8 @@ function GroupQuiz({ room, user, onClose, socket, activeQuiz, onStartQuiz }) {
 
   return (
     <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-      className="fixed inset-0 bg-space-dark/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
       <motion.div initial={{ scale:0.95, y:20, opacity:0 }} animate={{ scale:1, y:0, opacity:1 }} exit={{ scale:0.95, y:20, opacity:0 }}
         className="glass-card border border-white/10 p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto relative custom-scrollbar">
         <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 rounded-bl-full pointer-events-none" />
@@ -549,10 +602,15 @@ export default function StudyRoomsPage() {
   const [joinCodeOpen, setJoinCodeOpen] = useState(false);
   const [joinCode,    setJoinCode]    = useState('');
   const [newRoom,     setNewRoom]     = useState({ name:'', subject:SUBJECTS[0], description:'', type:'public', maxMembers:10, roomCode:'' });
-  const [activeTab,   setActiveTab]   = useState('chat'); // chat | members | material | whiteboard | host
+  const [customRoomSubject, setCustomRoomSubject] = useState('');
+  const [activeTab,   setActiveTab]   = useState('chat');
   const [groupQuizOpen, setGroupQuizOpen] = useState(false);
   const [socketOk,    setSocketOk]    = useState(false);
   const [participants, setParticipants] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // room id
+  const [showLeaveConfirm,  setShowLeaveConfirm]  = useState(false);
+  const [showEmojiPicker,   setShowEmojiPicker]   = useState(false);
+  const inputRef = useRef(null);
   
   // Real-time features
   const [rooms, setRooms] = useState([]);
@@ -647,6 +705,13 @@ export default function StudyRoomsPage() {
     setActiveTab('chat');
     audioSystem.playRoomJoin();
 
+    /* Load last 50 messages from Firestore */
+    try {
+      const q    = query(collection(db, 'studyRooms', r.id, 'messages'), orderBy('timestamp', 'asc'), limit(50));
+      const snap = await getDocs(q);
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp?.toDate?.()?.toISOString() || new Date().toISOString() })));
+    } catch {}
+
     const apiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:5000';
 
     import('socket.io-client').then(({ io }) => {
@@ -730,7 +795,14 @@ export default function StudyRoomsPage() {
     if (socketRef.current?.connected) {
       socketRef.current.emit('room-message', { roomId:room.id, ...msg });
     } else {
-      setMessages(m => [...m,msg]);
+      setMessages(m => [...m, msg]);
+    }
+    /* Persist to Firestore */
+    if (room?.id) {
+      addDoc(collection(db, 'studyRooms', room.id, 'messages'), {
+        uid: user.uid, displayName: user.displayName || 'You',
+        message: input.trim(), timestamp: serverTimestamp(),
+      }).catch(() => {});
     }
     audioSystem.playClick();
     setInput('');
@@ -757,8 +829,9 @@ export default function StudyRoomsPage() {
     audioSystem.playCreate();
     const id = `c-${Date.now()}`;
     const emojis = { Mathematics:'🧮', Physics:'⚡', Chemistry:'⚗️', Biology:'🔬', 'Computer Science':'💻', General:'📚', History:'📜', Economics:'💰' };
+    const actualSubject = newRoom.subject === 'Other' ? (customRoomSubject.trim() || 'General') : newRoom.subject;
     const r = { 
-      id, name:newRoom.name.trim(), subject:newRoom.subject, emoji:emojis[newRoom.subject]||'📚', 
+      id, name:newRoom.name.trim(), subject: actualSubject, emoji:emojis[actualSubject]||'📚', 
       isDemo:false, createdBy:user.uid, participantCount:0,
       description: newRoom.description.trim(),
       type: newRoom.type,
@@ -766,13 +839,27 @@ export default function StudyRoomsPage() {
       roomCode: newRoom.roomCode
     };
     await setDoc(doc(db, 'studyRooms', id), r);
-    setCreateOpen(false); setNewRoom({ name:'', subject:SUBJECTS[0], description:'', type:'public', maxMembers:10, roomCode:'' });
+    awardBadgeToFirestore(user.uid, 'study-room-create');
+    setCreateOpen(false);
+    setNewRoom({ name:'', subject:SUBJECTS[0], description:'', type:'public', maxMembers:10, roomCode:'' });
+    setCustomRoomSubject('');
     joinRoom(r);
   };
 
   const deleteRoom = async (id) => { 
-    audioSystem.playClick(); 
-    await deleteDoc(doc(db, 'studyRooms', id)); 
+    audioSystem.playClick();
+    await deleteDoc(doc(db, 'studyRooms', id));
+  };
+
+  const insertEmoji = (emoji) => {
+    const el = inputRef.current;
+    if (!el) { setInput(p => p + emoji); setShowEmojiPicker(false); return; }
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    const next  = input.slice(0, start) + emoji + input.slice(end);
+    setInput(next);
+    setShowEmojiPicker(false);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
   };
 
   const toggleHand = () => {
@@ -815,9 +902,8 @@ export default function StudyRoomsPage() {
         </div>
       </div>
 
-      <div className={`flex items-center gap-3 rounded-xl p-4 mb-4 text-sm font-medium border shadow-sm ${socketOk ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'bg-space-800 border-white/10 text-txt3'}`}>
-        {socketOk ? <div className="p-1.5 bg-green-500/20 rounded-md"><Wifi size={16} /></div> : <div className="p-1.5 bg-white/5 rounded-md"><WifiOff size={16} /></div>}
-        {socketOk ? 'Real-time server connected — multiplayer active!' : 'Local mode: chat and materials save on your device. Start the backend server for multiplayer.'}
+      <div className={`flex items-center gap-3 rounded-xl p-4 mb-4 text-sm font-medium border shadow-sm ${socketOk ? 'bg-green-500/10 border-green-500/30 text-green-500' : 'hidden'}`}>
+        {socketOk && <><div className="p-1.5 bg-green-500/20 rounded-md"><Wifi size={16} /></div>Real-time server connected — multiplayer active!</>}
       </div>
 
       <div className="flex items-start gap-3 rounded-xl p-4 mb-8 text-sm font-medium bg-cyan/5 border border-cyan/20 text-cyan/80 shadow-sm">
@@ -831,7 +917,7 @@ export default function StudyRoomsPage() {
           <p className="text-xs text-txt3 uppercase tracking-widest font-bold">Your Rooms</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
-          {customRooms.map(r => <RoomCard key={r.id} room={r} onJoin={joinRoom} onDelete={deleteRoom} />)}
+          {customRooms.map(r => <RoomCard key={r.id} room={r} onJoin={joinRoom} onDelete={(id) => { audioSystem.playClick(); setShowDeleteConfirm(id); }} />)}
         </div>
       </>}
 
@@ -875,7 +961,13 @@ export default function StudyRoomsPage() {
                       <button key={s} onClick={() => { audioSystem.playClick(); setNewRoom(r=>({...r,subject:s})); }}
                         className={`text-xs font-bold px-3 py-2 rounded-xl border transition-all shadow-sm ${s===newRoom.subject?'bg-primary/10 border-primary/40 text-primary':'bg-space-800 border-white/10 text-txt3 hover:border-white/20 hover:text-txt2'}`}>{s}</button>
                     ))}
+                    <button onClick={() => { audioSystem.playClick(); setNewRoom(r=>({...r,subject:'Other'})); }}
+                      className={`text-xs font-bold px-3 py-2 rounded-xl border transition-all shadow-sm ${'Other'===newRoom.subject?'bg-primary/10 border-primary/40 text-primary':'bg-space-800 border-white/10 text-txt3 hover:border-white/20 hover:text-txt2'}`}>Other</button>
                   </div>
+                  {newRoom.subject === 'Other' && (
+                    <input value={customRoomSubject} onChange={e => setCustomRoomSubject(e.target.value)}
+                      placeholder="e.g. Web Development, Astronomy..." className="input-field w-full text-sm py-2.5 border-white/10 mt-3" />
+                  )}
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -937,6 +1029,20 @@ export default function StudyRoomsPage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete room confirmation */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <ConfirmModal
+            title="Delete Room?"
+            message="Are you sure you want to delete this room? All messages and materials will be permanently deleted."
+            confirmLabel="Delete"
+            confirmClass="bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20"
+            onConfirm={() => { deleteRoom(showDeleteConfirm); setShowDeleteConfirm(null); }}
+            onCancel={() => setShowDeleteConfirm(null)}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -1027,7 +1133,7 @@ export default function StudyRoomsPage() {
             <FileQuestion size={14} />Group Quiz
           </button>
 
-          <button onClick={() => leaveRoom(false)} title="Leave this study room"
+          <button onClick={() => { audioSystem.playClick(); setShowLeaveConfirm(true); }} title="Leave this study room"
             className="flex items-center gap-2 text-xs font-bold text-red-500 bg-red-500/10 border border-red-500/30 rounded-xl px-3 sm:px-4 py-2 hover:bg-red-500/20 transition-all shadow-sm">
             <LogOut size={14} />Leave
           </button>
@@ -1110,13 +1216,26 @@ export default function StudyRoomsPage() {
             </div>
             {/* Input */}
             <div className="px-6 py-5 border-t border-white/10 bg-space-800/90 backdrop-blur-md flex-shrink-0">
-              <div className="flex gap-3">
-                <input value={input} onChange={e => setInput(e.target.value)}
+              <div className="flex gap-3 relative">
+                <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key==='Enter'&&sendMsg()} disabled={focusMode || (chatLocked && !isHost)}
-                  placeholder={focusMode ? "Chat disabled during Focus Mode" : (chatLocked && !isHost) ? "🔇 Chat locked by host" : "Message the room..."} className="input-field flex-1 text-sm py-3 disabled:opacity-50 border-white/10" />
+                  placeholder={focusMode ? "Chat disabled during Focus Mode" : (chatLocked && !isHost) ? "🔇 Chat locked by host" : "Message the room..."}
+                  className="input-field flex-1 text-sm py-3 disabled:opacity-50 border-white/10" />
+                {/* Emoji button */}
+                <div className="relative">
+                  <button onClick={() => setShowEmojiPicker(p => !p)}
+                    className="w-12 h-12 rounded-xl bg-space-700 border border-white/10 flex items-center justify-center text-txt3 hover:text-txt hover:bg-space-800 transition-all">
+                    <Smile size={18} />
+                  </button>
+                  <AnimatePresence>
+                    {showEmojiPicker && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} />}
+                  </AnimatePresence>
+                </div>
+                {/* Send button */}
                 <motion.button whileHover={{scale:1.05}} whileTap={{ scale:0.95 }} onClick={sendMsg} disabled={!input.trim() || focusMode || (chatLocked && !isHost)}
-                  className="w-12 h-12 rounded-xl btn-primary flex items-center justify-center disabled:opacity-40 shadow-glow-primary">
-                  <Send size={18} />
+                  className="w-12 h-12 rounded-xl flex items-center justify-center disabled:opacity-40 transition-all shadow-glow-primary"
+                  style={{ background: 'linear-gradient(135deg, var(--primary), #7c3aed)', border: '1px solid rgba(139,92,246,0.4)' }}>
+                  <Send size={18} className="text-white" />
                 </motion.button>
               </div>
             </div>
@@ -1219,6 +1338,22 @@ export default function StudyRoomsPage() {
       <AnimatePresence>
         {groupQuizOpen && <GroupQuiz room={room} user={user} onClose={() => setGroupQuizOpen(false)} socket={socketRef.current} activeQuiz={activeQuiz} host={quizHost} onStartQuiz={handleStartQuiz} />}
       </AnimatePresence>
+
+      {/* Leave confirm */}
+      <AnimatePresence>
+        {showLeaveConfirm && (
+          <ConfirmModal
+            title="Leave Room?"
+            message="Are you sure you want to leave this room?"
+            confirmLabel="Leave"
+            confirmClass="bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20"
+            onConfirm={() => { setShowLeaveConfirm(false); leaveRoom(false); }}
+            onCancel={() => setShowLeaveConfirm(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+

@@ -4,7 +4,7 @@
  * XP, streaks, badges, quiz history all saved directly to Firestore.
  */
 import {
-  doc, collection, addDoc, updateDoc, getDoc, getDocs,
+  doc, collection, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   arrayUnion, serverTimestamp, query, orderBy, limit, where,
   increment,
 } from 'firebase/firestore';
@@ -33,14 +33,14 @@ function xpForLevel(xp) {
  * Save a quiz result directly to Firestore and update user profile.
  * Returns { xpEarned, newXp, newLevel, newBadges }
  */
-export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty }) {
+export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions }) {
   if (!uid) return null;
 
   const xpEarned = correctAnswers * 10 + (score === 100 ? 50 : score >= 80 ? 25 : 10);
   const userRef  = doc(db, 'users', uid);
 
   try {
-    // 1. Save quiz result to subcollection
+    // 1. Save quiz result to subcollection (with full question detail when available)
     await addDoc(collection(db, 'quizResults', uid, 'results'), {
       subject,
       topic,
@@ -50,6 +50,7 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       difficulty,
       xpEarned,
       timestamp: serverTimestamp(),
+      ...(questions ? { questions } : {}),
     });
 
     // 2. Read current user data
@@ -89,6 +90,27 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
     const avgScore = totalQuestions2 > 0 ? Math.round((totalCorrect / totalQuestions2) * 100) : 0;
     if (avgScore >= 80 && totalQuizzes >= 5) addBadge('high-scorer');
 
+    // NEW BADGES LOGIC
+    const hour = new Date().getHours();
+    if (hour >= 22) addBadge('night-owl');
+    if (hour < 7)   addBadge('early-bird');
+    
+    // Check if it's a learning path quiz and perfect score
+    // we assume we pass isLearningPath from the calling page
+    if (arguments[1].isLearningPath && score === 100) addBadge('perfect-path');
+
+    // subject-master: Score above 90% average in any one subject across 5 quizzes
+    // To do this simply, we'll check if the current subject has reached 5 quizzes
+    // and if the average is > 90%. We can fetch current subject stats or just do a query.
+    // For performance, we'll quickly query the last 5 for this subject.
+    const subjQ = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
+    const subjSnap = await getDocs(subjQ);
+    if (subjSnap.size >= 4) { // 4 previous + 1 current = 5
+      let totalS = score;
+      subjSnap.docs.forEach(d => totalS += d.data().score);
+      if (totalS / (subjSnap.size + 1) > 90) addBadge('subject-master');
+    }
+
     // 4. Update user doc
     const updates = {
       xp:             newXp,
@@ -111,6 +133,43 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
 }
 
 /**
+ * Utility to award a specific badge manually from anywhere
+ */
+export async function awardBadgeToFirestore(uid, badgeId) {
+  if (!uid || !badgeId) return;
+  try {
+    const userRef = doc(db, 'users', uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
+    const userData = snap.data();
+    const existingBadges = userData.badges || [];
+    if (!existingBadges.find(b => b.id === badgeId)) {
+      // Find badge info
+      // Actually we don't need all the static info, just the id and earnedAt is fine, 
+      // but to match existing schema we'll just store id and earnedAt. The UI merges it.
+      const newBadge = { id: badgeId, earnedAt: new Date().toISOString() };
+      await updateDoc(userRef, { badges: arrayUnion(newBadge) });
+      return newBadge;
+    }
+  } catch (err) {
+    console.error('awardBadgeToFirestore error:', err);
+  }
+}
+
+/**
+ * Delete a single quiz result from Firestore.
+ */
+export async function deleteQuizResultFromFirestore(uid, resultId) {
+  if (!uid || !resultId) return;
+  try {
+    await deleteDoc(doc(db, 'quizResults', uid, 'results', resultId));
+  } catch (err) {
+    console.error('deleteQuizResult error:', err);
+    throw err;
+  }
+}
+
+/**
  * Fetch quiz history directly from Firestore.
  */
 export async function getQuizHistoryFromFirestore(uid, limitN = 30) {
@@ -122,11 +181,18 @@ export async function getQuizHistoryFromFirestore(uid, limitN = 30) {
       limit(limitN)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({
+    const docs = snap.docs.map(d => ({
       id: d.id,
       ...d.data(),
       timestamp: d.data().timestamp?.toDate?.()?.toISOString() || null,
     }));
+    
+    // Check if they have 10 and award quiz-history-10
+    if (docs.length >= 10) {
+      await awardBadgeToFirestore(uid, 'quiz-history-10');
+    }
+    
+    return docs;
   } catch (err) {
     console.error('getQuizHistory error:', err);
     return [];
@@ -181,9 +247,10 @@ export async function updateStreakInFirestore(uid) {
     const existingIds    = new Set(existingBadges.map(b => b.id));
     const newBadges      = [];
     [3, 7, 14, 30].forEach(m => {
-      if (streak >= m && !existingIds.has(`streak-${m}`)) {
-        newBadges.push({ id: `streak-${m}`, name: `${m}-Day Streak`, icon: '🔥', earnedAt: new Date().toISOString() });
-        existingIds.add(`streak-${m}`);
+      const badgeId = m === 7 ? '7-day-streak' : `streak-${m}`;
+      if (streak >= m && !existingIds.has(badgeId)) {
+        newBadges.push({ id: badgeId, name: m === 7 ? 'Week Warrior' : `${m}-Day Streak`, icon: '🔥', earnedAt: new Date().toISOString() });
+        existingIds.add(badgeId);
       }
     });
 

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Circle, X } from 'lucide-react';
 
 export default function StreakPopup({ streak, activeDays = new Set(), onClose }) {
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toDateString();
@@ -19,9 +18,9 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
     d.setDate(monday.getDate() + i);
     d.setHours(0, 0, 0, 0);
     weekDays.push({
-      label:    d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2),
-      key:      d.toDateString(),
-      isToday:  d.toDateString() === todayStr,
+      label: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2),
+      key: d.toDateString(),
+      isToday: d.toDateString() === todayStr,
       isFuture: d.getTime() > today.getTime(),
     });
   }
@@ -60,78 +59,42 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
           </button>
 
           {/* SVG Animated Flame */}
-          <div className="relative mb-2" style={{ width: 100, height: 130 }}>
-            {/* Glow beneath */}
+          <div className="relative mb-2" style={{ width: 140, height: 140 }}>
+            {/* pulsing glow underneath */}
             <motion.div
               className="absolute bottom-0 left-1/2 -translate-x-1/2"
               style={{
-                width: 80, height: 30, borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(249,115,22,0.6) 0%, transparent 70%)',
+                width: 90, height: 28, borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(232,93,78,0.55) 0%, transparent 70%)',
                 filter: 'blur(8px)',
               }}
-              animate={{ opacity: [0.5, 1, 0.5], scaleX: [0.9, 1.2, 0.9] }}
+              animate={{ opacity: [0.4, 0.9, 0.4], scaleX: [0.85, 1.2, 0.85] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
-
-            <svg width="100" height="130" viewBox="240 80 200 270" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 24 24" width="140" height="140">
               <style>{`
-                .fp1{animation:ff1 1.8s ease-in-out infinite alternate;transform-origin:340px 320px}
-                .fp2{animation:ff2 1.4s ease-in-out infinite alternate;transform-origin:340px 300px}
-                .fp3{animation:ff3 1.1s ease-in-out infinite alternate;transform-origin:340px 280px}
-                .fp4{animation:ff4 0.9s ease-in-out infinite alternate;transform-origin:340px 260px}
-                @keyframes ff1{
-                  0%  {transform:scaleX(1)    scaleY(1)    skewX(0deg)}
-                  30% {transform:scaleX(1.06) scaleY(1.03) skewX(2deg)}
-                  60% {transform:scaleX(0.95) scaleY(1.05) skewX(-3deg)}
-                  100%{transform:scaleX(1.04) scaleY(0.97) skewX(1deg)}
+                .fo {
+                  transform-origin: center bottom;
+                  animation: ff1 1.8s alternate infinite ease-in-out;
                 }
-                @keyframes ff2{
-                  0%  {transform:scaleX(1)    scaleY(1)    skewX(0deg)}
-                  25% {transform:scaleX(0.94) scaleY(1.06) skewX(-4deg)}
-                  70% {transform:scaleX(1.08) scaleY(0.96) skewX(3deg)}
-                  100%{transform:scaleX(0.97) scaleY(1.04) skewX(-2deg)}
+                .fi {
+                  transform-origin: center bottom;
+                  animation: ff2 1.3s alternate infinite ease-in-out;
                 }
-                @keyframes ff3{
-                  0%  {transform:scaleX(1)    scaleY(1)    skewX(0deg)}
-                  40% {transform:scaleX(1.1)  scaleY(0.94) skewX(5deg)}
-                  80% {transform:scaleX(0.92) scaleY(1.08) skewX(-4deg)}
-                  100%{transform:scaleX(1.05) scaleY(1.02) skewX(2deg)}
+                @keyframes ff1 {
+                  0%   { transform: skewX(-2deg) scaleX(0.96) scaleY(0.97); }
+                  100% { transform: skewX(2deg)  scaleX(1.04) scaleY(1.05); }
                 }
-                @keyframes ff4{
-                  0%  {transform:scaleY(1)    scaleX(1)}
-                  50% {transform:scaleY(1.12) scaleX(0.9)}
-                  100%{transform:scaleY(0.92) scaleX(1.1)}
+                @keyframes ff2 {
+                  0%   { transform: skewX(-3deg)  scaleX(0.93) scaleY(0.95); }
+                  100% { transform: skewX(2.5deg) scaleX(1.07) scaleY(1.08); }
                 }
               `}</style>
-
-              {/* Outer flame — deep red */}
-              <g className="fp1">
-                <path d="M340 95C290 130,230 160,220 220C210 270,230 310,260 330C280 342,310 348,340 348C370 348,400 342,420 330C450 310,470 270,460 220C450 160,390 130,340 95Z" fill="#CC1100"/>
-              </g>
-
-              {/* Mid flame — orange-red */}
-              <g className="fp2">
-                <path d="M340 120C300 155,248 185,242 238C236 278,252 312,278 330C297 341,320 346,340 346C360 346,383 341,402 330C428 312,444 278,438 238C432 185,380 155,340 120Z" fill="#E83000"/>
-              </g>
-
-              {/* Inner flame — orange */}
-              <g className="fp3">
-                <path d="M340 150C312 182,270 210,265 252C260 284,275 314,298 330C314 340,328 344,340 344C352 344,366 340,382 330C405 314,420 284,415 252C410 210,368 182,340 150Z" fill="#F55000"/>
-              </g>
-
-              {/* Core — amber */}
-              <g className="fp4">
-                <path d="M340 190C322 215,296 238,293 266C290 290,304 316,322 330C330 336,336 339,340 339C344 339,350 336,358 330C376 316,390 290,387 266C384 238,358 215,340 190Z" fill="#FF8C00"/>
-              </g>
-
-              {/* Tip — yellow */}
-              <g className="fp4">
-                <path d="M340 210C330 228,315 248,314 268C313 283,322 305,332 322C335 328,338 332,340 333C342 332,345 328,348 322C358 305,367 283,366 268C365 248,350 228,340 210Z" fill="#FFCC00"/>
-              </g>
-
-              {/* Bright center */}
-              <g className="fp4">
-                <ellipse cx="340" cy="285" rx="14" ry="22" fill="#FFE566" opacity="0.9"/>
+              <g style={{ filter: 'drop-shadow(0px 6px 18px rgba(232,93,78,0.65))' }}>
+                {/* Outer Red/Coral Flame */}
+                <path className="fo" d="M12,22 C6,22 4,16 5,12 C4.5,10 3,8 3,8 C5.5,9 7.5,7 9,2 C9.5,5.5 11,7.5 12,8 C13,5.5 15,4 17,4 C15.5,7 16,9 18,11 C20,16 18,22 12,22 Z" fill="#E85D4E"/>
+                {/* Inner Yellow/Gold Flame */}
+                <path className="fi" d="M12,20 C9,20 8,17 8,14 C8,12 9,10 10,8 C10.5,11 11.5,12.5 12.5,12.5 C13.5,12.5 14,11 14.5,10 C14.5,12 15,13 16,14 C17,17 15,20 12,20 Z" fill="#F9C646"/>
               </g>
             </svg>
           </div>

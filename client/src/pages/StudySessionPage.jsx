@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, ChevronRight, ChevronLeft, Zap, CheckCircle,
   XCircle, Brain, RotateCcw, Trophy, Layers, ArrowRight,
-  HelpCircle, Eye, EyeOff, Loader, Clock
+  HelpCircle, Eye, EyeOff, Loader, Clock, Target, FileQuestion, History, Trash2
 } from 'lucide-react';
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../utils/firebase';
 import { generateStudySession, generateQuiz, generateFlashcards, explainAnswer } from '../utils/api';
 import { saveQuizResultToFirestore } from '../utils/firestoreUtils';
 import { useAuth } from '../context/AuthContext';
@@ -18,33 +20,102 @@ const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Scienc
 
 /* ─── PHASE: Setup ─────────────────────────────────────────────────────────── */
 function SessionSetup({ onStart }) {
+  const { user }    = useAuth();
   const { profile } = useUserData();
   const [searchParams] = useSearchParams();
   const initialSubject = searchParams.get('subject') || SUBJECTS[0];
   const initialTopic   = searchParams.get('topic')   || '';
-  const [subject, setSubject] = useState(SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
-  const [topic,   setTopic]   = useState(initialTopic);
-  const [level,   setLevel]   = useState('intermediate');
-  const [loading, setLoading] = useState(false);
+  const [subject,       setSubject]       = useState(SUBJECTS.includes(initialSubject) ? initialSubject : SUBJECTS[0]);
+  const [customSubject, setCustomSubject] = useState('');
+  const [topic,         setTopic]         = useState(initialTopic);
+  const [level,         setLevel]         = useState('intermediate');
+  const [loading,       setLoading]       = useState(false);
+  const [history,       setHistory]       = useState([]);
+  const [histLoading,   setHistLoading]   = useState(true);
+  const [showHistory,   setShowHistory]   = useState(false);
+
+  /* Load session history */
+  useEffect(() => {
+    if (!user?.uid) return;
+    (async () => {
+      try {
+        const q    = query(collection(db, 'studySessions', user.uid, 'sessions'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        setHistory(snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.()?.toISOString() || null })));
+      } catch (e) { console.error(e); }
+      finally { setHistLoading(false); }
+    })();
+  }, [user?.uid]);
+
+  const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
 
   const start = async () => {
-    if (!topic.trim()) { toast.error('Enter a topic to study'); return; }
+    if (!actualSubject) { toast.error('Enter a subject name'); return; }
+    if (!topic.trim())  { toast.error('Enter a topic to study'); return; }
     setLoading(true);
     try {
-      const res = await generateStudySession(subject, topic, level, profile?.grade);
+      const res = await generateStudySession(actualSubject, topic, level, profile?.grade);
       audioSystem.playClick();
-      onStart({ ...res.data, grade: profile?.grade });
-    } catch (err) {
-      if (!err.response) {
-        toast.error('Backend server not running — start it with: npm run dev in /server');
-      } else {
-        toast.error('Failed to generate session. Please try again.');
+      const sessionData = { ...res.data, subject: actualSubject, grade: profile?.grade };
+      /* Save to Firestore (fire-and-forget) */
+      if (user?.uid) {
+        addDoc(collection(db, 'studySessions', user.uid, 'sessions'), {
+          subject: actualSubject, topic, level,
+          cards: res.data.cards || [], checkpoints: res.data.checkpoints || [],
+          createdAt: serverTimestamp(), completedAt: null, score: null,
+        }).catch(() => {});
       }
+      onStart(sessionData);
+    } catch (err) {
+      if (!err.response) toast.error('Backend server not running — start it with: npm run dev in /server');
+      else toast.error('Failed to generate session. Please try again.');
     } finally { setLoading(false); }
   };
 
+  const loadFromHistory = (item) => {
+    audioSystem.playClick();
+    onStart({ subject: item.subject, topic: item.topic, level: item.level, cards: item.cards, checkpoints: item.checkpoints, grade: profile?.grade });
+  };
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-4">
+      {/* History section */}
+      {(history.length > 0 || histLoading) && (
+        <div className="glass-card p-4">
+          <button onClick={() => { audioSystem.playClick(); setShowHistory(h => !h); }}
+            className="flex items-center gap-2 text-sm font-bold text-txt2 hover:text-txt w-full transition-colors">
+            <History size={15} className="text-primary" />
+            Recent Sessions
+            <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20 ml-1">{history.length}</span>
+            <ChevronRight size={13} className={`text-txt3 ml-auto transition-transform ${showHistory ? 'rotate-90' : ''}`} />
+          </button>
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }} className="overflow-hidden">
+                <div className="space-y-2 mt-3 max-h-56 overflow-y-auto custom-scrollbar">
+                  {histLoading ? [1,2].map(i => <div key={i} className="h-12 bg-white/5 rounded-xl animate-pulse" />) :
+                    history.map(item => (
+                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-space-800 border border-white/5 group hover:border-white/10 transition-all">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-txt truncate">{item.topic}</p>
+                          <p className="text-[10px] font-bold text-txt3">{item.subject} · {item.level} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : ''}
+                            {item.score != null && <span className="ml-2 text-green-500">{item.score}%</span>}
+                          </p>
+                        </div>
+                        <button onClick={() => loadFromHistory(item)}
+                          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all flex-shrink-0">
+                          Load
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
         className="glass-card p-6 md:p-10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
@@ -59,22 +130,24 @@ function SessionSetup({ onStart }) {
           </div>
         </div>
 
-        {/* How it works mini-guide */}
+        {/* How it works — Lucide icons */}
         <div className="bg-space-800 border border-white/5 rounded-2xl p-5 mb-8 relative z-10 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-widest text-txt3 mb-4">How it works:</p>
-          <div className="flex items-center justify-between gap-2 overflow-hidden">
+          <div className="flex items-center justify-between gap-2">
             {[
-              { icon:'📖', label:'5 lesson cards' },
-              { icon:'✅', label:'2 checkpoints' },
-              { icon:'📝', label:'End quiz' },
-              { icon:'🏆', label:'XP + badges' },
-            ].map((s, i) => (
+              { Icon: Target,       label: 'Set your goal' },
+              { Icon: BookOpen,     label: 'Learn step-by-step' },
+              { Icon: FileQuestion, label: 'Test & master' },
+              { Icon: Trophy,       label: 'XP + badges' },
+            ].map(({ Icon, label }, i) => (
               <React.Fragment key={i}>
-                <div className="flex flex-col items-center text-center flex-1">
-                  <span className="text-2xl mb-2 drop-shadow-sm">{s.icon}</span>
-                  <span className="text-[10px] font-bold text-txt3 uppercase tracking-wider">{s.label}</span>
+                <div className="flex flex-col items-center text-center flex-1 gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <Icon size={16} className="text-primary" />
+                  </div>
+                  <span className="text-[10px] font-bold text-txt3 uppercase tracking-wider leading-tight">{label}</span>
                 </div>
-                {i < 3 && <ChevronRight size={16} className="text-white/10 flex-shrink-0" />}
+                {i < 3 && <ChevronRight size={14} className="text-white/10 flex-shrink-0" />}
               </React.Fragment>
             ))}
           </div>
@@ -90,7 +163,20 @@ function SessionSetup({ onStart }) {
                   {s}
                 </button>
               ))}
+              <button onClick={() => { audioSystem.playClick(); setSubject('Other'); }}
+                className={`text-sm px-4 py-2 rounded-xl font-semibold transition-all border shadow-sm ${'Other'===subject ? 'bg-primary/10 border-primary/50 text-primary' : 'bg-transparent border-border text-txt3 hover:border-white/20 hover:text-txt2'}`}>
+                Other
+              </button>
             </div>
+            {subject === 'Other' && (
+              <input
+                value={customSubject}
+                onChange={e => setCustomSubject(e.target.value)}
+                placeholder="e.g. Web Development, Organic Chemistry, Chess Strategy..."
+                className="input-field text-sm mt-3"
+                autoFocus
+              />
+            )}
           </div>
 
           <div>
@@ -100,7 +186,7 @@ function SessionSetup({ onStart }) {
             <input value={topic} onChange={e => setTopic(e.target.value)}
               onKeyDown={e => e.key==='Enter' && start()}
               placeholder="e.g. Photosynthesis, Quadratic Equations, French Revolution..."
-              className="input-field text-sm" autoFocus />
+              className="input-field text-sm" />
           </div>
 
           <div>

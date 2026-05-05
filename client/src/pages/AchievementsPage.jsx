@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Lock, Zap, Star, FileText, BookOpen, GraduationCap, Crown,
   Target, Brain, Timer, TrendingUp, Sparkles, Flame, Shield, Users,
-  Award, BookMarked, CheckCircle, FileQuestion
+  Award, BookMarked, CheckCircle, FileQuestion, Map as MapIcon, Route, History, Moon, Sun
 } from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
 import { triggerConfetti } from '../utils/confetti';
@@ -41,6 +41,17 @@ export const ALL_BADGES = [
   // Goals
   { id:'first-goal',      name:'Goal Setter',        Icon: Target,        color: '#10B981', category:'Goals',        desc:'Create your first study goal' },
   { id:'goal-complete',   name:'Goal Crusher',       Icon: CheckCircle,   color: '#10B981', category:'Goals',        desc:'Complete a study goal' },
+  // New Badges
+  { id:'learning-path-gen',name:'Pathfinder',        Icon: MapIcon,       color: '#06B6D4', category:'Learning',     desc:'Generate your first learning path' },
+  { id:'path-complete',   name:'Road Warrior',       Icon: Route,         color: '#06B6D4', category:'Learning',     desc:'Complete all topics in a learning path' },
+  { id:'study-room-create',name:'Host',              Icon: Users,         color: '#0EA5E9', category:'Social',       desc:'Create your first study room' },
+  { id:'group-quiz-win',  name:'Quiz Champion',      Icon: Trophy,        color: '#0EA5E9', category:'Social',       desc:'Win a group quiz in study room' },
+  { id:'7-day-streak',    name:'Week Warrior',       Icon: Flame,         color: '#F97316', category:'Streak',       desc:'Maintain a 7 day streak' },
+  { id:'quiz-history-10', name:'History Buff',       Icon: History,       color: '#8B72FF', category:'Milestone',    desc:'Complete 10 quizzes and view history' },
+  { id:'night-owl',       name:'Night Owl',          Icon: Moon,          color: '#F59E0B', category:'Achievement',  desc:'Complete a quiz after 10 PM' },
+  { id:'early-bird',      name:'Early Bird',         Icon: Sun,           color: '#F59E0B', category:'Achievement',  desc:'Complete a quiz before 7 AM' },
+  { id:'perfect-path',    name:'Perfectionist',      Icon: Star,          color: '#F59E0B', category:'Achievement',  desc:'Score 100% on a learning path quiz' },
+  { id:'subject-master',  name:'Subject Master',     Icon: GraduationCap, color: '#F59E0B', category:'Achievement',  desc:'Score above 90% average in any one subject across 5 quizzes' },
 ];
 
 const CAT_COLORS = {
@@ -79,7 +90,8 @@ export default function AchievementsPage() {
 
   const handleBadgeClick = (badge) => {
     if (earnedMap.has(badge.id)) {
-      audioSystem.playClick();
+      audioSystem.playBadge();
+      triggerConfetti(['#8B72FF', '#F59E0B', '#00E5FF']); // purple, amber, teal
       setSelected(badge);
     }
   };

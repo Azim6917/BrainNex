@@ -38,6 +38,7 @@ import AboutPage          from './pages/AboutPage';
 import ContactPage        from './pages/ContactPage';
 import TopicLearningPage  from './pages/TopicLearningPage';
 import SavedPathsPage     from './pages/SavedPathsPage';
+import QuizHistoryPage   from './pages/QuizHistoryPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 
@@ -140,6 +141,7 @@ export default function App() {
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
               <Route path="/app/learn/:pathId/:topicIndex" element={<AppPage><TopicLearningPage /></AppPage>} />
               <Route path="/app/my-paths"          element={<AppPage><SavedPathsPage /></AppPage>} />
+              <Route path="/app/quiz-history"       element={<AppPage><QuizHistoryPage /></AppPage>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </UserDataProvider>

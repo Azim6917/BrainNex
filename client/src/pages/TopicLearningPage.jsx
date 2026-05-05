@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, BookOpen, CheckCircle, AlertTriangle, Lightbulb,
-  Star, ChevronRight, ExternalLink, Zap, RotateCcw, LayoutTemplate, Clock
+  Star, ChevronRight, ChevronLeft, ExternalLink, Zap, RotateCcw,
+  Lock, Clock, Info, RefreshCw
 } from 'lucide-react';
 import {
   doc, getDoc, setDoc, updateDoc, serverTimestamp,
@@ -11,9 +12,72 @@ import {
 import { db } from '../utils/firebase';
 import { useAuth } from '../context/AuthContext';
 import { generateTopicLesson, generateTopicQuiz, generateTopicResources } from '../utils/api';
-import { saveQuizResultToFirestore } from '../utils/firestoreUtils';
+import { saveQuizResultToFirestore, awardBadgeToFirestore } from '../utils/firestoreUtils';
 import { audioSystem } from '../utils/audio';
 import toast from 'react-hot-toast';
+
+/* ── Error Boundary ── */
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-8 max-w-2xl mx-auto">
+          <div className="glass-card p-10 text-center border-red-500/20">
+            <AlertTriangle size={48} className="text-red-500 mx-auto mb-4 opacity-70" />
+            <h2 className="font-jakarta font-black text-2xl text-txt mb-2">Something went wrong</h2>
+            <p className="text-txt3 text-sm mb-6 leading-relaxed">
+              {this.state.error?.message || 'An unexpected error occurred loading this topic.'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button onClick={() => window.history.back()}
+                className="btn-outline px-6 py-2.5 text-sm flex items-center gap-2">
+                <ArrowLeft size={16} />Go Back
+              </button>
+              <button onClick={() => this.setState({ error: null })}
+                className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2">
+                <RefreshCw size={16} />Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ── Static resource fallback by subject keyword ── */
+function getStaticResources(subject, topic) {
+  const s = (subject || '').toLowerCase();
+  const t = (topic   || '').toLowerCase();
+  const resources = [];
+  if (s.includes('math') || s.includes('calculus') || s.includes('algebra') || s.includes('statistic')) {
+    resources.push(
+      { title: 'Khan Academy – ' + topic, url: `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(topic)}`, type: 'course',   platform: 'Khan Academy' },
+      { title: 'Wolfram Alpha – ' + topic, url: `https://www.wolframalpha.com/input?i=${encodeURIComponent(topic)}`, type: 'documentation', platform: 'Wolfram Alpha' },
+    );
+  } else if (s.includes('physics') || s.includes('chemistry') || s.includes('biology') || s.includes('science')) {
+    resources.push(
+      { title: 'Khan Academy – ' + topic, url: `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(topic)}`, type: 'course',   platform: 'Khan Academy' },
+      { title: 'Wikipedia – ' + topic,    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/ /g,'_'))}`, type: 'documentation', platform: 'Wikipedia' },
+    );
+  } else if (s.includes('computer') || s.includes('programming') || s.includes('python') || s.includes('javascript') || s.includes('web') || s.includes('code')) {
+    resources.push(
+      { title: 'MDN Web Docs – ' + topic,  url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(topic)}`, type: 'documentation', platform: 'MDN' },
+      { title: 'W3Schools – ' + topic,     url: `https://www.w3schools.com/search/search_result.asp?search=${encodeURIComponent(topic)}`, type: 'tutorial', platform: 'W3Schools' },
+    );
+  } else {
+    resources.push(
+      { title: 'Khan Academy – ' + topic, url: `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(topic)}`, type: 'course',   platform: 'Khan Academy' },
+      { title: 'Wikipedia – ' + topic,    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/ /g,'_'))}`, type: 'documentation', platform: 'Wikipedia' },
+    );
+  }
+  // Always add YouTube
+  resources.push({ title: 'YouTube – ' + topic, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' ' + subject + ' tutorial')}`, type: 'video', platform: 'YouTube' });
+  return resources;
+}
 
 /* ── Section type config ── */
 const sectionStyles = {
@@ -49,26 +113,24 @@ function Skeleton({ lines = 4 }) {
   );
 }
 
-/* ── Lesson Section Card ── */
+/* ── Lesson Section ── */
 function LessonSection({ section }) {
-  const style = sectionStyles[section.type] || sectionStyles.text;
-  const Icon  = sectionIcons[section.type] || BookOpen;
+  const style  = sectionStyles[section.type] || sectionStyles.text;
+  const Icon   = sectionIcons[section.type]  || BookOpen;
   return (
-    <div className="rounded-2xl p-6 mb-5"
-      style={{ borderLeft: style.border, background: style.bg, border: '1px solid rgba(255,255,255,0.04)' }}>
-      <div className="flex items-center gap-2 mb-4">
-        <Icon size={16} className="text-txt3 flex-shrink-0" />
+    <div className="mb-6 rounded-2xl p-5 md:p-6"
+      style={{ borderLeft: style.border, background: style.bg }}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon size={15} className="text-primary flex-shrink-0" />
         <h3 className="font-jakarta font-bold text-sm text-txt uppercase tracking-wider">{section.heading}</h3>
       </div>
-      <div className="text-txt2 text-sm leading-relaxed font-medium space-y-2 whitespace-pre-wrap">
-        {section.content}
-      </div>
+      <p className="text-txt2 text-sm leading-relaxed">{section.content}</p>
     </div>
   );
 }
 
 /* ── Quiz Component ── */
-function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPass }) {
+function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user, onQuizPass }) {
   const [started,   setStarted]   = useState(false);
   const [quiz,      setQuiz]      = useState(null);
   const [loading,   setLoading]   = useState(false);
@@ -78,6 +140,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPa
   const [score,     setScore]     = useState(0);
   const [done,      setDone]      = useState(false);
   const [direction, setDirection] = useState(1);
+  const [xpEarned,  setXpEarned]  = useState(0);
 
   const loadQuiz = async () => {
     audioSystem.playClick();
@@ -103,7 +166,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPa
     }
   };
 
-  const handleAnswer = async (idx) => {
+  const handleAnswer = (idx) => {
     if (answered) return;
     audioSystem.playClick();
     setSelected(idx);
@@ -116,22 +179,25 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPa
   const handleNext = async () => {
     audioSystem.playClick();
     if (current + 1 >= quiz.questions.length) {
+      const correctCount = score + (selected === quiz.questions[current].correctIndex ? 1 : 0);
+      const finalScore   = Math.round((correctCount / quiz.questions.length) * 100);
+      const passed       = finalScore >= 60;
+
       setDone(true);
-      const correctCount  = score + (selected === quiz.questions[current].correctIndex ? 1 : 0);
-      const finalScore    = Math.round((correctCount / quiz.questions.length) * 100);
-      const result = await saveQuizResultToFirestore(user.uid, {
-        subject,
-        topic,
-        score: finalScore,
-        totalQuestions: quiz.questions.length,
-        correctAnswers: correctCount,
-        difficulty: level,
-      });
-      if (result?.xpEarned) {
-        toast.success(`+${result.xpEarned} XP earned! 🎉`);
-      }
-      if (finalScore >= 60) {
-        onQuizPass();
+
+      if (passed) {
+        // Only save XP and unlock next topic if passed
+        const result = await saveQuizResultToFirestore(user.uid, {
+          subject,
+          topic,
+          score: finalScore,
+          totalQuestions: quiz.questions.length,
+          correctAnswers: correctCount,
+          difficulty: level,
+          isLearningPath: true,
+        });
+        if (result?.xpEarned) setXpEarned(result.xpEarned);
+        onQuizPass(finalScore);
       }
     } else {
       setDirection(1);
@@ -141,21 +207,44 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPa
     }
   };
 
-  const finalScore = done ? Math.round((score / quiz.questions.length) * 100) : 0;
+  const handleRetry = () => {
+    setDone(false);
+    setCurrent(0);
+    setScore(0);
+    setSelected(null);
+    setAnswered(false);
+    setXpEarned(0);
+    audioSystem.playClick();
+  };
+
+  const finalScore = (done && quiz?.questions?.length) ? Math.round((score / quiz.questions.length) * 100) : 0;
+  const passed     = done && finalScore >= 60;
 
   if (!started) {
     return (
-      <div className="glass-card p-10 text-center shadow-lg border border-primary/20">
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-5">
-          <Zap size={28} className="text-amber-500" />
+      <div className="space-y-4">
+        {/* 60% requirement info box */}
+        <div className="flex items-start gap-3 p-4 rounded-2xl border"
+          style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.25)' }}>
+          <Info size={16} className="text-primary flex-shrink-0 mt-0.5" />
+          <p className="text-sm font-medium text-txt2 leading-relaxed">
+            Score <span className="font-black text-primary">60% or above</span> to unlock the next topic and earn{' '}
+            <span className="font-black text-amber-500">+{xpReward} XP</span> rewards.
+          </p>
         </div>
-        <h3 className="font-jakarta font-black text-2xl text-txt mb-2">Test Your Knowledge</h3>
-        <p className="text-txt3 text-sm mb-8 max-w-sm mx-auto leading-relaxed">
-          Take a quick 5-question quiz to reinforce your understanding of the core concepts in this lesson.
-        </p>
-        <button onClick={loadQuiz} className="btn-primary px-8 py-3.5 flex items-center justify-center gap-2 mx-auto shadow-glow-primary w-full max-w-xs">
-          Start Quiz <ChevronRight size={18} />
-        </button>
+
+        <div className="glass-card p-10 text-center shadow-lg border border-primary/20">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-5">
+            <Zap size={28} className="text-amber-500" />
+          </div>
+          <h3 className="font-jakarta font-black text-2xl text-txt mb-2">Test Your Knowledge</h3>
+          <p className="text-txt3 text-sm mb-8 max-w-sm mx-auto leading-relaxed">
+            Take a quick 5-question quiz to reinforce your understanding of the core concepts in this lesson.
+          </p>
+          <button onClick={loadQuiz} className="btn-primary px-8 py-3.5 flex items-center justify-center gap-2 mx-auto shadow-glow-primary w-full max-w-xs">
+            Start Quiz <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
     );
   }
@@ -163,23 +252,44 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, user, onQuizPa
   if (loading) return <Skeleton lines={5} />;
 
   if (done) {
-    const passed = finalScore >= 60;
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="glass-card p-10 text-center shadow-lg border border-primary/20">
         <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-lg
           ${passed ? 'bg-green-500/10 border-2 border-green-500/40' : 'bg-red-500/10 border-2 border-red-500/40'}`}>
-          {passed ? '🎉' : '📚'}
+          {passed ? '🎉' : '😔'}
         </div>
         <h3 className="font-jakarta font-black text-3xl text-txt mb-2">
-          {passed ? 'Great job!' : 'Keep practicing!'}
+          {passed ? 'Great job!' : 'Not quite there!'}
         </h3>
-        <p className="text-txt3 text-base mb-8">
-          You scored <span className="font-black text-lg mx-1" style={{ color: passed ? '#10B981' : '#EF4444' }}>{finalScore}%</span>
+        <p className="text-txt3 text-base mb-3">
+          You scored{' '}
+          <span className="font-black text-lg mx-1" style={{ color: passed ? '#10B981' : '#EF4444' }}>
+            {finalScore}%
+          </span>
           ({score}/{quiz.questions.length} correct)
         </p>
-        <div className="flex gap-4 justify-center">
-          <button onClick={() => { setDone(false); setCurrent(0); setScore(0); setSelected(null); setAnswered(false); audioSystem.playClick(); }}
+
+        {/* Pass/Fail message */}
+        {passed ? (
+          <div className="mb-8 p-4 rounded-2xl border"
+            style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.3)' }}>
+            <p className="text-sm font-bold text-green-400">
+              🎉 You've unlocked the next topic and earned{' '}
+              <span className="text-amber-400">+{xpEarned} XP</span>!
+            </p>
+          </div>
+        ) : (
+          <div className="mb-8 p-4 rounded-2xl border"
+            style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' }}>
+            <p className="text-sm font-bold text-red-400">
+              You need at least <span className="text-white">60%</span> to unlock the next topic and earn XP. Try again!
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-4 justify-center flex-wrap">
+          <button onClick={handleRetry}
             className="btn-outline px-6 py-3.5 flex items-center gap-2 text-sm bg-space-800">
             <RotateCcw size={16} /> Retry Quiz
           </button>
@@ -260,22 +370,23 @@ export default function TopicLearningPage() {
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('lesson');
-  const [nodes,     setNodes]     = useState([]);      // all nodes in path
-  const [topic,     setTopic]     = useState(null);    // current node
-  const [pathMeta,  setPathMeta]  = useState(null);    // subject, level, goal
-  
+  const [nodes,     setNodes]     = useState([]);
+  const [topic,     setTopic]     = useState(null);
+  const [pathMeta,  setPathMeta]  = useState(null);
+
   const [lesson,    setLesson]    = useState(null);
   const [resources, setResources] = useState(null);
   const [lessonLoading,    setLessonLoading]    = useState(true);
   const [resourcesLoading, setResourcesLoading] = useState(true);
+  const [quizPassed, setQuizPassed] = useState(false);
 
-  // Reset state on path or topic index change
   useEffect(() => {
     setLesson(null);
     setResources(null);
     setActiveTab('lesson');
     setLessonLoading(true);
     setResourcesLoading(true);
+    setQuizPassed(false);
   }, [pathId, topicIndex]);
 
   /* Load path + topic node */
@@ -288,7 +399,6 @@ export default function TopicLearningPage() {
         const pData = pathSnap.data();
         setPathMeta({ subject: pData.subject, level: pData.level, goal: pData.goal });
         setNodes(pData.nodes || []);
-        
         const node = pData.nodes?.[Number(topicIndex)];
         if (!node) { toast.error('Topic not found.'); navigate(-1); return; }
         setTopic(node);
@@ -338,53 +448,91 @@ export default function TopicLearningPage() {
     })();
   }, [topic, pathMeta, pathId, topicIndex, user?.uid]);
 
-  const handleNextTopic = async () => {
+  /* Called only when quiz score >= 60% */
+  const handleNextTopic = async (finalScore) => {
     if (!user?.uid || !pathId) return;
     audioSystem.playClick();
-    
+
     const currentIndex = Number(topicIndex);
-    const nextIndex = currentIndex + 1;
-    
-    // Update nodes status
+    const nextIndex    = currentIndex + 1;
+
     const updatedNodes = [...nodes];
-    updatedNodes[currentIndex].status = 'completed';
+    updatedNodes[currentIndex] = { ...updatedNodes[currentIndex], status: 'completed' };
     if (nextIndex < updatedNodes.length) {
       if (updatedNodes[nextIndex].status === 'locked') {
-        updatedNodes[nextIndex].status = 'current';
+        updatedNodes[nextIndex] = { ...updatedNodes[nextIndex], status: 'current' };
       }
     }
 
     try {
-      await updateDoc(doc(db, 'users', user.uid, 'savedPaths', pathId), {
-        nodes: updatedNodes
-      });
-      if (nextIndex < updatedNodes.length) {
-        navigate(`/app/learn/${pathId}/${nextIndex}`);
-      } else {
-        toast.success('🎉 You have completed this learning path!');
-        navigate(`/app/learning-path`, { state: { loadedPath: { nodes: updatedNodes, totalTopics: nodes.length, subject: pathMeta.subject }, pathId }});
+      await updateDoc(doc(db, 'users', user.uid, 'savedPaths', pathId), { nodes: updatedNodes });
+      setNodes(updatedNodes);
+      setQuizPassed(true);
+      
+      if (nextIndex >= updatedNodes.length) {
+        awardBadgeToFirestore(user.uid, 'path-complete');
       }
+
+      toast.success(nextIndex < updatedNodes.length
+        ? `🎉 Next topic unlocked! Keep going!`
+        : `🏆 You've completed this learning path!`
+      );
     } catch (error) {
       console.error(error);
-      toast.error('Failed to progress to next topic.');
+      toast.error('Failed to save progress.');
+    }
+  };
+
+  const goToNextTopic = () => {
+    const nextIndex = Number(topicIndex) + 1;
+    if (nextIndex < nodes.length) {
+      navigate(`/app/learn/${pathId}/${nextIndex}`);
+    } else {
+      navigate(`/app/learning-path`, {
+        state: {
+          loadedPath: { nodes, totalTopics: nodes.length, subject: pathMeta?.subject },
+          pathId,
+        }
+      });
     }
   };
 
   const levelColors = { beginner: '#10B981', intermediate: '#0EA5E9', advanced: '#8B5CF6' };
 
-  return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
-      {/* Back button */}
-      <button onClick={() => { audioSystem.playClick(); navigate(-1); }}
-        className="inline-flex items-center gap-2 text-txt3 hover:text-txt text-sm font-semibold mb-6 transition-colors group px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-        Back to Path
-      </button>
+  const currentIdx = Number(topicIndex);
+  const hasPrev = currentIdx > 0;
+  const hasNext = currentIdx < nodes.length - 1;
 
-      {/* Header Container */}
+  return (
+    <ErrorBoundary>
+    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
+      {/* Nav row */}
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <button onClick={() => { audioSystem.playClick(); navigate(-1); }}
+          className="inline-flex items-center gap-2 text-txt3 hover:text-txt text-sm font-semibold transition-colors group px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Back to Path
+        </button>
+        <div className="flex items-center gap-2">
+          {hasPrev && (
+            <button onClick={() => { audioSystem.playClick(); navigate(`/app/learn/${pathId}/${currentIdx - 1}`); }}
+              className="inline-flex items-center gap-2 text-txt3 hover:text-txt text-sm font-semibold transition-colors px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/20">
+              <ChevronLeft size={16} />Prev Topic
+            </button>
+          )}
+          {hasNext && (
+            <button onClick={() => { audioSystem.playClick(); navigate(`/app/learn/${pathId}/${currentIdx + 1}`); }}
+              disabled={nodes[currentIdx + 1]?.status === 'locked'}
+              className="inline-flex items-center gap-2 text-sm font-semibold transition-colors px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 disabled:opacity-40 disabled:cursor-not-allowed">
+              Next Topic<ChevronRight size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Header */}
       <div className="glass-card p-6 md:p-8 mb-8 border border-white/5 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-bl-full pointer-events-none" />
-        
         {topic && pathMeta ? (
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -398,6 +546,17 @@ export default function TopicLearningPage() {
               <span className="text-xs font-bold text-txt3 px-3 py-1.5 rounded-lg bg-space-800 border border-border">
                 Topic {Number(topicIndex) + 1} of {nodes.length}
               </span>
+              {/* Status badge */}
+              {topic.status === 'completed' && (
+                <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/30 flex items-center gap-1">
+                  <CheckCircle size={12} /> Completed
+                </span>
+              )}
+              {topic.status === 'locked' && (
+                <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/5 text-txt3 border border-white/10 flex items-center gap-1">
+                  <Lock size={12} /> Locked
+                </span>
+              )}
             </div>
             <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt leading-tight mb-3">
               {topic.title}
@@ -425,9 +584,9 @@ export default function TopicLearningPage() {
       {/* TABS */}
       <div className="flex items-center gap-2 mb-8 p-1.5 bg-space-800 rounded-2xl border border-white/5 shadow-sm overflow-x-auto custom-scrollbar">
         {[
-          { id: 'lesson',    label: 'Lesson',    icon: BookOpen,      color: 'text-primary' },
-          { id: 'quiz',      label: 'Quiz',      icon: Zap,           color: 'text-amber-500' },
-          { id: 'resources', label: 'Resources', icon: ExternalLink,  color: 'text-cyan-500' }
+          { id: 'lesson',    label: 'Lesson',    icon: BookOpen,     color: 'text-primary'    },
+          { id: 'quiz',      label: 'Quiz',      icon: Zap,          color: 'text-amber-500'  },
+          { id: 'resources', label: 'Resources', icon: ExternalLink, color: 'text-cyan-500'   },
         ].map(tab => {
           const active = activeTab === tab.id;
           return (
@@ -443,7 +602,7 @@ export default function TopicLearningPage() {
       {/* TAB CONTENT */}
       <div className="min-h-[500px]">
         <AnimatePresence mode="wait">
-          
+
           {/* LESSON TAB */}
           {activeTab === 'lesson' && (
             <motion.div key="lesson" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
@@ -455,7 +614,6 @@ export default function TopicLearningPage() {
                 <div className="glass-card p-6 md:p-8">
                   <div className="max-w-4xl mx-auto">
                     {lesson.sections?.map(s => <LessonSection key={s.id} section={s} />)}
-                    
                     {lesson.keyTakeaways?.length > 0 && (
                       <div className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/20 shadow-inner">
                         <h4 className="flex items-center gap-2 text-sm font-black text-primary uppercase tracking-widest mb-4">
@@ -483,16 +641,27 @@ export default function TopicLearningPage() {
           {activeTab === 'quiz' && (
             <motion.div key="quiz" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {topic && pathMeta && user && (
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-3xl mx-auto space-y-6">
                   <QuizSection
                     pathId={pathId}
                     topicIndex={Number(topicIndex)}
                     topic={topic.title}
                     subject={pathMeta.subject}
                     level={pathMeta.level}
+                    xpReward={topic.xpReward || 100}
                     user={user}
-                    onQuizPass={() => {}} // Could trigger a completion effect
+                    onQuizPass={handleNextTopic}
                   />
+
+                  {/* Next topic button — only shown after passing */}
+                  {quizPassed && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                      <button onClick={goToNextTopic}
+                        className="btn-primary w-full py-4 flex items-center justify-center gap-2 font-bold shadow-glow-primary">
+                        {Number(topicIndex) + 1 >= nodes.length ? 'Complete Path 🏆' : 'Go to Next Topic'} <ChevronRight size={18} />
+                      </button>
+                    </motion.div>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -505,62 +674,69 @@ export default function TopicLearningPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <Skeleton lines={2} /><Skeleton lines={2} /><Skeleton lines={2} /><Skeleton lines={2} />
                 </div>
-              ) : resources?.length > 0 ? (
-                <div className="max-w-4xl mx-auto">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {resources.map((r, i) => {
-                      const typeStyle = resourceTypeColors[r.type] || resourceTypeColors.tutorial;
-                      return (
-                        <motion.a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
-                          whileHover={{ y: -4, scale: 1.02 }}
-                          onClick={() => audioSystem.playClick()}
-                          className="glass-card p-6 flex flex-col h-full group cursor-pointer block hover:border-cyan-500/30 transition-all shadow-md"
-                          style={{ textDecoration: 'none' }}>
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider"
-                              style={{ background: typeStyle.bg, color: typeStyle.color }}>
-                              {r.type}
-                            </span>
-                            <span className="text-[10px] font-bold text-txt3 uppercase tracking-wider bg-white/5 px-2 py-1 rounded border border-white/10">
-                              {r.platform}
-                            </span>
-                          </div>
-                          <h4 className="font-bold text-base text-txt group-hover:text-cyan-500 transition-colors mb-2 leading-tight">
-                            {r.title}
-                          </h4>
-                          <p className="text-sm text-txt3 leading-relaxed flex-1">
-                            {r.description}
-                          </p>
-                          <div className="mt-5 pt-4 border-t border-white/5 flex items-center text-xs font-bold text-cyan-500 group-hover:text-cyan-400">
-                            Open Resource <ExternalLink size={14} className="ml-1.5 group-hover:translate-x-0.5 transition-transform" />
-                          </div>
-                        </motion.a>
-                      );
-                    })}
+              ) : (() => {
+                // Use AI resources if available, otherwise fall back to static links
+                const displayResources = (resources?.length > 0)
+                  ? resources
+                  : getStaticResources(pathMeta?.subject, topic?.title);
+                return (
+                  <div className="max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {displayResources.map((r, i) => {
+                        const typeStyle = resourceTypeColors[r.type] || resourceTypeColors.tutorial;
+                        return (
+                          <motion.a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+                            whileHover={{ y: -4, scale: 1.02 }}
+                            onClick={() => audioSystem.playClick()}
+                            className="glass-card p-6 flex flex-col h-full group cursor-pointer hover:border-cyan-500/30 transition-all shadow-md"
+                            style={{ textDecoration: 'none' }}>
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider"
+                                style={{ background: typeStyle.bg, color: typeStyle.color }}>
+                                {r.type}
+                              </span>
+                              <span className="text-[10px] font-bold text-txt3 uppercase tracking-wider bg-white/5 px-2 py-1 rounded border border-white/10">
+                                {r.platform}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-base text-txt group-hover:text-cyan-500 transition-colors mb-2 leading-tight">
+                              {r.title}
+                            </h4>
+                            {r.description && <p className="text-sm text-txt3 leading-relaxed flex-1">{r.description}</p>}
+                            <div className="mt-5 pt-4 border-t border-white/5 flex items-center text-xs font-bold text-cyan-500 group-hover:text-cyan-400">
+                              Open Resource <ExternalLink size={14} className="ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </motion.a>
+                        );
+                      })}
+                    </div>
+                    {resources?.length > 0 && (
+                      <p className="text-xs text-center mt-8 font-medium bg-space-800 py-3 rounded-xl border border-white/5 max-w-md mx-auto text-txt3">
+                        <span className="text-primary mr-1">ℹ</span> Links are AI-suggested. Verify before use.
+                      </p>
+                    )}
                   </div>
-                  <p className="text-xs text-center mt-8 font-medium bg-space-800 py-3 rounded-xl border border-white/5 max-w-md mx-auto text-txt3">
-                    <span className="text-primary mr-1">ℹ</span> Links are AI-suggested search queries or documentation links. Verify before use.
-                  </p>
-                </div>
-              ) : (
-                <div className="glass-card p-10 text-center text-txt3 font-medium">No resources available.</div>
-              )}
+                );
+              })()}
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
 
-      {/* Next Topic Bottom Bar */}
+      {/* Bottom progress bar */}
       <div className="mt-12 flex justify-between items-center pt-6 border-t border-white/10">
         <div className="text-sm font-medium text-txt3">
           Topic {Number(topicIndex) + 1} of {nodes.length}
         </div>
-        <button onClick={handleNextTopic} 
-          className="btn-primary px-8 py-3.5 flex items-center gap-2 font-bold shadow-glow-primary">
-          {Number(topicIndex) + 1 >= nodes.length ? 'Complete Path 🏆' : 'Next Topic'} <ChevronRight size={18} />
-        </button>
+        {quizPassed && (
+          <button onClick={goToNextTopic}
+            className="btn-primary px-8 py-3.5 flex items-center gap-2 font-bold shadow-glow-primary">
+            {Number(topicIndex) + 1 >= nodes.length ? 'Complete Path 🏆' : 'Next Topic'} <ChevronRight size={18} />
+          </button>
+        )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
