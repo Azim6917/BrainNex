@@ -33,7 +33,7 @@ function xpForLevel(xp) {
  * Save a quiz result directly to Firestore and update user profile.
  * Returns { xpEarned, newXp, newLevel, newBadges }
  */
-export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions }) {
+export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions, isLearningPath }) {
   if (!uid) return null;
 
   const xpEarned = correctAnswers * 10 + (score === 100 ? 50 : score >= 80 ? 25 : 10);
@@ -97,18 +97,19 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
     
     // Check if it's a learning path quiz and perfect score
     // we assume we pass isLearningPath from the calling page
-    if (arguments[1].isLearningPath && score === 100) addBadge('perfect-path');
+    if (isLearningPath && score === 100) addBadge('perfect-path');
 
     // subject-master: Score above 90% average in any one subject across 5 quizzes
     // To do this simply, we'll check if the current subject has reached 5 quizzes
     // and if the average is > 90%. We can fetch current subject stats or just do a query.
     // For performance, we'll quickly query the last 5 for this subject.
+    // Fetch the last 5 quizzes for this subject (including the one just saved)
     const subjQ = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
     const subjSnap = await getDocs(subjQ);
-    if (subjSnap.size >= 4) { // 4 previous + 1 current = 5
-      let totalS = score;
-      subjSnap.docs.forEach(d => totalS += d.data().score);
-      if (totalS / (subjSnap.size + 1) > 90) addBadge('subject-master');
+    if (subjSnap.size >= 5) {
+      let totalS = 0;
+      subjSnap.docs.forEach(d => { totalS += d.data().score; });
+      if (totalS / subjSnap.size > 90) addBadge('subject-master');
     }
 
     // 4. Update user doc
@@ -247,9 +248,9 @@ export async function updateStreakInFirestore(uid) {
     const existingIds    = new Set(existingBadges.map(b => b.id));
     const newBadges      = [];
     [3, 7, 14, 30].forEach(m => {
-      const badgeId = m === 7 ? '7-day-streak' : `streak-${m}`;
+      const badgeId = `streak-${m}`;
       if (streak >= m && !existingIds.has(badgeId)) {
-        newBadges.push({ id: badgeId, name: m === 7 ? 'Week Warrior' : `${m}-Day Streak`, icon: '🔥', earnedAt: new Date().toISOString() });
+        newBadges.push({ id: badgeId, name: `${m}-Day Streak`, icon: '🔥', earnedAt: new Date().toISOString() });
         existingIds.add(badgeId);
       }
     });

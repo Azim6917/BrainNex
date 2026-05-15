@@ -659,7 +659,7 @@ export default function StudyRoomsPage() {
       }, 1000);
     }
     return () => clearInterval(intv);
-  }, [roomTimer !== null]);
+  }, [roomTimer]);
 
   useEffect(() => {
     if (roomTimer && roomTimer.secondsLeft === 0) {
@@ -1290,12 +1290,25 @@ export default function StudyRoomsPage() {
             <div className="mb-8">
               <h3 className="text-xs font-bold text-txt mb-3 uppercase tracking-wider">Room Announcement</h3>
               <div className="flex gap-3">
-                <input id="announcementInput" placeholder="Type announcement for all members..." className="input-field flex-1 text-sm border-white/10" />
+                <input
+                  id="announcementInput"
+                  placeholder="Type announcement for all members..."
+                  className="input-field flex-1 text-sm border-white/10"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && e.target.value.trim() && socketRef.current) {
+                      socketRef.current.emit('room-announcement', { roomId: room.id, text: e.target.value.trim() });
+                      e.target.value = '';
+                      toast.success('Announcement sent');
+                      setActiveTab('chat');
+                    }
+                  }}
+                />
                 <button onClick={() => {
-                  const val = document.getElementById('announcementInput').value;
+                  const el = document.getElementById('announcementInput');
+                  const val = el?.value?.trim();
                   if(val && socketRef.current) {
                      socketRef.current.emit('room-announcement', { roomId: room.id, text: val });
-                     document.getElementById('announcementInput').value = '';
+                     el.value = '';
                      toast.success('Announcement sent');
                      setActiveTab('chat');
                   }

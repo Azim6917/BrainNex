@@ -131,7 +131,7 @@ export default function DashboardPage() {
     checkAndShow();
   }, [profile, user]);
 
-  useEffect(() => { if (profile?.totalQuizzes > 0) refreshProfile(); }, [profile?.totalQuizzes]);
+  useEffect(() => { if (profile?.totalQuizzes > 0) refreshProfile(); }, [profile?.totalQuizzes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadReport = async () => {
     audioSystem.playClick(); setReportLoading(true); setShowReport(true);

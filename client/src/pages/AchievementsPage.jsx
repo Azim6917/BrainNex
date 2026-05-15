@@ -46,7 +46,6 @@ export const ALL_BADGES = [
   { id:'path-complete',   name:'Road Warrior',       Icon: Route,         color: '#06B6D4', category:'Learning',     desc:'Complete all topics in a learning path' },
   { id:'study-room-create',name:'Host',              Icon: Users,         color: '#0EA5E9', category:'Social',       desc:'Create your first study room' },
   { id:'group-quiz-win',  name:'Quiz Champion',      Icon: Trophy,        color: '#0EA5E9', category:'Social',       desc:'Win a group quiz in study room' },
-  { id:'7-day-streak',    name:'Week Warrior',       Icon: Flame,         color: '#F97316', category:'Streak',       desc:'Maintain a 7 day streak' },
   { id:'quiz-history-10', name:'History Buff',       Icon: History,       color: '#8B72FF', category:'Milestone',    desc:'Complete 10 quizzes and view history' },
   { id:'night-owl',       name:'Night Owl',          Icon: Moon,          color: '#F59E0B', category:'Achievement',  desc:'Complete a quiz after 10 PM' },
   { id:'early-bird',      name:'Early Bird',         Icon: Sun,           color: '#F59E0B', category:'Achievement',  desc:'Complete a quiz before 7 AM' },
@@ -169,8 +168,8 @@ export default function AchievementsPage() {
           </div>
           <div className="flex flex-wrap gap-4">
             {[...(profile?.badges||[])].reverse().slice(0,6).map((b, i) => {
-              const badge = ALL_BADGES.find(ab => ab.id === b.id) || ALL_BADGES[0];
-              badge.earnedAt = b.earnedAt;
+              const baseBadge = ALL_BADGES.find(ab => ab.id === b.id) || ALL_BADGES[0];
+              const badge = { ...baseBadge, earnedAt: b.earnedAt };
               return (
                 <motion.div key={badge.id}
                   initial={{ scale:0, rotate:-10 }} animate={{ scale:1, rotate:0 }}

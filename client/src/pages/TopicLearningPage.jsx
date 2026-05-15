@@ -141,6 +141,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   const [done,      setDone]      = useState(false);
   const [direction, setDirection] = useState(1);
   const [xpEarned,  setXpEarned]  = useState(0);
+  const [finalScoreVal, setFinalScoreVal] = useState(0);
 
   const loadQuiz = async () => {
     audioSystem.playClick();
@@ -184,6 +185,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
       const passed       = finalScore >= 60;
 
       setDone(true);
+      setFinalScoreVal(finalScore);
 
       if (passed) {
         // Only save XP and unlock next topic if passed
@@ -214,10 +216,11 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
     setSelected(null);
     setAnswered(false);
     setXpEarned(0);
+    setFinalScoreVal(0);
     audioSystem.playClick();
   };
 
-  const finalScore = (done && quiz?.questions?.length) ? Math.round((score / quiz.questions.length) * 100) : 0;
+  const finalScore = done ? finalScoreVal : 0;
   const passed     = done && finalScore >= 60;
 
   if (!started) {
