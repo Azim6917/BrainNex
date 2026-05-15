@@ -887,13 +887,13 @@ export default function StudyRoomsPage() {
   // BROWSE
   if (phase === 'browse') return (
     <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pt-12 lg:pt-0 gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pt-12 lg:pt-0 gap-6 border-b border-white/5 pb-6">
         <div>
           <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Study Rooms</h1>
           <p className="text-sm font-medium text-txt3">Chat · Group Quizzes · Shared Study Material</p>
         </div>
-        <div className="flex gap-3 self-start md:self-auto">
-          <button onClick={() => { audioSystem.playClick(); setJoinCodeOpen(true); }} className="btn-outline flex items-center justify-center gap-2 text-sm py-3 px-6 bg-space-800 border-white/10">
+        <div className="flex gap-4 self-start md:self-auto mt-2 md:mt-0">
+          <button onClick={() => { audioSystem.playClick(); setJoinCodeOpen(true); }} className="btn-outline flex items-center justify-center gap-2 text-sm py-3 px-6 bg-space-800 border-white/10 shadow-sm">
             <Lock size={18} />Join via Code
           </button>
           <button onClick={() => { audioSystem.playClick(); setCreateOpen(true); }} className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-6 shadow-glow-primary">
@@ -914,7 +914,7 @@ export default function StudyRoomsPage() {
       {customRooms.length > 0 && <>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-1 h-5 bg-primary rounded-full"/>
-          <p className="text-xs text-txt3 uppercase tracking-widest font-bold">Your Rooms</p>
+          <p className="text-sm text-txt uppercase tracking-widest font-black">Your Rooms</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
           {customRooms.map(r => <RoomCard key={r.id} room={r} onJoin={joinRoom} onDelete={(id) => { audioSystem.playClick(); setShowDeleteConfirm(id); }} />)}
@@ -923,7 +923,7 @@ export default function StudyRoomsPage() {
 
       <div className="flex items-center gap-3 mb-4">
         <div className="w-1 h-5 bg-cyan rounded-full"/>
-        <p className="text-xs text-txt3 uppercase tracking-widest font-bold">Public Rooms</p>
+        <p className="text-sm text-txt uppercase tracking-widest font-black">Public Rooms</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-8">
         {rooms.map(r => <RoomCard key={r.id} room={r} onJoin={joinRoom} onDelete={null} />)}

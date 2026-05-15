@@ -123,7 +123,7 @@ function SidebarInner({ onClose }) {
             {({ isActive }) => (
               <div className={`sidebar-item ${isActive ? 'active' : ''} ${kidMode ? 'py-3' : 'py-2.5'}`}>
                 <span className="flex-shrink-0 flex items-center justify-center w-8">
-                  <Icon size={kidMode ? 20 : 18} />
+                  <Icon size={kidMode ? 22 : 20} />
                 </span>
                 <span className={`truncate ${kidMode ? 'font-bold' : 'font-medium'}`}>{label}</span>
                 {badge && (

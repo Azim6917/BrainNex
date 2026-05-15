@@ -305,11 +305,11 @@ export default function DashboardPage() {
             <Link to="/app/quiz" onClick={() => audioSystem.playClick()} className="text-sm font-bold text-primary hover:text-primary-light transition-colors">Practice now →</Link>
           </div>
           {subjectProgress.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-20 h-20 bg-space-800 rounded-full flex items-center justify-center mb-4 shadow-sm"><BookOpen size={36} className="text-txt3" /></div>
-              <p className="text-txt font-medium mb-1">No data yet</p>
-              <p className="text-txt3 text-sm mb-5 max-w-xs">Take a quiz or complete a study session to see your subject mastery here.</p>
-              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-primary text-sm px-6 py-2.5">Start a Quiz</button></Link>
+            <div className="flex-1 flex flex-col items-center justify-center py-10 text-center glass-card border-white/5 bg-space-800/30 m-2 rounded-2xl">
+              <div className="w-20 h-20 bg-space-800 rounded-full flex items-center justify-center mb-4 shadow-inner border border-white/5"><BookOpen size={36} className="text-cyan/60" /></div>
+              <p className="text-txt font-bold text-lg mb-1">No data yet</p>
+              <p className="text-txt3 text-sm mb-6 max-w-xs leading-relaxed">Take a quiz or complete a study session to see your subject mastery here.</p>
+              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-primary text-sm px-6 py-2.5 shadow-glow-primary">Start a Quiz</button></Link>
             </div>
           ) : (
             <div className="space-y-5 flex-1">
@@ -487,10 +487,11 @@ export default function DashboardPage() {
             <Link to="/app/quiz-history" className="text-xs font-bold text-primary hover:text-primary-light transition-colors">See all →</Link>
           </div>
           {quizHistory.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 mb-3 rounded-xl bg-space-800 flex items-center justify-center"><FileQuestion size={22} className="text-txt3" /></div>
-              <p className="text-sm font-medium text-txt2 mb-4">No quizzes taken yet.</p>
-              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-primary text-xs py-2 px-5 shadow-sm">Take a Quiz</button></Link>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 glass-card border-white/5 bg-space-800/30 rounded-2xl">
+              <div className="w-14 h-14 mb-4 rounded-full bg-space-800 flex items-center justify-center shadow-inner border border-white/5"><FileQuestion size={26} className="text-primary/60" /></div>
+              <p className="text-sm font-bold text-txt mb-1">No quizzes taken yet</p>
+              <p className="text-xs text-txt3 mb-4">Your history will appear here.</p>
+              <Link to="/app/quiz" onClick={() => audioSystem.playClick()}><button className="btn-outline border-primary/30 text-primary text-xs py-2 px-5 hover:bg-primary/10">Take a Quiz</button></Link>
             </div>
           ) : (
             <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">

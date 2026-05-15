@@ -105,26 +105,28 @@ function ProfileTab({ user, onSaved }) {
   return (
     <div className="space-y-6 max-w-xl">
       {/* Avatar */}
-      <div className="flex items-center gap-6 glass-card p-6 border-primary/10 bg-primary/5">
-        <div className="relative cursor-pointer" onClick={() => { audioSystem.playClick(); fileRef.current?.click(); }}>
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 glass-card p-6 md:p-8 border-primary/10 bg-primary/5 text-center sm:text-left shadow-sm">
+        <div className="relative cursor-pointer flex-shrink-0" onClick={() => { audioSystem.playClick(); fileRef.current?.click(); }}>
           {photoB64
-            ? <img src={photoB64} alt="avatar" className="w-24 h-24 rounded-2xl object-cover border-2 border-primary/30 shadow-sm" onError={() => setPhotoB64('')} />
-            : <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-jakarta font-black text-white shadow-sm"
+            ? <img src={photoB64} alt="avatar" className="w-28 h-28 rounded-2xl object-cover border-4 border-primary/20 shadow-lg" onError={() => setPhotoB64('')} />
+            : <div className="w-28 h-28 rounded-2xl flex items-center justify-center text-4xl font-jakarta font-black text-white shadow-lg border-4 border-primary/20"
                 style={{ background:'linear-gradient(135deg,var(--primary),var(--cyan))' }}>{initials}</div>
           }
-          <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full flex items-center justify-center border-4 border-space-900 bg-primary text-white shadow-sm hover:scale-110 transition-transform">
-            <Camera size={14} />
+          <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center border-4 border-space-900 bg-primary text-white shadow-lg hover:scale-110 transition-transform">
+            <Camera size={16} />
           </div>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
         </div>
-        <div>
-          <p className="font-jakarta font-black text-xl text-txt mb-1">{form.displayName||'Your Name'}</p>
-          <p className="text-sm font-medium text-txt3 mb-3">{user?.email}</p>
-          <button onClick={() => { audioSystem.playClick(); fileRef.current?.click(); }}
-            className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5 transition-colors hover:text-primary-light bg-primary/10 px-3 py-1.5 rounded-lg">
-            <Camera size={12} />{photoB64 ? 'Change photo' : 'Upload photo'}
-          </button>
-          <p className="text-[10px] font-bold text-txt3 mt-2 uppercase tracking-widest">JPG, PNG · max 3MB</p>
+        <div className="flex flex-col justify-center sm:h-28">
+          <p className="font-jakarta font-black text-2xl text-txt mb-1">{form.displayName||'Your Name'}</p>
+          <p className="text-sm font-medium text-txt3 mb-4">{user?.email}</p>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <button onClick={() => { audioSystem.playClick(); fileRef.current?.click(); }}
+              className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-2 transition-colors hover:bg-primary/20 bg-primary/10 px-4 py-2 rounded-xl shadow-sm">
+              <Camera size={14} />{photoB64 ? 'Change photo' : 'Upload photo'}
+            </button>
+            <p className="text-[10px] font-bold text-txt3 uppercase tracking-widest">JPG, PNG · max 3MB</p>
+          </div>
         </div>
       </div>
 
