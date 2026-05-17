@@ -37,12 +37,10 @@ const SUBJECTS_ALL = [
   'Computer Science','History','Geography','Literature','Economics','Psychology',
 ];
 
-/* ── Reusable label ── */
 const Label = ({ children }) => (
   <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2 block">{children}</label>
 );
 
-/* ── Toggle switch ── */
 function Toggle({ on, onChange, disabled }) {
   return (
     <button onClick={() => !disabled && onChange(!on)} disabled={disabled}
@@ -52,7 +50,6 @@ function Toggle({ on, onChange, disabled }) {
   );
 }
 
-/* ─────────────────── PROFILE TAB ─────────────────── */
 function ProfileTab({ user, onSaved }) {
   const [form,     setForm]     = useState({ displayName: user?.displayName||'', phone:'', bio:'' });
   const [photoB64, setPhotoB64] = useState('');
@@ -104,7 +101,7 @@ function ProfileTab({ user, onSaved }) {
 
   return (
     <div className="space-y-6 max-w-xl">
-      {/* Avatar */}
+
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 glass-card p-6 md:p-8 border-primary/10 bg-primary/5 text-center sm:text-left shadow-sm">
         <div className="relative cursor-pointer flex-shrink-0" onClick={() => { audioSystem.playClick(); fileRef.current?.click(); }}>
           {photoB64
@@ -164,7 +161,6 @@ function ProfileTab({ user, onSaved }) {
   );
 }
 
-/* ─────────────────── STUDENT INFO TAB ─────────────────── */
 function StudentTab({ user, profile, onSaved }) {
   const { setKidMode } = useTheme();
 
@@ -225,7 +221,7 @@ function StudentTab({ user, profile, onSaved }) {
       </div>
 
       <div className="glass-card p-6 space-y-6">
-        {/* Grade */}
+
         <div>
           <Label>Class / Grade</Label>
           <div className="flex flex-wrap gap-2.5">
@@ -245,7 +241,7 @@ function StudentTab({ user, profile, onSaved }) {
               </button>
             ))}
           </div>
-          {/* Custom grade input — shown only when Other is selected */}
+
           {grade === 'Other' && (
             <div className="mt-3">
               <input
@@ -259,7 +255,6 @@ function StudentTab({ user, profile, onSaved }) {
           )}
         </div>
 
-        {/* School */}
         <div>
           <Label>School Name (optional)</Label>
           <div className="relative">
@@ -269,7 +264,6 @@ function StudentTab({ user, profile, onSaved }) {
           </div>
         </div>
 
-        {/* Board */}
         <div>
           <Label>Board (optional)</Label>
           <div className="flex flex-wrap gap-2.5">
@@ -286,7 +280,6 @@ function StudentTab({ user, profile, onSaved }) {
           </div>
         </div>
 
-        {/* Subjects */}
         <div>
           <Label>My Subjects</Label>
           <div className="flex flex-wrap gap-2.5">
@@ -317,7 +310,6 @@ function StudentTab({ user, profile, onSaved }) {
   );
 }
 
-/* ─────────────────── SECURITY TAB ─────────────────── */
 function SecurityTab({ user }) {
   const [ef,   setEf]   = useState({ newEmail:'', currentPassword:'' });
   const [pf,   setPf]   = useState({ currentPassword:'', newPassword:'', confirm:'' });
@@ -396,7 +388,7 @@ function SecurityTab({ user }) {
 
   return (
     <div className="space-y-6 max-w-xl">
-      {/* Change Email */}
+
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-6 flex items-center gap-2.5 text-txt">
           <div className="p-2 rounded-lg bg-cyan/20 text-cyan shadow-sm border border-cyan/30">
@@ -419,7 +411,6 @@ function SecurityTab({ user }) {
         </form>
       </div>
 
-      {/* Change Password */}
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-6 flex items-center gap-2.5 text-txt">
           <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500 shadow-sm border border-amber-500/30">
@@ -448,7 +439,6 @@ function SecurityTab({ user }) {
         </form>
       </div>
 
-      {/* Password Reset Email */}
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-2 flex items-center gap-2.5 text-txt">
           <div className="p-2 rounded-lg bg-green-500/20 text-green-500 shadow-sm border border-green-500/30">
@@ -473,7 +463,6 @@ function SecurityTab({ user }) {
   );
 }
 
-/* ─────────────────── PREFERENCES TAB ─────────────────── */
 function PrefsTab() {
   const K = 'brainnex-prefs';
   const [prefs, setPrefs] = useState(() => {
@@ -538,7 +527,7 @@ function PrefsTab() {
 
   return (
     <div className="max-w-xl space-y-6">
-      {/* Sound & Display */}
+
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-6 text-txt">App Settings</h3>
         <div className="space-y-6">
@@ -559,7 +548,6 @@ function PrefsTab() {
         </div>
       </div>
 
-      {/* Study Reminders */}
       <div className="glass-card p-6 md:p-8">
         <h3 className="font-jakarta font-black text-lg mb-6 text-txt">Reminders</h3>
         <div className="flex items-center justify-between">
@@ -585,7 +573,6 @@ function PrefsTab() {
   );
 }
 
-/* ─────────────────── MAIN PAGE ─────────────────── */
 export default function SettingsPage() {
   const { user }                    = useAuth();
   const { profile, refreshProfile } = useUserData();
@@ -598,7 +585,6 @@ export default function SettingsPage() {
         <p className="text-sm font-medium text-txt3">Profile, student info, security and preferences</p>
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-2 p-2 rounded-2xl mb-8 overflow-x-auto glass-card shadow-sm border-transparent custom-scrollbar">
         {TABS.map(({ id, label, icon:Icon }) => (
           <button key={id} onClick={() => { audioSystem.playClick(); setTab(id); }}

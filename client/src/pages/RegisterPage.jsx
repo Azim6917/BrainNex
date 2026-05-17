@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex bg-space-dark">
-      {/* Left panel */}
+
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,229,255,0.15),transparent_50%)] pointer-events-none" />
         <div className="absolute w-[500px] h-[500px] rounded-full blur-[100px] -top-40 -left-40 bg-primary/10 pointer-events-none" />
@@ -82,7 +82,6 @@ export default function RegisterPage() {
         <p className="relative z-10 text-[10px] font-bold text-txt3 uppercase tracking-widest">FREE TO START · NO CREDIT CARD REQUIRED</p>
       </div>
 
-      {/* Right form */}
       <div className="flex-1 flex items-center justify-center p-6 relative overflow-y-auto custom-scrollbar">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.05),transparent_70%)] pointer-events-none" />
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="w-full max-w-md p-8 md:p-10 relative z-10 glass-card shadow-2xl">

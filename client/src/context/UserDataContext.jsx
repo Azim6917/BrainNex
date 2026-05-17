@@ -75,7 +75,6 @@ export function UserDataProvider({ children }) {
   const prevXpRef    = React.useRef(0);
   const prevLevelRef = React.useRef(1);
 
-  /* ── Init + real-time listener ── */
   useEffect(() => {
     if (!user) {
       setProfile(null);
@@ -147,7 +146,6 @@ export function UserDataProvider({ children }) {
     return unsub;
   }, [user]);
 
-  /* ── Load subject stats ── */
   const loadSubjectProgress = useCallback(async () => {
     if (!user) return;
     const stats = await computeSubjectStats(user.uid);
@@ -158,13 +156,11 @@ export function UserDataProvider({ children }) {
     if (user) loadSubjectProgress();
   }, [user, loadSubjectProgress]);
 
-  /* ── Refresh (re-read stats from Firestore) ── */
   const refreshProfile = useCallback(async () => {
     await loadSubjectProgress();
     // Profile itself updates via onSnapshot
   }, [loadSubjectProgress]);
 
-  /* ── Optimistic update + Firestore write ── */
   const updateProfileLocal = useCallback((updates) => {
     setProfile(p => p ? { ...p, ...updates } : p);
     if (user?.uid) {

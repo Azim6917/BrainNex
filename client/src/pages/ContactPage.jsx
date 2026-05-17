@@ -77,7 +77,6 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-brand-bg text-white overflow-x-hidden font-inter selection:bg-primary selection:text-white">
 
-      {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-brand-bg/80 backdrop-blur-xl border-b border-white/10 shadow-sm' : 'py-5 bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
           <BrainNexLogo size="md" />
@@ -177,7 +176,6 @@ export default function ContactPage() {
         </div>
       </main>
 
-      {/* FOOTER */}
       <footer className="border-t border-white/10 bg-brand-bg2 pt-16 pb-8 px-6 lg:px-8 text-sm mt-auto">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">

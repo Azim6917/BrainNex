@@ -18,7 +18,6 @@ import toast from 'react-hot-toast';
 
 const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Computer Science','History','Geography','Literature','Economics','Psychology'];
 
-/* ─── PHASE: Setup ─────────────────────────────────────────────────────────── */
 function SessionSetup({ onStart }) {
   const { user }    = useAuth();
   const { profile } = useUserData();
@@ -79,7 +78,7 @@ function SessionSetup({ onStart }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      {/* History section */}
+
       {(history.length > 0 || histLoading) && (
         <div className="glass-card p-4">
           <button onClick={() => { audioSystem.playClick(); setShowHistory(h => !h); }}
@@ -130,7 +129,6 @@ function SessionSetup({ onStart }) {
           </div>
         </div>
 
-        {/* How it works — Lucide icons */}
         <div className="bg-space-800 border border-white/5 rounded-2xl p-5 mb-8 relative z-10 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-widest text-txt3 mb-4">How it works:</p>
           <div className="flex items-center justify-between gap-2">
@@ -214,7 +212,6 @@ function SessionSetup({ onStart }) {
   );
 }
 
-/* ─── PHASE: Lesson Cards ──────────────────────────────────────────────────── */
 function LessonCards({ session, onComplete }) {
   const [cardIdx,    setCardIdx]    = useState(0);
   const [checkpoint, setCheckpoint] = useState(null); // null | {data, answered}
@@ -269,7 +266,7 @@ function LessonCards({ session, onComplete }) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Progress */}
+
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-2 bg-space-800 rounded-full overflow-hidden shadow-inner">
           <motion.div className="h-full rounded-full shadow-[0_0_10px_rgba(124,58,237,0.5)]"
@@ -281,7 +278,7 @@ function LessonCards({ session, onComplete }) {
       </div>
 
       <AnimatePresence mode="wait">
-        {/* ── CHECKPOINT ── */}
+
         {checkpoint ? (
           <motion.div key="checkpoint"
             initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
@@ -328,11 +325,11 @@ function LessonCards({ session, onComplete }) {
             )}
           </motion.div>
         ) : (
-          /* ── LESSON CARD ── */
+
           <motion.div key={cardIdx}
             initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-30 }}
             className="glass-card overflow-hidden shadow-lg">
-            {/* Card header */}
+
             <div className="px-8 pt-8 pb-6 bg-gradient-to-br from-primary/10 to-transparent border-b border-border">
               <div className="flex items-center gap-4">
                 <span className="text-5xl drop-shadow-md">{card.emoji}</span>
@@ -346,10 +343,9 @@ function LessonCards({ session, onComplete }) {
             </div>
 
             <div className="px-8 py-6 space-y-6">
-              {/* Main content */}
+
               <p className="text-txt2 font-medium leading-relaxed text-base">{card.content}</p>
 
-              {/* Formula box */}
               {card.formula && (
                 <div className="bg-space-800 border border-border rounded-2xl p-5 shadow-inner">
                   {card.formulaLabel && (
@@ -359,7 +355,6 @@ function LessonCards({ session, onComplete }) {
                 </div>
               )}
 
-              {/* Example */}
               {card.example && (
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2.5 flex items-center gap-1.5"><Zap size={12}/> Example</p>
@@ -367,7 +362,6 @@ function LessonCards({ session, onComplete }) {
                 </div>
               )}
 
-              {/* Key points */}
               {card.keyPoints?.length > 0 && (
                 <div className="pt-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-3 pl-1">Key Points</p>
@@ -385,7 +379,6 @@ function LessonCards({ session, onComplete }) {
               )}
             </div>
 
-            {/* Navigation */}
             <div className="px-8 pb-8 pt-2 flex items-center gap-4">
               {cardIdx > 0 && (
                 <button onClick={() => { audioSystem.playClick(); setFlipped(false); setCardIdx(i => i-1); }}
@@ -405,7 +398,6 @@ function LessonCards({ session, onComplete }) {
   );
 }
 
-/* ─── PHASE: End Quiz ──────────────────────────────────────────────────────── */
 function EndQuiz({ session, onComplete }) {
   const [quiz,     setQuiz]     = useState(null);
   const [loading,  setLoading]  = useState(true);
@@ -518,7 +510,7 @@ function EndQuiz({ session, onComplete }) {
             className={`rounded-2xl px-6 py-5 mb-6 border text-sm shadow-sm border-l-4 ${selected===q.correctIndex ? 'bg-green-500/5 border-green-500/20 border-l-green-500' : 'bg-red-500/5 border-red-500/20 border-l-red-500'}`}>
             <p className={`font-bold text-base mb-2 ${selected===q.correctIndex ? 'text-green-500' : 'text-red-500'}`}>{selected===q.correctIndex ? '✅ Correct!' : '❌ Incorrect'}</p>
             <p className="text-txt2 font-medium leading-relaxed">{q.explanation}</p>
-            {/* Explain deeper button */}
+
             {selected !== q.correctIndex && (
               <div className="mt-4">
                 {deepExp ? (
@@ -548,7 +540,6 @@ function EndQuiz({ session, onComplete }) {
   );
 }
 
-/* ─── PHASE: Results ───────────────────────────────────────────────────────── */
 function SessionResults({ session, quizResult, onRestart, onNewSession }) {
   const { user }                         = useAuth();
   const { updateProfileLocal, refreshProfile } = useUserData();
@@ -594,7 +585,7 @@ setWrongQs(wq);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Score card */}
+
       <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
         className="glass-card p-10 text-center relative overflow-hidden shadow-lg border-primary/20">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
@@ -603,7 +594,6 @@ setWrongQs(wq);
         <p className="text-txt2 font-medium text-base mb-1">{quizResult.correct}/{quizResult.total} correct · <span className="text-txt">{session.topic}</span></p>
         <p className="text-txt3 font-bold uppercase tracking-widest text-xs mb-8">Session complete · {session.subject}</p>
 
-        {/* XP */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <motion.div
             initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:0.5, type:'spring' }}
@@ -612,7 +602,6 @@ setWrongQs(wq);
           </motion.div>
         </div>
 
-        {/* Breakdown */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             { l:'Score',         v:`${score}%`,              c:color },
@@ -659,7 +648,6 @@ setWrongQs(wq);
 </div>
       </motion.div>
 
-      {/* Flashcards for wrong answers */}
       {flashcards.length > 0 && (
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
           className="glass-card p-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -679,19 +667,19 @@ setWrongQs(wq);
             </div>
           ) : (
             <div className="mt-6">
-              {/* Flashcard flip */}
+
               <div className="relative h-48 mb-4 cursor-pointer" onClick={() => { audioSystem.playClick(); setShowBack(b => !b); }}
                 style={{ perspective:'1000px' }}>
                 <motion.div animate={{ rotateY: showBack ? 180 : 0 }}
                   transition={{ duration: 0.4 }} style={{ transformStyle:'preserve-3d', width:'100%', height:'100%' }}>
-                  {/* Front */}
+
                   <div className="absolute inset-0 rounded-2xl bg-space-800 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.2)] flex flex-col items-center justify-center px-6 text-center"
                     style={{ backfaceVisibility:'hidden' }}>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-txt3 bg-white/5 px-2 py-1 rounded-md mb-4">Question</p>
                     <p className="text-lg font-bold text-txt leading-relaxed">{flashcards[currentFc]?.front}</p>
                     <p className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full mt-4 flex items-center gap-1.5"><Eye size={12} />Tap to reveal answer</p>
                   </div>
-                  {/* Back */}
+
                   <div className="absolute inset-0 rounded-2xl bg-green-500/10 border border-green-500/30 shadow-[0_10px_30px_rgba(16,185,129,0.1)] flex flex-col items-center justify-center px-6 text-center"
                     style={{ backfaceVisibility:'hidden', transform:'rotateY(180deg)' }}>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-green-500 bg-green-500/20 px-2 py-1 rounded-md mb-4">Answer</p>
@@ -703,7 +691,6 @@ setWrongQs(wq);
                 </motion.div>
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center justify-between px-2">
                 <button onClick={() => { audioSystem.playClick(); setShowBack(false); setCurrentFc(i => Math.max(0, i-1)); }}
                   disabled={currentFc===0} className="w-10 h-10 flex items-center justify-center rounded-xl bg-space-800 border border-border hover:border-white/20 disabled:opacity-30 disabled:hover:border-border transition-all shadow-sm text-txt2 hover:text-txt">
@@ -727,7 +714,6 @@ setWrongQs(wq);
   );
 }
 
-/* ─── MAIN PAGE ────────────────────────────────────────────────────────────── */
 export default function StudySessionPage() {
   const { profile } = useUserData();
   const [phase,   setPhase]   = useState('setup');   // setup | lesson | quiz | results
@@ -736,12 +722,11 @@ export default function StudySessionPage() {
 
   return (
     <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
-      {/* Header with phase indicator */}
+
       <div className="mb-8 pt-12 lg:pt-0">
         <h1 className="font-jakarta font-black text-3xl md:text-4xl text-txt mb-2">Study Sessions</h1>
         <p className="text-sm font-medium text-txt3">AI teaches you first, then quizzes you on what you learned</p>
 
-        {/* Phase breadcrumb */}
         {session && (
           <div className="flex items-center gap-3 mt-5 bg-space-800 inline-flex px-4 py-2 rounded-xl border border-white/5 shadow-sm">
             {[

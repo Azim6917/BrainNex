@@ -5,7 +5,6 @@ const { verifyToken } = require('../middleware/auth');
 
 const db = admin.firestore();
 
-// ─── Get User Profile & Stats ─────────────────────────────────────────────────
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -40,7 +39,6 @@ router.get('/profile', verifyToken, async (req, res) => {
   }
 });
 
-// ─── Update Streak ────────────────────────────────────────────────────────────
 router.post('/update-streak', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -91,7 +89,6 @@ router.post('/update-streak', verifyToken, async (req, res) => {
   }
 });
 
-// ─── Save Quiz Result ─────────────────────────────────────────────────────────
 router.post('/quiz-result', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -157,7 +154,6 @@ router.post('/quiz-result', verifyToken, async (req, res) => {
   }
 });
 
-// ─── Get Quiz History ─────────────────────────────────────────────────────────
 router.get('/quiz-history', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -179,7 +175,6 @@ router.get('/quiz-history', verifyToken, async (req, res) => {
   }
 });
 
-// ─── Update User Difficulty ───────────────────────────────────────────────────
 router.post('/update-difficulty', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -191,7 +186,6 @@ router.post('/update-difficulty', verifyToken, async (req, res) => {
   }
 });
 
-// ─── Get Subject Progress ─────────────────────────────────────────────────────
 router.get('/subject-progress', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;

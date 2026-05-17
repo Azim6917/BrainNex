@@ -16,7 +16,6 @@ import { saveQuizResultToFirestore, awardBadgeToFirestore } from '../utils/fires
 import { audioSystem } from '../utils/audio';
 import toast from 'react-hot-toast';
 
-/* ── Error Boundary ── */
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(e) { return { error: e }; }
@@ -48,7 +47,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-/* ── Static resource fallback by subject keyword ── */
 function getStaticResources(subject, topic) {
   const s = (subject || '').toLowerCase();
   const t = (topic   || '').toLowerCase();
@@ -79,7 +77,6 @@ function getStaticResources(subject, topic) {
   return resources;
 }
 
-/* ── Section type config ── */
 const sectionStyles = {
   text:      { border: '3px solid rgba(139, 92, 246, 0.5)',  bg: 'rgba(139, 92, 246, 0.04)' },
   highlight: { border: '3px solid rgba(14, 165, 233, 0.6)',  bg: 'rgba(14, 165, 233, 0.05)' },
@@ -101,7 +98,6 @@ const resourceTypeColors = {
   course:        { bg: 'rgba(16, 185, 129, 0.12)',  color: '#10B981' },
 };
 
-/* ── Skeleton ── */
 function Skeleton({ lines = 4 }) {
   return (
     <div className="glass-card p-6 animate-pulse space-y-3">
@@ -113,7 +109,6 @@ function Skeleton({ lines = 4 }) {
   );
 }
 
-/* ── Lesson Section ── */
 function LessonSection({ section }) {
   const style  = sectionStyles[section.type] || sectionStyles.text;
   const Icon   = sectionIcons[section.type]  || BookOpen;
@@ -129,7 +124,6 @@ function LessonSection({ section }) {
   );
 }
 
-/* ── Quiz Component ── */
 function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user, onQuizPass }) {
   const [started,   setStarted]   = useState(false);
   const [quiz,      setQuiz]      = useState(null);
@@ -226,7 +220,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   if (!started) {
     return (
       <div className="space-y-4">
-        {/* 60% requirement info box */}
+
         <div className="flex items-start gap-3 p-4 rounded-2xl border"
           style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.25)' }}>
           <Info size={16} className="text-primary flex-shrink-0 mt-0.5" />
@@ -273,7 +267,6 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
           ({score}/{quiz.questions.length} correct)
         </p>
 
-        {/* Pass/Fail message */}
         {passed ? (
           <div className="mb-8 p-4 rounded-2xl border"
             style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.3)' }}>
@@ -366,7 +359,6 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   );
 }
 
-/* ── Main Page ── */
 export default function TopicLearningPage() {
   const { pathId, topicIndex } = useParams();
   const navigate = useNavigate();
@@ -509,7 +501,7 @@ export default function TopicLearningPage() {
   return (
     <ErrorBoundary>
     <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
-      {/* Nav row */}
+
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <button onClick={() => { audioSystem.playClick(); navigate(-1); }}
           className="inline-flex items-center gap-2 text-txt3 hover:text-txt text-sm font-semibold transition-colors group px-4 py-2 rounded-xl bg-white/5 border border-white/10">
@@ -533,7 +525,6 @@ export default function TopicLearningPage() {
         </div>
       </div>
 
-      {/* Header */}
       <div className="glass-card p-6 md:p-8 mb-8 border border-white/5 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-bl-full pointer-events-none" />
         {topic && pathMeta ? (
@@ -549,7 +540,7 @@ export default function TopicLearningPage() {
               <span className="text-xs font-bold text-txt3 px-3 py-1.5 rounded-lg bg-space-800 border border-border">
                 Topic {Number(topicIndex) + 1} of {nodes.length}
               </span>
-              {/* Status badge */}
+
               {topic.status === 'completed' && (
                 <span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-green-500/10 text-green-400 border border-green-500/30 flex items-center gap-1">
                   <CheckCircle size={12} /> Completed
@@ -584,7 +575,6 @@ export default function TopicLearningPage() {
         )}
       </div>
 
-      {/* TABS */}
       <div className="flex items-center gap-2 mb-8 p-1.5 bg-space-800 rounded-2xl border border-white/5 shadow-sm overflow-x-auto custom-scrollbar">
         {[
           { id: 'lesson',    label: 'Lesson',    icon: BookOpen,     color: 'text-primary'    },
@@ -602,11 +592,9 @@ export default function TopicLearningPage() {
         })}
       </div>
 
-      {/* TAB CONTENT */}
       <div className="min-h-[500px]">
         <AnimatePresence mode="wait">
 
-          {/* LESSON TAB */}
           {activeTab === 'lesson' && (
             <motion.div key="lesson" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {lessonLoading ? (
@@ -640,7 +628,6 @@ export default function TopicLearningPage() {
             </motion.div>
           )}
 
-          {/* QUIZ TAB */}
           {activeTab === 'quiz' && (
             <motion.div key="quiz" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {topic && pathMeta && user && (
@@ -656,7 +643,6 @@ export default function TopicLearningPage() {
                     onQuizPass={handleNextTopic}
                   />
 
-                  {/* Next topic button — only shown after passing */}
                   {quizPassed && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                       <button onClick={goToNextTopic}
@@ -670,7 +656,6 @@ export default function TopicLearningPage() {
             </motion.div>
           )}
 
-          {/* RESOURCES TAB */}
           {activeTab === 'resources' && (
             <motion.div key="resources" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {resourcesLoading ? (
@@ -727,7 +712,6 @@ export default function TopicLearningPage() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom progress bar */}
       <div className="mt-12 flex justify-between items-center pt-6 border-t border-white/10">
         <div className="text-sm font-medium text-txt3">
           Topic {Number(topicIndex) + 1} of {nodes.length}

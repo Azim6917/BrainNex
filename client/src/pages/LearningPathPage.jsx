@@ -41,7 +41,6 @@ function formatDate(ts) {
   return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/* ── Inline saved path row ── */
 function SavedPathRow({ path, onLoad, onDelete }) {
   const lc = levelColors[path.level] || '#8B5CF6';
   const completed = path.nodes?.filter(n => n.status === 'completed').length || 0;
@@ -79,7 +78,6 @@ function SavedPathRow({ path, onLoad, onDelete }) {
   );
 }
 
-/* ── Delete confirm ── */
 function DeleteConfirm({ onConfirm, onCancel }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -109,7 +107,6 @@ function DeleteConfirm({ onConfirm, onCancel }) {
   );
 }
 
-/* ── Node Card ── */
 function NodeCard({ node, onClick }) {
   const { bg, border, text, Icon } = statusStyles[node.status] || statusStyles.locked;
   return (
@@ -151,7 +148,6 @@ function NodeCard({ node, onClick }) {
   );
 }
 
-/* ── Custom dark select ── */
 function DarkSelect({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   return (
@@ -199,7 +195,6 @@ function DarkSelect({ value, onChange, options }) {
   );
 }
 
-/* ── Duplicate Modal ── */
 function DuplicateModal({ subject, level, onLoad, onGenerateNew, onClose }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -240,7 +235,6 @@ function DuplicateModal({ subject, level, onLoad, onGenerateNew, onClose }) {
   );
 }
 
-/* ── Main Page ── */
 export default function LearningPathPage() {
   const { subjectProgress } = useUserData();
   const { user } = useAuth();
@@ -287,7 +281,6 @@ export default function LearningPathPage() {
 
   const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
 
-  /* ── Check duplicate (subject + level + goal) ── */
   const checkDuplicate = async () => {
     if (!user?.uid || !actualSubject) return null;
     const q = query(
@@ -301,7 +294,6 @@ export default function LearningPathPage() {
     return null;
   };
 
-  /* ── Save path to Firestore ── */
   const savePath = async (data) => {
     if (!user?.uid) return null;
     try {
@@ -321,7 +313,6 @@ export default function LearningPathPage() {
     }
   };
 
-  /* ── Generate flow ── */
   const generate = async (forceNew = false) => {
     audioSystem.playClick();
     if (!actualSubject) { toast.error('Please enter a subject name.'); return; }
@@ -378,7 +369,6 @@ export default function LearningPathPage() {
     generate(true);
   };
 
-  /* ── Load a saved path from the inline list ── */
   const handleLoadSaved = (path) => {
     audioSystem.playClick();
     setPathData({ nodes: path.nodes, totalTopics: path.totalTopics, subject: path.subject });
@@ -389,7 +379,6 @@ export default function LearningPathPage() {
     setTimeout(() => document.getElementById('path-display')?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  /* ── Delete a saved path ── */
   const handleDeleteConfirm = async () => {
     if (!toDelete) return;
     setDeleting(true);
@@ -402,7 +391,6 @@ export default function LearningPathPage() {
     finally { setDeleting(false); setToDelete(null); }
   };
 
-  /* ── Click node → navigate ── */
   const handleNodeClick = async (node) => {
     const nodeIndex = pathData.nodes.indexOf(node);
     let pid = savedPathId;
@@ -431,7 +419,6 @@ export default function LearningPathPage() {
         <p className="text-sm font-medium text-txt3">AI-generated visual roadmap of topics to master — in the right order</p>
       </div>
 
-      {/* ── My Learning Paths ── */}
       {(savedPaths.length > 0 || pathsLoading) && (
         <div className="mb-6">
           <button
@@ -467,12 +454,10 @@ export default function LearningPathPage() {
         </div>
       )}
 
-      {/* Controls */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="glass-card p-4 md:p-6 mb-6 md:mb-8 shadow-sm"
         style={{ position: 'relative', zIndex: 100 }}>
 
-        {/* Row 1: Subject + Level */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-4 md:gap-5 items-start sm:items-end mb-5">
           <div className="w-full sm:flex-1 sm:min-w-[200px]">
             <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Subject</label>
@@ -506,7 +491,6 @@ export default function LearningPathPage() {
           </div>
         </div>
 
-        {/* Row 2: Goal */}
         <div className="mb-5">
           <label className="text-xs font-bold text-txt3 uppercase tracking-widest mb-3 block">Learning Goal</label>
           <div className="flex flex-wrap gap-2">
@@ -523,7 +507,6 @@ export default function LearningPathPage() {
           </div>
         </div>
 
-        {/* Generate Button */}
         <button onClick={() => generate(false)} disabled={loading}
           className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-8 text-sm shadow-glow-primary">
           {loading
@@ -532,10 +515,9 @@ export default function LearningPathPage() {
         </button>
       </motion.div>
 
-      {/* Path */}
       {pathData && (
         <motion.div id="path-display" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          {/* Stats */}
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
               { label: 'Total Topics', val: pathData.totalTopics,                                          color: '#0EA5E9' },
@@ -550,7 +532,6 @@ export default function LearningPathPage() {
             ))}
           </div>
 
-          {/* Progress bar */}
           <div className="glass-card p-6 mb-10 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full pointer-events-none" />
             <div className="flex items-center justify-between text-sm mb-3 relative z-10">
@@ -570,7 +551,6 @@ export default function LearningPathPage() {
             </div>
           </div>
 
-          {/* Nodes */}
           <div className="space-y-8 relative">
             <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-border -translate-x-1/2 hidden md:block z-0" />
             {rows.map((row, rowIdx) => (
@@ -590,7 +570,6 @@ export default function LearningPathPage() {
             ))}
           </div>
 
-          {/* Legend */}
           <div className="flex flex-wrap items-center justify-center gap-6 mt-10 p-4 glass-card inline-flex mx-auto">
             <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-md bg-green-500/10 border border-green-500/30 flex items-center justify-center"><CheckCircle size={12} className="text-green-500" /></div><span className="text-xs font-bold text-txt3 uppercase tracking-wider">Completed</span></div>
             <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/40 flex items-center justify-center"><Circle size={12} className="text-primary" /></div><span className="text-xs font-bold text-txt3 uppercase tracking-wider">Current</span></div>
@@ -599,7 +578,6 @@ export default function LearningPathPage() {
         </motion.div>
       )}
 
-      {/* Empty state — show most recent saved path or generate CTA */}
       {!pathData && !loading && (
         <div className="text-center py-24 glass-card mt-8">
           {savedPaths.length > 0 ? (
@@ -630,7 +608,6 @@ export default function LearningPathPage() {
         </div>
       )}
 
-      {/* Duplicate detection modal */}
       <AnimatePresence>
         {showDupModal && (
           <DuplicateModal
@@ -643,7 +620,6 @@ export default function LearningPathPage() {
         )}
       </AnimatePresence>
 
-      {/* Delete confirmation */}
       <AnimatePresence>
         {toDelete && (
           <DeleteConfirm

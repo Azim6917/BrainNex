@@ -16,7 +16,6 @@ import {
 import { db } from '../utils/firebase';
 import { awardBadgeToFirestore } from '../utils/firestoreUtils';
 
-/* ── Emoji picker data ── */
 const EMOJI_GROUPS = [
   { label: 'Smileys', emojis: ['😀','😂','🥲','😊','😍','🤔','😅','😎','🥳','😤','😢','😡','🤯','🥺','😏'] },
   { label: 'Hands',  emojis: ['👍','👎','👋','🙌','🤝','✌️','🤙','💪','🙏','👀','✅','❌','🔥','💡','⭐'] },
@@ -42,7 +41,6 @@ function EmojiPicker({ onSelect, onClose }) {
   );
 }
 
-/* ── Confirm modal ── */
 function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, onCancel }) {
   return (
     <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
@@ -110,7 +108,6 @@ function RoomCard({ room, onJoin, onDelete }) {
   );
 }
 
-/* ── Group Quiz inside room ── */
 function GroupQuiz({ room, user, onClose, socket, activeQuiz, onStartQuiz }) {
   const [phase,    setPhase]    = useState(activeQuiz ? 'quiz' : 'setup');
   const [topic,    setTopic]    = useState(activeQuiz?.topic || '');
@@ -278,7 +275,6 @@ function GroupQuiz({ room, user, onClose, socket, activeQuiz, onStartQuiz }) {
   );
 }
 
-/* ── Study Material panel ── */
 function MaterialPanel({ roomId, user }) {
   const [materials, setMaterials] = useState([]);
   const [newMat, setNewMat] = useState({ title:'', content:'' });
@@ -374,7 +370,6 @@ function MaterialPanel({ roomId, user }) {
   );
 }
 
-/* ── Whiteboard panel ── */
 function Whiteboard({ socket, roomId }) {
   const canvasRef = useRef(null);
   const previewCanvasRef = useRef(null);
@@ -1032,7 +1027,6 @@ export default function StudyRoomsPage() {
         )}
       </AnimatePresence>
 
-      {/* Delete room confirmation */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <ConfirmModal
@@ -1051,7 +1045,7 @@ export default function StudyRoomsPage() {
   // ROOM
   return (
     <div className="h-full min-h-[calc(100vh-2rem)] m-4 flex flex-col rounded-3xl border border-white/10 shadow-2xl overflow-hidden glass-card">
-      {/* Header */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-white/10 bg-space-800/80 backdrop-blur-md flex-shrink-0 relative z-20 gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-2xl border border-primary/20 shadow-sm">{room?.emoji}</div>
@@ -1115,19 +1109,16 @@ export default function StudyRoomsPage() {
             </button>
           )}
 
-          {/* Raise Hand button */}
           <button onClick={toggleHand} title="Raise your hand to get the group's attention"
             className={`flex items-center gap-2 text-xs font-bold rounded-xl px-3 sm:px-4 py-2 transition-all shadow-sm border ${handRaised ? 'bg-amber-500/20 border-amber-500/50 text-amber-500' : 'bg-space-700/50 border-white/10 text-txt2 hover:bg-space-700'}`}>
             <Hand size={14} />{handRaised ? 'Lower Hand' : 'Raise Hand'}
           </button>
-          
-          {/* Focus Mode button */}
+
           <button onClick={toggleFocus} title="Start a distraction-free focus session for the whole room"
             className={`flex items-center gap-2 text-xs font-bold rounded-xl px-3 sm:px-4 py-2 transition-all shadow-sm border ${focusMode ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-space-700/50 border-white/10 text-txt2 hover:bg-space-700'}`}>
             <Target size={14} />Focus Mode
           </button>
 
-          {/* Group quiz button */}
           <button onClick={() => { audioSystem.playClick(); setGroupQuizOpen(true); }} title="Generate and share a live quiz with your study group"
             className="flex items-center gap-2 text-xs font-bold bg-cyan/10 border border-cyan/20 text-cyan rounded-xl px-3 sm:px-4 py-2 hover:bg-cyan/20 transition-all shadow-sm">
             <FileQuestion size={14} />Group Quiz
@@ -1140,7 +1131,6 @@ export default function StudyRoomsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-white/10 flex-shrink-0 bg-space-900/50 overflow-x-auto custom-scrollbar-hide relative z-10">
         <style>{`.custom-scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
         {[
@@ -1157,7 +1147,6 @@ export default function StudyRoomsPage() {
         ))}
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-hidden relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full pointer-events-none z-0" />
         
@@ -1174,7 +1163,7 @@ export default function StudyRoomsPage() {
                  </p>
               </div>
             )}
-            {/* Messages */}
+
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 custom-scrollbar">
               <AnimatePresence initial={false}>
                 {messages.map((msg, i) =>
@@ -1214,14 +1203,14 @@ export default function StudyRoomsPage() {
               </AnimatePresence>
               <div ref={msgEnd} />
             </div>
-            {/* Input */}
+
             <div className="px-6 py-5 border-t border-white/10 bg-space-800/90 backdrop-blur-md flex-shrink-0">
               <div className="flex gap-3 relative">
                 <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key==='Enter'&&sendMsg()} disabled={focusMode || (chatLocked && !isHost)}
                   placeholder={focusMode ? "Chat disabled during Focus Mode" : (chatLocked && !isHost) ? "🔇 Chat locked by host" : "Message the room..."}
                   className="input-field flex-1 text-sm py-3 disabled:opacity-50 border-white/10" />
-                {/* Emoji button */}
+
                 <div className="relative">
                   <button onClick={() => setShowEmojiPicker(p => !p)}
                     className="w-12 h-12 rounded-xl bg-space-700 border border-white/10 flex items-center justify-center text-txt3 hover:text-txt hover:bg-space-800 transition-all">
@@ -1231,7 +1220,7 @@ export default function StudyRoomsPage() {
                     {showEmojiPicker && <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmojiPicker(false)} />}
                   </AnimatePresence>
                 </div>
-                {/* Send button */}
+
                 <motion.button whileHover={{scale:1.05}} whileTap={{ scale:0.95 }} onClick={sendMsg} disabled={!input.trim() || focusMode || (chatLocked && !isHost)}
                   className="w-12 h-12 rounded-xl flex items-center justify-center disabled:opacity-40 transition-all shadow-glow-primary"
                   style={{ background: 'linear-gradient(135deg, var(--primary), #7c3aed)', border: '1px solid rgba(139,92,246,0.4)' }}>
@@ -1347,12 +1336,10 @@ export default function StudyRoomsPage() {
         </div>
       </div>
 
-      {/* Group Quiz Modal */}
       <AnimatePresence>
         {groupQuizOpen && <GroupQuiz room={room} user={user} onClose={() => setGroupQuizOpen(false)} socket={socketRef.current} activeQuiz={activeQuiz} host={quizHost} onStartQuiz={handleStartQuiz} />}
       </AnimatePresence>
 
-      {/* Leave confirm */}
       <AnimatePresence>
         {showLeaveConfirm && (
           <ConfirmModal

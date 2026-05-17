@@ -76,7 +76,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-space-dark">
-      {/* Left panel */}
+
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden bg-space-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(124,58,237,0.15),transparent_50%)] pointer-events-none" />
         <div className="absolute w-[500px] h-[500px] rounded-full blur-[100px] -top-40 -left-40 bg-cyan/10 pointer-events-none" />
@@ -95,7 +95,6 @@ export default function LoginPage() {
         <p className="relative z-10 text-[10px] font-bold text-txt3 uppercase tracking-widest">Trusted by 50,000+ students globally</p>
       </div>
 
-      {/* Right form */}
       <div className="flex-1 flex items-center justify-center p-6 relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,229,255,0.05),transparent_70%)] pointer-events-none" />
         <AnimatePresence mode="wait">

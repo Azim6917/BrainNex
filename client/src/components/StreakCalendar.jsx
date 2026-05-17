@@ -101,7 +101,6 @@ export default function StreakCalendar() {
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
 
-      {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--txt)' }}>Activity Calendar</span>
         <span style={{ fontSize: 11, color: 'var(--txt3)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 6 }}>
@@ -111,7 +110,6 @@ export default function StreakCalendar() {
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, width: '100%' }}>
 
-        {/* Day labels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginTop: 20, flexShrink: 0, width: CELL }}>
           {DAY_LABELS.map((l, i) => (
             <div key={i} style={{
@@ -123,10 +121,8 @@ export default function StreakCalendar() {
           ))}
         </div>
 
-        {/* Grid area */}
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
 
-          {/* Month labels */}
           <div style={{ position: 'relative', height: 16, marginBottom: 4, width: '100%' }}>
             {monthLabels.map(({ wi, label }) => (
               <span key={wi} style={{
@@ -140,7 +136,6 @@ export default function StreakCalendar() {
             ))}
           </div>
 
-          {/* Week columns — stretched to fill full width */}
           <div style={{ display: 'flex', gap: GAP, width: '100%' }}>
             {columns.map((col, wi) => (
               <div key={wi} style={{
@@ -171,7 +166,6 @@ export default function StreakCalendar() {
         </div>
       </div>
 
-      {/* Legend */}
       <div style={{ display:'flex', alignItems:'center', gap: 6, marginTop: 10, justifyContent:'flex-end' }}>
         <span style={{ fontSize: 9, color:'var(--txt3)', fontWeight: 600 }}>Less</span>
         {[0,1,2,3,4].map(n => (

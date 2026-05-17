@@ -8,7 +8,6 @@ const MODEL       = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS  = 600;
 const QUIZ_TOKENS = 1500;
 
-/* ── Grade helpers ── */
 const isJunior = g => ['Class 1','Class 2','Class 3','Class 4','Class 5'].includes(g);
 const isMiddle = g => ['Class 6','Class 7','Class 8'].includes(g);
 
@@ -26,7 +25,6 @@ Your role:
 Keep responses concise but thorough. Use markdown formatting for better readability.`;
 }
 
-/* ─── Chat ─────────────────────────────────────────────────────── */
 router.post('/chat', verifyToken, async (req, res) => {
   const { messages, subject, studentLevel, grade } = req.body;
   try {
@@ -44,7 +42,6 @@ router.post('/chat', verifyToken, async (req, res) => {
   }
 });
 
-/* ─── Quiz Generator ────────────────────────────────────────────── */
 router.post('/generate-quiz', verifyToken, async (req, res) => {
   const { subject, topic, difficulty, numQuestions = 5, grade } = req.body;
   const safeNum = Math.min(+numQuestions, 5);
@@ -97,7 +94,6 @@ Return ONLY valid JSON:
   }
 });
 
-/* ─── Weak Topic Detector ───────────────────────────────────────── */
 router.post('/detect-weak-topics', verifyToken, async (req, res) => {
   const { quizHistory } = req.body;
   if (!quizHistory?.length) return res.json({ weakTopics:[], insights:'Take more quizzes for insights!' });
@@ -115,7 +111,6 @@ Only topics below 65%. Priority: high<50%, medium 50-64%.`;
   } catch { res.status(500).json({ error:'Analysis failed.' }); }
 });
 
-/* ─── Learning Path ─────────────────────────────────────────── */
 router.post('/learning-path', verifyToken, async (req, res) => {
   const { subject, currentLevel, completedTopics, goal } = req.body;
   const prompt = `Create a highly detailed, comprehensive learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',') || 'none'}. Student goal: ${goal || 'Master the Basics'}.
@@ -132,7 +127,6 @@ Status: completed=done, current=next logical, locked=rest.`;
   } catch { res.status(500).json({ error: 'Failed to generate path.' }); }
 });
 
-/* ─── Adaptive Difficulty (no AI — pure logic) ──────────────────── */
 router.post('/adaptive-difficulty', verifyToken, async (req, res) => {
   const { recentScores, currentDifficulty } = req.body;
   if (!recentScores?.length) return res.json({ recommendedDifficulty: currentDifficulty||'intermediate', reason:'Take more quizzes to calibrate.' });
@@ -150,7 +144,6 @@ router.post('/adaptive-difficulty', verifyToken, async (req, res) => {
   res.json({ recommendedDifficulty:rec, reason, averageScore:Math.round(avg) });
 });
 
-/* ─── Study Session ─────────────────────────────────────────────── */
 router.post('/study-session', verifyToken, async (req, res) => {
   const { subject, topic, level = 'intermediate', grade } = req.body;
   const kid = isJunior(grade);
@@ -195,7 +188,6 @@ Return ONLY valid JSON:
   } catch { res.status(500).json({ error:'Failed to generate study session.' }); }
 });
 
-/* ─── Flashcards ─────────────────────────────────────────────────── */
 router.post('/flashcards', verifyToken, async (req, res) => {
   const { subject, topic, wrongQuestions, grade } = req.body;
   const kid = isJunior(grade);
@@ -211,7 +203,6 @@ Return ONLY JSON:
   } catch { res.status(500).json({ error:'Flashcard generation failed.' }); }
 });
 
-/* ─── Explain Answer ─────────────────────────────────────────────── */
 router.post('/explain-answer', verifyToken, async (req, res) => {
   const { question, correctAnswer, subject, grade } = req.body;
   const kid = isJunior(grade);
@@ -227,7 +218,6 @@ Give a clear 3-4 sentence explanation: why correct, an analogy, and what to avoi
   } catch { res.status(500).json({ error:'Explanation failed.' }); }
 });
 
-/* ─── Weekly Report ─────────────────────────────────────────────── */
 router.post('/weekly-report', verifyToken, async (req, res) => {
   const { quizHistory, streak, totalXP, grade } = req.body;
   if (!quizHistory?.length) return res.json({ report:"Take some quizzes this week to get your AI report!" });
@@ -247,7 +237,6 @@ Quiz results: ${JSON.stringify(quizHistory.slice(0,10))}.
   } catch { res.status(500).json({ error:'Report failed.' }); }
 });
 
-/* ─── Topic Lesson ──────────────────────────────────────────────────────────── */
 router.post('/topic-lesson', verifyToken, async (req, res) => {
   const { subject, topic, level, goal } = req.body;
   const prompt = `Create a highly detailed, comprehensive lesson for topic "${topic}" in ${subject} at ${level} level. Goal: ${goal || 'Master the Basics'}.
@@ -276,7 +265,6 @@ Return ONLY valid JSON:
   } catch { res.status(500).json({ error: 'Failed to generate lesson.' }); }
 });
 
-/* ─── Topic Quiz ─────────────────────────────────────────────────────────────── */
 router.post('/topic-quiz', verifyToken, async (req, res) => {
   const { subject, topic, level } = req.body;
   const prompt = `Generate a ${level} quiz on "${topic}" in ${subject}. 5 questions.
@@ -304,7 +292,6 @@ Return ONLY valid JSON:
   } catch { res.status(500).json({ error: 'Quiz generation failed.' }); }
 });
 
-/* ─── Topic Resources ────────────────────────────────────────────────────────── */
 router.post('/topic-resources', verifyToken, async (req, res) => {
   const { subject, topic } = req.body;
   const prompt = `Suggest 4 highly relevant learning resources for "${topic}" in ${subject}.

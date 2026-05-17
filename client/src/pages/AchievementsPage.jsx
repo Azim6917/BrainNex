@@ -102,7 +102,6 @@ export default function AchievementsPage() {
         <p className="text-sm font-medium text-txt3">Your badges, level progress, and stats</p>
       </div>
 
-      {/* Level card */}
       <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
         className="glass-card p-6 md:p-8 mb-8 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 opacity-20 rounded-bl-full pointer-events-none" style={{ background:`linear-gradient(to bottom left, ${levelInfo.color}, transparent)` }} />
@@ -138,7 +137,6 @@ export default function AchievementsPage() {
         </div>
       </motion.div>
 
-      {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
           { Icon:Trophy,   color:'#F59E0B', label:'Badges',       val:`${earnedMap.size}/${ALL_BADGES.length}` },
@@ -157,7 +155,6 @@ export default function AchievementsPage() {
         ))}
       </div>
 
-      {/* Recently earned — with entrance animation */}
       {earnedMap.size > 0 && (
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-5">
@@ -190,7 +187,6 @@ export default function AchievementsPage() {
         </div>
       )}
 
-      {/* All badges */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-1 h-6 bg-cyan rounded-full shadow-[0_0_8px_rgba(0,229,255,0.6)]"/>
@@ -247,7 +243,6 @@ export default function AchievementsPage() {
         </div>
       </div>
 
-      {/* Level roadmap */}
       <div className="mt-10 mb-8">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-1 h-6 bg-primary rounded-full shadow-[0_0_8px_rgba(124,58,237,0.6)]"/>
@@ -279,7 +274,6 @@ export default function AchievementsPage() {
         </div>
       </div>
 
-      {/* Badge detail modal */}
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}

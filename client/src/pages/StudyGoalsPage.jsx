@@ -271,7 +271,7 @@ export default function StudyGoalsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto w-full">
-      {/* Header */}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 pt-2 lg:pt-0 gap-4">
         <div>
           <h1 className="font-jakarta font-black text-2xl md:text-4xl text-txt mb-2">Study Goals</h1>
@@ -283,7 +283,6 @@ export default function StudyGoalsPage() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-10">
         {STATS.map(({ Icon, label, val }) => (
           <div key={label} className="glass-card p-4 md:p-6 text-center shadow-sm">
@@ -296,7 +295,6 @@ export default function StudyGoalsPage() {
         ))}
       </div>
 
-      {/* Goals Grid */}
       {goals.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-10">
           {goals.map(g => (
@@ -314,7 +312,6 @@ export default function StudyGoalsPage() {
         </div>
       )}
 
-      {/* Templates */}
       <div>
         <div className="flex items-center gap-3 mb-5">
           <div className="w-1 h-6 bg-cyan rounded-full shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
@@ -350,7 +347,6 @@ export default function StudyGoalsPage() {
         </div>
       </div>
 
-      {/* Create Modal */}
       <AnimatePresence>
         {showCreate && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -362,7 +358,6 @@ export default function StudyGoalsPage() {
               onClick={e => e.stopPropagation()}
               className="glass-card p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto border-primary/20 relative custom-scrollbar">
 
-              {/* Close button */}
               <button onClick={() => setShowCreate(false)}
                 className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-space-800 border border-border text-txt3 hover:text-txt flex items-center justify-center transition-all">
                 <X size={16} />
@@ -372,7 +367,7 @@ export default function StudyGoalsPage() {
               <h2 className="font-jakarta font-black text-2xl mb-6 text-txt relative z-10">Create Goal</h2>
 
               <div className="space-y-5 relative z-10">
-                {/* Title */}
+
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Goal Title</label>
                   <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -380,7 +375,6 @@ export default function StudyGoalsPage() {
                     className="input-field w-full text-sm py-3" autoFocus />
                 </div>
 
-                {/* Icon Picker — Lucide grid */}
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Icon</label>
                   <div className="grid grid-cols-6 gap-2">
@@ -397,7 +391,6 @@ export default function StudyGoalsPage() {
                   </div>
                 </div>
 
-                {/* Type */}
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Type</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -417,7 +410,6 @@ export default function StudyGoalsPage() {
                   </div>
                 </div>
 
-                {/* Custom description — shown only when type === custom */}
                 {form.type === 'custom' && (
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">
@@ -436,7 +428,6 @@ export default function StudyGoalsPage() {
                   </div>
                 )}
 
-                {/* Period */}
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-2.5 block">Period</label>
                   <div className="flex gap-3">
@@ -452,7 +443,6 @@ export default function StudyGoalsPage() {
                   </div>
                 </div>
 
-                {/* Target — hidden for custom */}
                 {form.type !== 'custom' && (
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-txt3 mb-3 block flex justify-between">

@@ -50,7 +50,7 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
             boxShadow: '0 0 60px rgba(249,115,22,0.15), 0 20px 60px rgba(0,0,0,0.6)',
           }}
         >
-          {/* Dismiss */}
+
           <button
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
@@ -58,9 +58,8 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
             <X size={16} />
           </button>
 
-          {/* SVG Animated Flame */}
           <div className="relative mb-2" style={{ width: 140, height: 140 }}>
-            {/* pulsing glow underneath */}
+
             <motion.div
               className="absolute bottom-0 left-1/2 -translate-x-1/2"
               style={{
@@ -91,15 +90,14 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
                 }
               `}</style>
               <g style={{ filter: 'drop-shadow(0px 6px 18px rgba(232,93,78,0.65))' }}>
-                {/* Outer Red/Coral Flame */}
+
                 <path className="fo" d="M12,22 C6,22 4,16 5,12 C4.5,10 3,8 3,8 C5.5,9 7.5,7 9,2 C9.5,5.5 11,7.5 12,8 C13,5.5 15,4 17,4 C15.5,7 16,9 18,11 C20,16 18,22 12,22 Z" fill="#E85D4E"/>
-                {/* Inner Yellow/Gold Flame */}
+
                 <path className="fi" d="M12,20 C9,20 8,17 8,14 C8,12 9,10 10,8 C10.5,11 11.5,12.5 12.5,12.5 C13.5,12.5 14,11 14.5,10 C14.5,12 15,13 16,14 C17,17 15,20 12,20 Z" fill="#F9C646"/>
               </g>
             </svg>
           </div>
 
-          {/* Streak count */}
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -117,7 +115,6 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
           </motion.div>
           <p className="text-2xl font-black text-white mb-6 tracking-tight">day streak!</p>
 
-          {/* Mon–Sun week row */}
           <div className="flex items-center gap-2 mb-6">
             {weekDays.map(({ label, key, isToday, isFuture }, i) => {
               const active = activeDays.has(key);
@@ -153,7 +150,6 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
             })}
           </div>
 
-          {/* Message */}
           <p className="text-sm font-medium text-white/60 mb-8 leading-relaxed max-w-[240px]">
             {streak >= 30
               ? "Absolutely legendary. You're unstoppable! 🏆"
@@ -162,7 +158,6 @@ export default function StreakPopup({ streak, activeDays = new Set(), onClose })
               : "Great start! Keep showing up every day."}
           </p>
 
-          {/* CTA */}
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}

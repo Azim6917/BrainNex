@@ -104,7 +104,6 @@ export default function OnboardingFlow({ onComplete }) {
       <div className="w-full max-w-lg relative">
         <div className="flex justify-center mb-8"><BrainNexLogo size="lg" /></div>
 
-        {/* Progress */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {STEPS.map((_, i) => (
             <motion.div key={i}
@@ -125,7 +124,6 @@ export default function OnboardingFlow({ onComplete }) {
             <h2 className="font-syne font-black text-2xl mb-1" style={{ color:'var(--txt)' }}>{STEPS[step].title}</h2>
             <p className="text-sm mb-6" style={{ color:'var(--txt2)' }}>{STEPS[step].sub}</p>
 
-            {/* Step 0 — Grade */}
             {step === 0 && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color:'var(--txt3)' }}>Junior School</p>
@@ -180,7 +178,6 @@ export default function OnboardingFlow({ onComplete }) {
               </div>
             )}
 
-            {/* Step 1 — Subjects */}
             {step === 1 && (
               <div className="grid grid-cols-2 gap-2">
                 {subjectList.map(({ emoji, name }) => {
@@ -202,7 +199,6 @@ export default function OnboardingFlow({ onComplete }) {
               </div>
             )}
 
-            {/* Step 2 — Goal */}
             {step === 2 && (
               <div className="space-y-3">
                 {GOALS.map(g => (
@@ -226,7 +222,6 @@ export default function OnboardingFlow({ onComplete }) {
               </div>
             )}
 
-            {/* Navigation */}
             <div className="flex gap-3 mt-7">
               {step > 0 && (
                 <button onClick={() => { playClick(); setStep(s => s-1); }} className="btn-outline py-3 px-6 text-sm">← Back</button>

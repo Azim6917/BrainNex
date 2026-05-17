@@ -30,7 +30,6 @@
   --shadow-lift: 0 8px 32px rgba(124,58,237,0.12);
 }
 
-/* ── Light Mode ── */
 :root.light {
   --bg:        #F8FAFC;
   --bg2:       #FFFFFF;
@@ -45,7 +44,6 @@
   --shadow-lift: 0 8px 32px rgba(124,58,237,0.15);
 }
 
-/* ── Kid Mode overlays ── */
 :root.kid-mode { 
   --radius-card: 24px;
   --primary: #9b5de5;
@@ -102,7 +100,6 @@
     font-weight: 900;
   }
 
-  /* ── Landing page font protection (immune to kid-mode) ── */
   .landing-page h1,
   .landing-page h2,
   .landing-page h3,

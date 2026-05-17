@@ -120,13 +120,13 @@ export default function App() {
               success: { iconTheme:{ primary:'var(--cyan)', secondary:'var(--bg)' } },
             }} />
             <Routes>
-              {/* Public */}
+
               <Route path="/"         element={<LandingPage />} />
               <Route path="/about"    element={<AboutPage />} />
               <Route path="/contact"  element={<ContactPage />} />
               <Route path="/login"    element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              {/* App */}
+
               <Route path="/app"                  element={<Navigate to="/app/dashboard" replace />} />
               <Route path="/app/dashboard"        element={<AppPage><DashboardPage /></AppPage>} />
               <Route path="/app/tutor"            element={<AppPage><ChatTutorPage /></AppPage>} />

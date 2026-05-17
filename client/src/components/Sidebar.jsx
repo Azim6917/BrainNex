@@ -58,7 +58,6 @@ function SidebarInner({ onClose }) {
   return (
     <div className="flex flex-col h-full" style={{ background:'var(--bg2)' }}>
 
-      {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-5 border-b" style={{ borderColor:'var(--border)' }}>
         <Link
           to="/app/dashboard"
@@ -69,7 +68,6 @@ function SidebarInner({ onClose }) {
         </Link>
         <div className="flex items-center gap-2">
 
-          {/* Mobile close */}
           {onClose && (
             <button onClick={onClose}
               className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center hover:bg-opacity-80"
@@ -80,7 +78,6 @@ function SidebarInner({ onClose }) {
         </div>
       </div>
 
-      {/* ── User card ── */}
       <div onClick={() => { audioSystem.playClick(); onClose?.(); navigate('/app/settings'); }}
            className="px-4 py-4 border-b cursor-pointer hover:bg-white/5 transition-colors" 
            style={{ borderColor:'var(--border)' }}>
@@ -116,7 +113,6 @@ function SidebarInner({ onClose }) {
         <XPBar xp={xp} level={level} />
       </div>
 
-      {/* ── Navigation ── */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
         {NAV.map(({ to, icon: Icon, label, badge }) => (
           <NavLink key={to} to={to} onClick={() => { audioSystem.playClick(); onClose?.(); }}>
@@ -138,7 +134,6 @@ function SidebarInner({ onClose }) {
         ))}
       </nav>
 
-      {/* ── Bottom ── */}
       <div className="px-3 py-4 space-y-1 border-t" style={{ borderColor:'var(--border)' }}>
         <NavLink to="/app/settings" onClick={() => { audioSystem.playClick(); onClose?.(); }}>
           {({ isActive }) => (

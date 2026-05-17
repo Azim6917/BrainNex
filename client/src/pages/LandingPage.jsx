@@ -91,7 +91,6 @@ export default function LandingPage() {
   return (
     <div className="landing-page min-h-screen bg-brand-bg text-white overflow-x-hidden selection:bg-primary selection:text-white">
 
-      {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-brand-bg/80 backdrop-blur-xl border-b border-white/10 shadow-sm' : 'py-5 bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
           <BrainNexLogo size="md" />
@@ -107,10 +106,9 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* HERO */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 lg:px-8 hero-bg">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Content */}
+
           <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.6 }} className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 mb-6 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -143,10 +141,9 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          {/* Right: Mockup */}
           <motion.div initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.2 }} className="relative z-10 hidden lg:block">
             <div className="relative rounded-2xl border border-white/10 bg-brand-bg2 shadow-[0_0_80px_rgba(124,58,237,0.15)] overflow-hidden transform perspective-1000 rotate-y-[-5deg] rotate-x-[2deg]">
-              {/* App Window Header */}
+
               <div className="h-10 bg-black/40 border-b border-white/5 flex items-center px-4 gap-2 backdrop-blur-md">
                 <div className="w-3 h-3 rounded-full bg-red-500/80" />
                 <div className="w-3 h-3 rounded-full bg-amber-500/80" />
@@ -156,14 +153,13 @@ export default function LandingPage() {
                 <div className="flex-1" />
               </div>
 
-              {/* App Window Body (CSS Mockup) */}
               <div className="h-[400px] bg-brand-bg flex p-4 gap-4 relative overflow-hidden">
-                {/* Sidebar mock */}
+
                 <div className="w-16 flex flex-col gap-3 items-center pt-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-cyan mb-4" />
                   {[1,2,3,4].map(i => <div key={i} className="w-10 h-10 rounded-xl bg-white/5" />)}
                 </div>
-                {/* Content mock */}
+
                 <div className="flex-1 flex flex-col gap-4">
                   <div className="h-20 rounded-xl bg-gradient-to-r from-primary/20 to-cyan/10 border border-primary/20 p-4 flex flex-col justify-center shadow-inner">
                     <div className="text-white font-bold text-sm flex items-center gap-2">Welcome back, Student! <Sparkles size={16} className="text-amber-400" /></div>
@@ -196,11 +192,9 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Subtle overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
               </div>
 
-              {/* Floating elements */}
               <motion.div animate={{ y: [-10, 10, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -left-6 top-24 glass-card bg-brand-card p-3 flex items-center gap-3 shadow-lg border border-white/10">
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-500"><CheckCircle size={16}/></div>
                 <div><p className="text-xs font-bold text-white">Quiz Passed!</p><p className="text-[10px] text-txt-sec">+50 XP Earned</p></div>
@@ -214,7 +208,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* MARQUEE */}
       <div className="py-8 border-y border-white/5 bg-white/[0.02] overflow-hidden">
         <p className="text-center text-xs font-semibold text-txt3 uppercase tracking-widest mb-6">Trusted by students from</p>
         <div className="flex gap-16 animate-marquee w-max opacity-40 hover:opacity-80 transition-opacity">
@@ -224,7 +217,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* FEATURES */}
       <section id="features" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative z-10">
@@ -247,7 +239,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
       <section id="how-it-works" className="py-32 px-6 lg:px-8 relative">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-20">
@@ -275,7 +266,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
       <section id="testimonials" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative z-10">
@@ -308,7 +298,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA BANNER */}
       <section className="py-20 px-6 lg:px-8">
         <div className="max-w-5xl mx-auto relative group cursor-pointer">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan to-primary rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
@@ -322,7 +311,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PRICING SECTION */}
       <section id="pricing-section" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="max-w-4xl mx-auto relative z-10">
@@ -355,7 +343,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="border-t border-white/10 bg-brand-bg2 pt-16 pb-8 px-6 lg:px-8 text-sm">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">

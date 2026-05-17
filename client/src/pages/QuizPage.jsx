@@ -20,7 +20,6 @@ const TIMER_OPTIONS   = [
 
 function isJuniorGrade(g) { return ['Class 1','Class 2','Class 3','Class 4','Class 5'].includes(g); }
 
-/* ── Setup ── */
 function QuizSetup({ onStart, currentDifficulty, grade }) {
   const junior   = isJuniorGrade(grade);
   const subjects = junior ? JUNIOR_SUBJECTS : SENIOR_SUBJECTS;
@@ -166,7 +165,6 @@ const res = await generateQuiz(actualSubject, topic, difficulty, numQ, grade);
   );
 }
 
-/* ── Active Quiz ── */
 function ActiveQuiz({ quiz, timerSeconds, grade, onComplete }) {
   const [current,  setCurrent]  = useState(0);
   const [selected, setSelected] = useState(null);
@@ -329,7 +327,6 @@ function ActiveQuiz({ quiz, timerSeconds, grade, onComplete }) {
   );
 }
 
-/* ── Results ── */
 function QuizResults({ result, quiz, onRetry, onNew, grade }) {
   const { user }                            = useAuth();
   const { updateProfileLocal, refreshProfile } = useUserData();
@@ -446,7 +443,6 @@ useEffect(() => {
 </div>
       </motion.div>
 
-      {/* Flashcards — senior only */}
       {!junior && flashcards.length>0 && (
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
           className="glass-card p-6 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">

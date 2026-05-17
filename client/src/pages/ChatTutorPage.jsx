@@ -14,7 +14,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 
-/* ── Subjects differ by grade ── */
 const JUNIOR_SUBJECTS  = ['Maths','Science','English','Social Studies','Art','Music'];
 const SENIOR_SUBJECTS  = ['Mathematics','Physics','Chemistry','Biology','Computer Science','History','Geography','Literature','Economics','Psychology'];
 
@@ -25,7 +24,6 @@ function isMiddle(grade) {
   return ['Class 6','Class 7','Class 8'].includes(grade);
 }
 
-/* ── Firestore helpers ── */
 const sessionsRef = (uid) => collection(db, 'chatHistory', uid, 'sessions');
 const sessionRef  = (uid, sid) => doc(db, 'chatHistory', uid, 'sessions', sid);
 
@@ -84,12 +82,10 @@ async function fsDeleteSession(uid, sessionId) {
   }
 }
 
-/* ── localStorage fallback ── */
 const HIST_KEY    = uid => `bn-chat-hist-${uid}`;
 function lsLoad(uid)    { try { return JSON.parse(localStorage.getItem(HIST_KEY(uid)) || '[]'); } catch { return []; } }
 function lsSave(uid, s) { try { localStorage.setItem(HIST_KEY(uid), JSON.stringify(s.slice(-20))); } catch {} }
 
-/* ── Markdown formatter ── */
 function formatMsg(text) {
   return text
     .replace(/```([\s\S]*?)```/g, '<pre className="bg-space-900 border border-border p-3 rounded-xl overflow-x-auto text-xs my-2 font-mono"><code>$1</code></pre>')
@@ -103,7 +99,6 @@ function formatMsg(text) {
     .replace(/^(.+)$/, '<p className="my-1">$1</p>');
 }
 
-/* ── Greeting based on grade ── */
 function getGreeting(grade, name) {
   if (isJunior(grade)) {
     const firstName = (name || 'friend').split(' ')[0];
@@ -157,7 +152,6 @@ export default function ChatTutorPage() {
   useEffect(() => { activeIdRef.current = activeSession; }, [activeSession]);
   useEffect(() => { localStorage.setItem('brainnex-tutor-subject', subject); }, [subject]);
 
-  /* ── Load history from Firestore when panel opens ── */
   const loadHistory = useCallback(async () => {
     if (!user?.uid) return;
     setHistLoading(true);
@@ -176,7 +170,6 @@ export default function ChatTutorPage() {
     if (showHistory) loadHistory();
   }, [showHistory, loadHistory]);
 
-  /* ── Send message ── */
   const send = async () => {
     if (!input.trim() || loading) return;
     const userContent = input.trim();
@@ -189,7 +182,7 @@ export default function ChatTutorPage() {
     const currentSessionId = activeIdRef.current;
 
     try {
-      /* ── Create Firestore session on first user message ── */
+
       if (!currentSessionId && !sessionCreatedRef.current) {
         sessionCreatedRef.current = true;
         const newId = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -209,19 +202,16 @@ export default function ChatTutorPage() {
 
       const sid = activeIdRef.current;
 
-      /* ── Save user message ── */
       if (usingFs && sid) {
         const title = messages.find(m=>m.role==='user')?.content?.substring(0,40) || userContent.substring(0,40);
         await fsAppendMessage(user.uid, sid, userMsg, !currentSessionId ? title : null);
       }
 
-      /* ── Call AI ── */
       const history = [...messages, userMsg].slice(-10).map(m => ({ role:m.role, content:m.content }));
       const res = await chatWithAI(history, subject, profile?.currentDifficulty||'intermediate', grade);
       const aiMsg = { role:'assistant', content:res.data.content };
       setMessages(m => [...m, aiMsg]);
 
-      /* ── Save AI response ── */
       if (usingFs && sid) {
         await fsAppendMessage(user.uid, sid, aiMsg, null);
       } else if (!usingFs) {
@@ -275,7 +265,6 @@ export default function ChatTutorPage() {
     if (activeIdRef.current === id) newChat();
   };
 
-  /* ── Voice ── */
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { toast.error('Voice not supported in this browser'); return; }
@@ -297,9 +286,6 @@ export default function ChatTutorPage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)] m-2 lg:m-4 overflow-hidden rounded-2xl lg:rounded-3xl shadow-2xl">
 
-      {/* ── History sidebar ── */}
-
-      {/* Mobile dim overlay — separate AnimatePresence */}
       <AnimatePresence>
         {showHistory && (
           <motion.div
@@ -312,7 +298,6 @@ export default function ChatTutorPage() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar panel */}
       <AnimatePresence>
         {showHistory && (
           <motion.div
@@ -373,11 +358,9 @@ export default function ChatTutorPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Main chat ── */}
       <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: '#0d0d1a' }}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full pointer-events-none" />
 
-        {/* Top bar */}
         <div className="flex items-center justify-between flex-shrink-0 relative z-10" style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', backdropFilter: 'blur(10px)', padding: '10px 14px' }}>
           <style>{`@keyframes customPulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }`}</style>
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -399,7 +382,7 @@ export default function ChatTutorPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Subject picker — hidden on xs, visible sm+ */}
+
             <div className="relative group hidden sm:flex items-center gap-2">
               {showOtherInput ? (
                 <div className="flex items-center gap-2">
@@ -479,7 +462,6 @@ export default function ChatTutorPage() {
           </div>
         </div>
 
-        {/* Mobile Subject Selector Row */}
         <div className="sm:hidden px-3 pt-3 pb-1 relative z-10 w-full flex-shrink-0">
            <button onClick={() => { audioSystem.playClick(); setShowSubjects(true); }}
              className="w-full flex items-center justify-between transition-all shadow-sm"
@@ -492,7 +474,6 @@ export default function ChatTutorPage() {
            </button>
         </div>
 
-        {/* Mobile Bottom Sheet for Subjects */}
         <AnimatePresence>
           {showSubjects && (
             <>
@@ -570,7 +551,6 @@ export default function ChatTutorPage() {
           )}
         </AnimatePresence>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 pb-[80px] sm:pb-6 space-y-4 sm:space-y-6 custom-scrollbar relative z-0">
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => (
@@ -619,7 +599,6 @@ export default function ChatTutorPage() {
           <div ref={msgEnd} />
         </div>
 
-        {/* Quick prompts */}
         {messages.length <= 2 && (
           <div className="px-3 sm:px-6 pb-2 sm:pb-3 flex overflow-x-auto custom-scrollbar-hide gap-2 relative z-10 w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <style>{`.custom-scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
@@ -639,7 +618,6 @@ export default function ChatTutorPage() {
           </div>
         )}
 
-        {/* Input */}
         <div className="sm:relative fixed bottom-0 left-0 right-0 px-3 sm:px-6 py-3 sm:py-5 flex-shrink-0 z-20 bg-[#0d0d1a] border-t border-white/5 sm:border-none" style={{ minHeight: '56px' }}>
           {listening && (
             <p className="text-xs font-bold mb-2 sm:mb-3 flex items-center gap-2 animate-pulse text-amber-500 uppercase tracking-widest">

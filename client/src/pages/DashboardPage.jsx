@@ -108,7 +108,6 @@ export default function DashboardPage() {
     loadHistory();
   }, [user, profile?.totalQuizzes]);
 
-  /* ── Streak popup: show only when streak increases to new number ── */
   useEffect(() => {
     if (!profile || !user?.uid) return;
     const currentStreak = profile.streak || 0;
@@ -163,7 +162,6 @@ export default function DashboardPage() {
   return (
     <div className="p-5 md:p-8 space-y-6 max-w-[1400px] mx-auto w-full">
 
-      {/* Streak popup */}
       {showStreakPopup && (
         <StreakPopup
           streak={profile?.streak || 0}
@@ -179,7 +177,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Header */}
       <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-12 lg:pt-0">
         <div>
@@ -201,7 +198,6 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* Weekly AI Report */}
       {showReport && (
         <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }}>
           <div className="glass-card border-primary/30 p-5 flex items-start gap-4 bg-gradient-to-r from-primary/5 to-transparent relative">
@@ -216,7 +212,6 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Streak banner */}
       {(profile?.streak||0) >= 2 && showStreak && (
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
           className="bg-gradient-to-r from-amber-500/15 to-transparent border border-amber-500/20 rounded-2xl p-4 flex items-center gap-4 shadow-sm relative overflow-hidden">
@@ -241,10 +236,8 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
-        {/* Streak card — custom, no percentage */}
         <motion.div
           initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.07 }}
           whileHover={{ y:-4, boxShadow: '0 10px 40px -10px rgba(0,0,0,0.3)' }}
@@ -266,7 +259,6 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Other 3 stat cards */}
         {[
           { icon:Zap,      color:'#0EA5E9', val:profile?.xp||0,           label:'Total XP',      sub:`Level ${level}`,                                       pct:xpPct },
           { icon:Target,   color:'#10B981', val:null,                     label:'Avg Score',     sub:avgScore>0?`${totalAccuracy}% accuracy`:'Take a quiz!', pct:avgScore, display:`${avgScore}%` },
@@ -296,7 +288,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Subject Progress + Right column */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
           className="xl:col-span-2 glass-card p-6 flex flex-col">
@@ -356,7 +347,7 @@ export default function DashboardPage() {
             <h2 className="font-jakarta font-bold text-sm mb-4 flex items-center gap-2 text-txt2">
               <TrendingUp size={16} className="text-primary" />Weekly Activity
             </h2>
-            {/* Bar chart */}
+
             <div className="flex items-end gap-1.5 flex-1" style={{ minHeight: 80 }}>
               {weeklyData.map((v, i) => {
                 const max     = Math.max(...weeklyData, 1);
@@ -367,11 +358,11 @@ export default function DashboardPage() {
                 const barPx   = v > 0 ? Math.max(12, Math.round((v / max) * BAR_H)) : 4;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    {/* count label */}
+
                     <span className="text-[9px] font-black" style={{ color: isToday ? '#8B72FF' : 'transparent', minHeight: 12 }}>
                       {v > 0 ? v : ''}
                     </span>
-                    {/* bar + today dot */}
+
                     <div className="relative w-full flex flex-col items-center justify-end" style={{ height: BAR_H }}>
                       {isToday && (
                         <div className="absolute -top-1.5 w-2 h-2 rounded-full z-10"
@@ -399,7 +390,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-            {/* Footer */}
+
             <p className="text-[10px] font-bold text-txt3 uppercase tracking-wider mt-3">
               {weeklyData.reduce((a, b) => a + b, 0)}
               <span className="text-txt3 normal-case font-medium"> quizzes this week</span>
@@ -408,13 +399,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Activity Calendar — full width standalone */}
       <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35 }}
         className="glass-card p-6 overflow-hidden">
         <StreakCalendar />
       </motion.div>
 
-      {/* Quick Actions + Study Tip */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.38 }}
           className="xl:col-span-2 glass-card p-6">
@@ -456,7 +445,6 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Start Studying + Recent Quizzes + Badges */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}
           className="glass-card p-6">

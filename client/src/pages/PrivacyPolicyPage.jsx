@@ -13,7 +13,6 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-[#0d0d1a] text-white font-jakarta">
 
-      {/* Header */}
       <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <Link to="/">
           <BrainNexLogo size="md" />
@@ -26,7 +25,7 @@ export default function PrivacyPolicyPage() {
         transition={{ duration: 0.5 }}
         className="max-w-3xl mx-auto px-6 py-12"
       >
-        {/* Back button */}
+
         <button
           onClick={() => navigate(-1)}
           style={{
@@ -108,7 +107,6 @@ export default function PrivacyPolicyPage() {
         ))}
       </motion.div>
 
-      {/* Footer */}
       <div className="border-t border-white/10 py-6 text-center text-white/30 text-sm">
         © 2026 BrainNex. All rights reserved.
       </div>

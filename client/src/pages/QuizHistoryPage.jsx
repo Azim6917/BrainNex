@@ -12,14 +12,12 @@ import { audioSystem } from '../utils/audio';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-/* ── Score colour helper ── */
 function scoreStyle(score) {
   if (score >= 80) return { color: '#10B981', bg: '#10B98115', label: 'Excellent' };
   if (score >= 50) return { color: '#F59E0B', bg: '#F59E0B15', label: 'Good' };
   return { color: '#EF4444', bg: '#EF444415', label: 'Needs Work' };
 }
 
-/* ── Per-question row inside the detail modal ── */
 function QuestionRow({ q, index }) {
   const correct   = q.userSelectedIndex === q.correctIndex;
   const unanswered = q.userSelectedIndex < 0 || q.userSelectedIndex == null;
@@ -65,7 +63,6 @@ function QuestionRow({ q, index }) {
   );
 }
 
-/* ── Detail modal ── */
 function DetailModal({ quiz, onClose }) {
   const ss = scoreStyle(quiz.score);
   return (
@@ -79,7 +76,7 @@ function DetailModal({ quiz, onClose }) {
         exit={{ scale: 0.95, y: 20, opacity: 0 }}
         onClick={e => e.stopPropagation()}
         className="glass-card w-full max-w-2xl max-h-[88vh] overflow-y-auto custom-scrollbar border-white/10 shadow-2xl">
-        {/* Header */}
+
         <div className="sticky top-0 z-10 glass-card rounded-none border-0 border-b border-white/5 px-6 py-4 flex items-start justify-between gap-4 backdrop-blur-xl">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-txt3 mb-0.5">{quiz.subject}</p>
@@ -97,7 +94,6 @@ function DetailModal({ quiz, onClose }) {
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 px-6 py-4 border-b border-white/5">
           {[
             { label: 'Correct',    val: `${quiz.correctAnswers} / ${quiz.totalQuestions}` },
@@ -111,7 +107,6 @@ function DetailModal({ quiz, onClose }) {
           ))}
         </div>
 
-        {/* Questions */}
         <div className="px-6 py-5">
           {(!quiz.questions || quiz.questions.length === 0) ? (
             <div className="text-center py-10">
@@ -128,7 +123,6 @@ function DetailModal({ quiz, onClose }) {
   );
 }
 
-/* ── Delete confirmation dialog ── */
 function DeleteConfirm({ onConfirm, onCancel }) {
   return (
     <motion.div
@@ -161,7 +155,6 @@ function DeleteConfirm({ onConfirm, onCancel }) {
   );
 }
 
-/* ── Main page ── */
 export default function QuizHistoryPage() {
   const { user } = useAuth();
   const [history,     setHistory]     = useState([]);
@@ -220,7 +213,7 @@ export default function QuizHistoryPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1100px] mx-auto w-full">
-      {/* Header */}
+
       <div className="flex items-center gap-4 mb-6 pt-12 lg:pt-0">
         <Link to="/app/dashboard"
           className="w-9 h-9 rounded-xl bg-space-800 border border-border flex items-center justify-center text-txt3 hover:text-txt transition-all">
@@ -232,7 +225,6 @@ export default function QuizHistoryPage() {
         </div>
       </div>
 
-      {/* Summary stats */}
       {totalQuizzes > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
@@ -251,7 +243,6 @@ export default function QuizHistoryPage() {
         </div>
       )}
 
-      {/* Filter pills */}
       {totalQuizzes > 0 && (
         <div className="flex gap-2 mb-5 flex-wrap">
           {[
@@ -271,7 +262,6 @@ export default function QuizHistoryPage() {
         </div>
       )}
 
-      {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-24">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -299,13 +289,12 @@ export default function QuizHistoryPage() {
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-4 flex items-center gap-4 group hover:border-white/10 transition-all border-transparent">
-                  {/* Score badge */}
+
                   <div className="w-14 h-14 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0 border"
                     style={{ color: ss.color, background: ss.bg, borderColor: ss.color + '40' }}>
                     {q.score}%
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-txt truncate">{q.topic}</p>
                     <p className="text-xs text-txt3 font-medium mt-0.5">{q.subject}</p>
@@ -326,7 +315,6 @@ export default function QuizHistoryPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => { audioSystem.playClick(); setSelected(q); }}
@@ -346,12 +334,10 @@ export default function QuizHistoryPage() {
         </div>
       )}
 
-      {/* Detail modal */}
       <AnimatePresence>
         {selected && <DetailModal quiz={selected} onClose={() => setSelected(null)} />}
       </AnimatePresence>
 
-      {/* Delete confirm */}
       <AnimatePresence>
         {toDelete && (
           <DeleteConfirm

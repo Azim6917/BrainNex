@@ -42,7 +42,7 @@ function PathCard({ path, pathId }) {
       className="glass-card p-6 flex flex-col gap-4 cursor-pointer group transition-all"
       onClick={handleContinue}
     >
-      {/* Header */}
+
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-jakarta font-black text-lg text-txt leading-tight mb-1 group-hover:text-primary transition-colors">
@@ -66,13 +66,11 @@ function PathCard({ path, pathId }) {
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="flex items-center gap-4 text-xs font-bold text-txt3">
         <span className="flex items-center gap-1.5"><Layers size={12} /> {total} topics</span>
         <span className="flex items-center gap-1.5"><Clock size={12} /> {formatDate(path.createdAt)}</span>
       </div>
 
-      {/* Progress */}
       <div>
         <div className="flex items-center justify-between text-xs font-bold mb-2">
           <span className="text-txt3 uppercase tracking-wider">Progress</span>
@@ -87,7 +85,6 @@ function PathCard({ path, pathId }) {
         </div>
       </div>
 
-      {/* CTA */}
       <button
         onClick={e => { e.stopPropagation(); handleContinue(); }}
         className="btn-primary py-2.5 text-sm flex items-center justify-center gap-2 mt-auto">
@@ -121,7 +118,7 @@ export default function SavedPathsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto w-full">
-      {/* Header */}
+
       <div className="mb-6 md:mb-8 pt-2 lg:pt-0">
         <h1 className="font-jakarta font-black text-2xl md:text-4xl text-txt mb-2 flex items-center gap-3">
           <Bookmark size={28} className="text-primary" /> My Learning Paths
@@ -129,7 +126,6 @@ export default function SavedPathsPage() {
         <p className="text-sm font-medium text-txt3">All your saved AI-generated study roadmaps in one place</p>
       </div>
 
-      {/* Loading skeletons */}
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {[1, 2, 3].map(i => (
@@ -143,7 +139,6 @@ export default function SavedPathsPage() {
         </div>
       )}
 
-      {/* Paths grid */}
       {!loading && paths.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {paths.map(p => (
@@ -152,7 +147,6 @@ export default function SavedPathsPage() {
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && paths.length === 0 && (
         <div className="text-center py-24 glass-card mt-8">
           <div className="w-20 h-20 bg-space-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-border">

@@ -18,7 +18,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ─── AI API ───────────────────────────────────────────────────────────────────
 export const chatWithAI = (messages, subject, studentLevel, grade) =>
     api.post("/ai/chat", { messages, subject, studentLevel, grade });
 
@@ -43,7 +42,6 @@ export const generateTopicResources = (subject, topic) =>
 export const getAdaptiveDifficulty = (recentScores, currentDifficulty) =>
   api.post('/ai/adaptive-difficulty', { recentScores, currentDifficulty });
 
-// ─── Progress API ─────────────────────────────────────────────────────────────
 export const fetchProfile     = ()          => api.get('/progress/profile');
 export const updateStreak     = ()          => api.post('/progress/update-streak');
 export const saveQuizResult   = (data)      => api.post('/progress/quiz-result', data);
@@ -53,8 +51,6 @@ export const fetchSubjectProgress = ()      => api.get('/progress/subject-progre
 
 export default api;
 
-
-// ─── New AI endpoints ─────────────────────────────────────────────────────────
 export const generateStudySession = (subject, topic, level, grade) =>
     api.post("/ai/study-session", { subject, topic, level, grade });
 
