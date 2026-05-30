@@ -113,18 +113,26 @@ Only topics below 65%. Priority: high<50%, medium 50-64%.`;
 
 router.post('/learning-path', verifyToken, async (req, res) => {
   const { subject, currentLevel, completedTopics, goal } = req.body;
-  const prompt = `Create a highly detailed, comprehensive learning path for ${subject} at ${currentLevel} level. Completed: ${completedTopics?.join(',') || 'none'}. Student goal: ${goal || 'Master the Basics'}.
-Break down the subject into specific, deeply focused sub-topics rather than broad categories. Ensure it forms a complete step-by-step curriculum.
-Return ONLY JSON (10 nodes):
-{"subject":"${subject}","totalTopics":10,"nodes":[{"id":"1","title":"Specific Topic Name","description":"Detailed explanation of what this covers","level":"beginner","status":"completed","prerequisites":[],"estimatedMinutes":30,"xpReward":50}],"connections":[{"from":"1","to":"2"}]}
-Status: completed=done, current=next logical, locked=rest.`;
+
+  // Compact prompt — one-sentence descriptions keep the JSON under 800 tokens
+  const prompt = `Create a ${currentLevel} learning path for ${subject}. Goal: ${goal || 'Master the Basics'}. Previously completed: ${completedTopics?.join(', ') || 'none'}.
+Return ONLY minified JSON, no other text:
+{"subject":"${subject}","totalTopics":10,"nodes":[{"id":"1","title":"Topic Name","description":"One sentence only.","level":"${currentLevel}","status":"current","prerequisites":[],"estimatedMinutes":30,"xpReward":100}],"connections":[{"from":"1","to":"2"}]}
+Rules: exactly 10 nodes, one sentence per description, minified JSON, first node status=current rest=locked, mark any completed topics as completed.`;
 
   try {
-    const r = await client.messages.create({ model: MODEL, max_tokens: QUIZ_TOKENS, messages: [{ role: 'user', content: prompt }] });
+    const r = await client.messages.create({
+      model: MODEL,
+      max_tokens: 800, // Hard cap — sufficient for 10 nodes with one-sentence descriptions
+      messages: [{ role: 'user', content: prompt }],
+    });
     const m = r.content[0].text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Invalid');
+    if (!m) throw new Error('Invalid JSON from AI');
     res.json(JSON.parse(m[0]));
-  } catch { res.status(500).json({ error: 'Failed to generate path.' }); }
+  } catch (err) {
+    console.error('Learning path error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to generate path.' });
+  }
 });
 
 router.post('/adaptive-difficulty', verifyToken, async (req, res) => {
@@ -258,11 +266,14 @@ Return ONLY valid JSON:
 }`;
 
   try {
-    const r = await client.messages.create({ model: MODEL, max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+    const r = await client.messages.create({ model: MODEL, max_tokens: 2500, messages: [{ role: 'user', content: prompt }] });
     const m = r.content[0].text.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Invalid JSON');
     res.json(JSON.parse(m[0]));
-  } catch { res.status(500).json({ error: 'Failed to generate lesson.' }); }
+  } catch (err) {
+    console.error('Topic lesson error:', err?.message || err);
+    res.status(500).json({ error: 'Failed to generate lesson.' });
+  }
 });
 
 router.post('/topic-quiz', verifyToken, async (req, res) => {

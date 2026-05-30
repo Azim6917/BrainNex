@@ -168,9 +168,9 @@ function GoalCard({ goal, profile, quizHistory, onDelete, onToggle }) {
           <span className="text-txt3">{done ? 'Completed!' : `Progress: ${pct}%`}</span>
           <span className="drop-shadow-sm" style={{ color }}>{pct}%</span>
         </div>
-        <div className="h-2 bg-space-800 rounded-full overflow-hidden shadow-inner mb-3">
-          <motion.div className="h-full rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}80` }}
-            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2 }} />
+        <div className="w-full mb-3" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+          <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-bold text-txt3 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg w-fit">
           <Clock size={10} className="text-txt3 opacity-60" />

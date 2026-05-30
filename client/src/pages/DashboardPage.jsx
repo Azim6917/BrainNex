@@ -322,11 +322,9 @@ export default function DashboardPage() {
                       <span className="font-bold text-txt">{subject}</span>
                       <span className="text-xs font-semibold text-txt2"><span className="text-txt3 mr-2">{totalQuizzes} quizzes</span> <span style={{ color:c }}>{averageScore}% avg</span></span>
                     </div>
-                    <div className="h-2.5 bg-space-800 rounded-full overflow-hidden shadow-inner">
-                      <motion.div initial={{ width:0 }} animate={{ width:`${averageScore}%` }} transition={{ duration:1, delay:0.3 }}
-                         className="h-full rounded-full shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)] relative" style={{ background: c }}>
-                           <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-                      </motion.div>
+                    <div className="w-full" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+                      <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+                        initial={{ width:0 }} animate={{ width:`${averageScore}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
                     </div>
                   </div>
                 );

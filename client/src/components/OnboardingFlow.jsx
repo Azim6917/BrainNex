@@ -104,14 +104,10 @@ export default function OnboardingFlow({ onComplete }) {
       <div className="w-full max-w-lg relative">
         <div className="flex justify-center mb-8"><BrainNexLogo size="lg" /></div>
 
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {STEPS.map((_, i) => (
-            <motion.div key={i}
-              animate={{ width: i === step ? 32 : 8 }}
-              className="h-2 rounded-full"
-              style={{ background: i <= step ? 'var(--cyan)' : 'var(--border2)' }}
-              transition={{ duration:0.3 }} />
-          ))}
+        <div className="mb-8" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+          <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+            animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
 
         <AnimatePresence mode="wait">

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Map, Lock, CheckCircle, Circle, Zap, ChevronDown, Clock, X, Trash2, BookOpen, ChevronRight, Layers } from 'lucide-react';
 import {
   collection, addDoc, getDocs, query, where, orderBy, doc, getDoc,
-  serverTimestamp, deleteDoc, updateDoc,
+  serverTimestamp, deleteDoc, updateDoc, setDoc,
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { generateLearningPath } from '../utils/api';
@@ -57,6 +57,11 @@ function SavedPathRow({ path, onLoad, onDelete }) {
           <span className="font-bold text-sm text-txt truncate">{path.subject}</span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded capitalize"
             style={{ background: `${lc}18`, color: lc, border: `1px solid ${lc}30` }}>{path.level}</span>
+          {path.goal && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-txt3 border border-white/10 truncate max-w-[140px]">
+              {path.goal}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 text-[10px] font-bold text-txt3">
           <span className="flex items-center gap-1"><Layers size={9}/>{total} topics</span>
@@ -281,6 +286,10 @@ export default function LearningPathPage() {
 
   const actualSubject = subject === 'Other' ? customSubject.trim() : subject;
 
+  /** Deterministic cache key shared across all users for the same subject+level+goal */
+  const buildCacheKey = (subj, lvl, gl) =>
+    `${subj}-${lvl}-${gl}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
   const checkDuplicate = async () => {
     if (!user?.uid || !actualSubject) return null;
     const q = query(
@@ -320,6 +329,7 @@ export default function LearningPathPage() {
     if (!forceNew) {
       setLoading(true);
       try {
+        // Layer 1: user's own saved paths (fastest, always free)
         const existing = await checkDuplicate();
         if (existing) {
           setDupDoc(existing);
@@ -327,9 +337,31 @@ export default function LearningPathPage() {
           setLoading(false);
           return;
         }
-      } catch { /* continue */ }
+
+        // Layer 2: global shared cache (free for any user who's requested this path before)
+        const cacheKey   = buildCacheKey(actualSubject, level, goal);
+        const globalSnap = await getDoc(doc(db, 'learningPathCache', cacheKey));
+        if (globalSnap.exists()) {
+          const cachedData = globalSnap.data().path;
+          // Validate cache structure
+          if (cachedData && Array.isArray(cachedData.nodes) && cachedData.nodes.length > 0) {
+            setPathData(cachedData);
+            // Save a personal copy so it appears in user's saved paths
+            await savePath(cachedData);
+            await loadSavedPaths();
+            // Increment useCount (best-effort, non-blocking)
+            updateDoc(doc(db, 'learningPathCache', cacheKey), {
+              useCount: (globalSnap.data().useCount || 1) + 1,
+            }).catch(() => {});
+            toast.success('Learning path loaded from cache ⚡ (0 tokens used)');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch { /* continue to API */ }
     }
 
+    // Layer 3: call AI — only reached when no cache exists
     setLoading(true);
     setPathData(null);
     setSavedPathId(null);
@@ -337,15 +369,36 @@ export default function LearningPathPage() {
       const completedTopics = (subjectProgress || [])
         .filter(s => s.subject === actualSubject && s.averageScore >= 70)
         .map(s => s.subject);
-      const res = await generateLearningPath(actualSubject, level, completedTopics, goal);
+      const res  = await generateLearningPath(actualSubject, level, completedTopics, goal);
       const data = res.data;
+
+      // Validate before setting state
+      if (!data || !Array.isArray(data.nodes) || data.nodes.length === 0) {
+        throw new Error('Invalid path data received from server.');
+      }
+
       setPathData(data);
+
+      // Save to user's personal paths
       await savePath(data);
-      await loadSavedPaths(); // refresh list
+      await loadSavedPaths();
+
+      // Save to global cache (best-effort — don't fail the user if this errors)
+      const cacheKey = buildCacheKey(actualSubject, level, goal);
+      setDoc(doc(db, 'learningPathCache', cacheKey), {
+        path:      data,
+        subject:   actualSubject,
+        level,
+        goal,
+        createdAt: serverTimestamp(),
+        useCount:  1,
+      }).catch(err => console.warn('Global cache save failed (non-critical):', err.message));
+
       awardBadgeToFirestore(user.uid, 'learning-path-gen');
       toast.success('Learning path generated & saved!');
-    } catch {
-      toast.error('Failed to generate path. Please try again.');
+    } catch (err) {
+      console.error('Generate path error:', err);
+      toast.error(err?.response?.data?.error || 'Failed to generate path. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -540,14 +593,11 @@ export default function LearningPathPage() {
                 {Math.round((completedCount / pathData.nodes.length) * 100)}%
               </span>
             </div>
-            <div className="h-3 bg-space-800 rounded-full overflow-hidden shadow-inner relative z-10">
-              <motion.div className="h-full rounded-full shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)] relative"
-                style={{ background: 'var(--primary)' }}
+            <div className="w-full relative z-10" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+              <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
                 initial={{ width: 0 }}
                 animate={{ width: `${(completedCount / pathData.nodes.length) * 100}%` }}
-                transition={{ duration: 1 }}>
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-              </motion.div>
+                transition={{ duration: 0.5, ease: "easeOut" }} />
             </div>
           </div>
 

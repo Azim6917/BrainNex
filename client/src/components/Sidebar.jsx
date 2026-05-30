@@ -34,10 +34,9 @@ function XPBar({ xp, level }) {
         <span>{xpInLevel} XP</span>
         <span>Lv.{level + 1}</span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background:'var(--border2)' }}>
-        <motion.div className="h-full rounded-full"
-          style={{ background:'linear-gradient(90deg, #7C3AED, #0EA5E9)' }}
-          initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration:1, delay:0.4 }} />
+      <div className="w-full" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+        <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+          initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
       </div>
     </div>
   );

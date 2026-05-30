@@ -6,7 +6,7 @@
 import {
   doc, collection, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   arrayUnion, serverTimestamp, query, orderBy, limit, where,
-  increment,
+  increment, runTransaction,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -40,7 +40,7 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
   const userRef  = doc(db, 'users', uid);
 
   try {
-    // 1. Save quiz result to subcollection (with full question detail when available)
+    // 1. Save quiz result to subcollection (fire-and-forget, safe to run outside transaction)
     await addDoc(collection(db, 'quizResults', uid, 'results'), {
       subject,
       topic,
@@ -53,20 +53,22 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       ...(questions ? { questions } : {}),
     });
 
-    // 2. Read current user data
-    const snap     = await getDoc(userRef);
-    const userData = snap.data() || {};
+    // 2. Determine badge eligibility from a pre-read snapshot (used for badge checks only,
+    //    not for computing the final XP — that happens inside the transaction below).
+    const preSnap    = await getDoc(userRef);
+    const preData    = preSnap.data() || {};
+    const preQuizzes = (preData.totalQuizzes  || 0) + 1;
+    const preCorrect = (preData.totalCorrect  || 0) + correctAnswers;
+    const preQns     = (preData.totalQuestions|| 0) + totalQuestions;
+    const preXp      = (preData.xp            || 0) + xpEarned;  // optimistic, for badge checks
 
-    const newXp          = (userData.xp || 0) + xpEarned;
-    const newLevel       = xpForLevel(newXp);
-    const totalQuizzes   = (userData.totalQuizzes || 0) + 1;
-    const totalCorrect   = (userData.totalCorrect || 0) + correctAnswers;
-    const totalQuestions2= (userData.totalQuestions || 0) + totalQuestions;
-    const existingBadges = userData.badges || [];
+    const existingBadges = preData.badges || [];
     const existingIds    = new Set(existingBadges.map(b => b.id));
-    const subjects       = userData.subjects || [];
+    const preSubjects    = preData.subjects || [];
+    const newSubjects    = preSubjects.includes(subject) ? preSubjects : [...preSubjects, subject];
 
-    // 3. Check badges
+    // 3. Badge detection (based on pre-read data — badges are idempotent so a small
+    //    lag here is fine; the transaction will apply the final badge list atomically)
     const newBadges = [];
     const addBadge = (id) => {
       if (!existingIds.has(id)) {
@@ -75,36 +77,24 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       }
     };
 
-    if (totalQuizzes === 1)  addBadge('first-quiz');
-    if (score === 100)       addBadge('perfect-score');
-    if (totalQuizzes >= 10)  addBadge('10-quizzes');
-    if (totalQuizzes >= 25)  addBadge('25-quizzes');
-    if (newXp >= 1000)       addBadge('1k-xp');
-    if (newXp >= 5000)       addBadge('5k-xp');
-
-    // multi-subject badge
-    const newSubjects = subjects.includes(subject) ? subjects : [...subjects, subject];
+    if (preQuizzes === 1)  addBadge('first-quiz');
+    if (score === 100)     addBadge('perfect-score');
+    if (preQuizzes >= 10)  addBadge('10-quizzes');
+    if (preQuizzes >= 25)  addBadge('25-quizzes');
+    if (preXp >= 1000)     addBadge('1k-xp');
+    if (preXp >= 5000)     addBadge('5k-xp');
     if (newSubjects.length >= 5) addBadge('multi-subject');
 
-    // high-scorer: check avg
-    const avgScore = totalQuestions2 > 0 ? Math.round((totalCorrect / totalQuestions2) * 100) : 0;
-    if (avgScore >= 80 && totalQuizzes >= 5) addBadge('high-scorer');
+    const avgScore = preQns > 0 ? Math.round((preCorrect / preQns) * 100) : 0;
+    if (avgScore >= 80 && preQuizzes >= 5) addBadge('high-scorer');
 
-    // NEW BADGES LOGIC
     const hour = new Date().getHours();
     if (hour >= 22) addBadge('night-owl');
     if (hour < 7)   addBadge('early-bird');
-    
-    // Check if it's a learning path quiz and perfect score
-    // we assume we pass isLearningPath from the calling page
     if (isLearningPath && score === 100) addBadge('perfect-path');
 
-    // subject-master: Score above 90% average in any one subject across 5 quizzes
-    // To do this simply, we'll check if the current subject has reached 5 quizzes
-    // and if the average is > 90%. We can fetch current subject stats or just do a query.
-    // For performance, we'll quickly query the last 5 for this subject.
-    // Fetch the last 5 quizzes for this subject (including the one just saved)
-    const subjQ = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
+    // subject-master: check last 5 quizzes for this subject
+    const subjQ    = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
     const subjSnap = await getDocs(subjQ);
     if (subjSnap.size >= 5) {
       let totalS = 0;
@@ -112,21 +102,47 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       if (totalS / subjSnap.size > 90) addBadge('subject-master');
     }
 
-    // 4. Update user doc
-    const updates = {
-      xp:             newXp,
-      level:          newLevel,
-      totalQuizzes,
-      totalCorrect,
-      totalQuestions: totalQuestions2,
-      subjects:       newSubjects,
-      currentDifficulty: difficulty,
-    };
-    if (newBadges.length > 0) updates.badges = [...existingBadges, ...newBadges];
+    // 4. Atomically update XP and all counters using a Firestore transaction.
+    //    This prevents the race condition where two concurrent quiz saves read the
+    //    same stale XP and one increment is silently dropped.
+    let finalXp, finalLevel;
+    await runTransaction(db, async (transaction) => {
+      const txSnap = await transaction.get(userRef);
+      if (!txSnap.exists()) return;
 
-    await updateDoc(userRef, updates);
+      const txData     = txSnap.data();
+      finalXp          = (txData.xp            || 0) + xpEarned;
+      finalLevel       = xpForLevel(finalXp);
+      const txTotalQ   = (txData.totalQuizzes   || 0) + 1;
+      const txTotalC   = (txData.totalCorrect   || 0) + correctAnswers;
+      const txTotalQns = (txData.totalQuestions || 0) + totalQuestions;
+      const txSubs     = txData.subjects || [];
+      const txNewSubs  = txSubs.includes(subject) ? txSubs : [...txSubs, subject];
 
-    return { xpEarned, newXp, newLevel, newBadges };
+      const txUpdates = {
+        xp:                finalXp,
+        level:             finalLevel,
+        totalQuizzes:      txTotalQ,
+        totalCorrect:      txTotalC,
+        totalQuestions:    txTotalQns,
+        subjects:          txNewSubs,
+        currentDifficulty: difficulty,
+        lastUpdated:       serverTimestamp(),
+      };
+      // Merge new badges with deduplication at transaction time
+      if (newBadges.length > 0) {
+        const txBadges      = txData.badges || [];
+        const txBadgeIds    = new Set(txBadges.map(b => b.id));
+        const dedupedBadges = newBadges.filter(b => !txBadgeIds.has(b.id));
+        if (dedupedBadges.length > 0) {
+          txUpdates.badges = [...txBadges, ...dedupedBadges];
+        }
+      }
+
+      transaction.update(userRef, txUpdates);
+    });
+
+    return { xpEarned, newXp: finalXp ?? preXp, newLevel: finalLevel ?? xpForLevel(preXp), newBadges };
   } catch (err) {
     console.error('saveQuizResultToFirestore error:', err);
     return { xpEarned, newXp: 0, newLevel: 1, newBadges: [] };

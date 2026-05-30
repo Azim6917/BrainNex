@@ -128,10 +128,9 @@ export default function AchievementsPage() {
               <span>{xpInLevel} / {xpNeeded} XP</span>
               <span>{xpPct}% to Lv.{Math.min(level+1,10)}</span>
             </div>
-            <div className="h-3 bg-space-800 rounded-full overflow-hidden shadow-inner">
-              <motion.div className="h-full rounded-full"
-                style={{ background:`linear-gradient(90deg,${levelInfo.color}88,${levelInfo.color})`, boxShadow:`0 0 10px ${levelInfo.color}60` }}
-                initial={{ width:0 }} animate={{ width:`${xpPct}%` }} transition={{ duration:1.2, delay:0.3 }} />
+            <div className="w-full" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+              <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+                initial={{ width:0 }} animate={{ width:`${xpPct}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
             </div>
           </div>
         </div>

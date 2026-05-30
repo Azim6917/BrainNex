@@ -328,8 +328,8 @@ function ActiveQuiz({ quiz, timerSeconds, grade, onComplete }) {
 }
 
 function QuizResults({ result, quiz, onRetry, onNew, grade }) {
-  const { user }                            = useAuth();
-  const { updateProfileLocal, refreshProfile } = useUserData();
+  const { user }      = useAuth();
+  const { refreshProfile } = useUserData();
   const [saved,      setSaved]      = useState(false);
   const [flashcards, setFlashcards] = useState([]);
   const [fcLoad,     setFcLoad]     = useState(false);
@@ -364,7 +364,7 @@ useEffect(() => {
       questions: questionsDetail,
     });
     if (res?.newBadges?.length>0) res.newBadges.forEach(b => toast.success(`🏆 ${b.name}!`, { duration:4000 }));
-    if (res) { updateProfileLocal({ xp:res.newXp, level:res.newLevel }); await refreshProfile(); }
+    if (res) { await refreshProfile(); }
     setSaved(true);
 
     const wq = quiz.questions.filter((_,i) => !result.answers[i]?.correct).map(q => q.question);

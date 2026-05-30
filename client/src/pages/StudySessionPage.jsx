@@ -268,10 +268,9 @@ function LessonCards({ session, onComplete }) {
     <div className="max-w-3xl mx-auto">
 
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex-1 h-2 bg-space-800 rounded-full overflow-hidden shadow-inner">
-          <motion.div className="h-full rounded-full shadow-[0_0_10px_rgba(124,58,237,0.5)]"
-            style={{ background:'linear-gradient(90deg, var(--primary), var(--cyan))' }}
-            animate={{ width:`${pct}%` }} transition={{ duration:0.4 }} />
+        <div className="flex-1" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+          <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+            animate={{ width:`${pct}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
         <span className="text-xs font-bold text-txt3 flex-shrink-0 bg-space-800 px-3 py-1.5 rounded-lg border border-white/5">{cardIdx + 1}/{total}</span>
         <span className="text-xs font-bold text-txt3 flex-shrink-0 bg-space-800 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-1.5"><Clock size={12}/>~{session.estimatedMinutes}min</span>
@@ -467,9 +466,9 @@ function EndQuiz({ session, onComplete }) {
         </div>
         <span className="text-sm font-bold text-txt3 bg-space-800 px-4 py-2.5 rounded-xl border border-white/5 shadow-sm flex-shrink-0">{current+1}/{total}</span>
       </div>
-      <div className="h-2 bg-space-800 rounded-full overflow-hidden mb-6 shadow-inner">
-        <motion.div className="h-full rounded-full shadow-[0_0_10px_rgba(124,58,237,0.5)]" style={{ background:'linear-gradient(90deg,var(--primary),var(--cyan))' }}
-          animate={{ width:`${(current/total)*100}%` }} transition={{ duration:0.4 }} />
+      <div className="w-full mb-6" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+        <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
+          animate={{ width:`${(current/total)*100}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
       </div>
 
       <AnimatePresence mode="wait">
@@ -542,7 +541,7 @@ function EndQuiz({ session, onComplete }) {
 
 function SessionResults({ session, quizResult, onRestart, onNewSession }) {
   const { user }                         = useAuth();
-  const { updateProfileLocal, refreshProfile } = useUserData();
+  const { refreshProfile } = useUserData();
   const [flashcards, setFlashcards]      = useState([]);
   const [fcLoading,  setFcLoading]       = useState(false);
   const [wrongQs,    setWrongQs]         = useState([]);
@@ -568,7 +567,7 @@ function SessionResults({ session, quizResult, onRestart, onNewSession }) {
       if (res?.newBadges?.length > 0) {
         res.newBadges.forEach(b => toast.success(`🏆 ${b.name}!`, { duration:4000 }));
       }
-      if (res) { updateProfileLocal({ xp: res.newXp, level: res.newLevel }); await refreshProfile(); }
+      if (res) { await refreshProfile(); }
       setSaved(true);
 
       // Auto-generate flashcards for wrong answers

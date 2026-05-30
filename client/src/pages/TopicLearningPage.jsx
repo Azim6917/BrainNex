@@ -4,10 +4,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, BookOpen, CheckCircle, AlertTriangle, Lightbulb,
   Star, ChevronRight, ChevronLeft, ExternalLink, Zap, RotateCcw,
-  Lock, Clock, Info, RefreshCw
+  Lock, Clock, Info, RefreshCw, AlertCircle, ChevronDown, X
 } from 'lucide-react';
 import {
-  doc, getDoc, setDoc, updateDoc, serverTimestamp,
+  doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, orderBy, limit, getDocs
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -136,6 +136,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   const [direction, setDirection] = useState(1);
   const [xpEarned,  setXpEarned]  = useState(0);
   const [finalScoreVal, setFinalScoreVal] = useState(0);
+  const [answers,   setAnswers]   = useState([]);
 
   const loadQuiz = async () => {
     audioSystem.playClick();
@@ -166,6 +167,11 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
     audioSystem.playClick();
     setSelected(idx);
     setAnswered(true);
+    setAnswers(prev => {
+      const newAnswers = [...prev];
+      newAnswers[current] = idx;
+      return newAnswers;
+    });
     if (idx === quiz.questions[current].correctIndex) {
       setScore(s => s + 1);
     }
@@ -183,6 +189,11 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
 
       if (passed) {
         // Only save XP and unlock next topic if passed
+        const finalQuestions = quiz.questions.map((q, i) => ({
+          ...q,
+          selectedOption: answers[i] ?? (i === current ? selected : null)
+        }));
+        
         const result = await saveQuizResultToFirestore(user.uid, {
           subject,
           topic,
@@ -191,6 +202,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
           correctAnswers: correctCount,
           difficulty: level,
           isLearningPath: true,
+          questions: finalQuestions,
         });
         if (result?.xpEarned) setXpEarned(result.xpEarned);
         onQuizPass(finalScore);
@@ -209,6 +221,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
     setScore(0);
     setSelected(null);
     setAnswered(false);
+    setAnswers([]);
     setXpEarned(0);
     setFinalScoreVal(0);
     audioSystem.playClick();
@@ -303,10 +316,10 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
         <span className="text-xs font-bold text-txt3 uppercase tracking-widest px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
           Question {current + 1} of {quiz.questions.length}
         </span>
-        <div className="h-2.5 flex-1 mx-6 bg-space-800 rounded-full overflow-hidden shadow-inner border border-white/5">
-          <motion.div className="h-full rounded-full bg-gradient-to-r from-primary to-cyan-500"
+        <div className="flex-1 mx-6" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
+          <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}
             animate={{ width: `${((current) / quiz.questions.length) * 100}%` }}
-            transition={{ duration: 0.4 }} />
+            transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
         <span className="text-sm font-bold text-primary px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">{score} correct</span>
       </div>
@@ -372,12 +385,17 @@ export default function TopicLearningPage() {
   const [lesson,    setLesson]    = useState(null);
   const [resources, setResources] = useState(null);
   const [lessonLoading,    setLessonLoading]    = useState(true);
+  const [lessonError,      setLessonError]      = useState(null);
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [quizPassed, setQuizPassed] = useState(false);
+
+  const [quizHistory, setQuizHistory] = useState(null);
+  const [expandedAttemptId, setExpandedAttemptId] = useState(null);
 
   useEffect(() => {
     setLesson(null);
     setResources(null);
+    setLessonError(null);
     setActiveTab('lesson');
     setLessonLoading(true);
     setResourcesLoading(true);
@@ -402,24 +420,64 @@ export default function TopicLearningPage() {
   }, [user?.uid, pathId, topicIndex]);
 
   /* Load lesson */
-  useEffect(() => {
+  const loadLesson = async () => {
     if (!topic || !pathMeta || !user?.uid) return;
-    (async () => {
-      setLessonLoading(true);
-      try {
-        const cacheRef = doc(db, 'users', user.uid, 'savedPaths', pathId, 'topicContent', String(topicIndex));
-        const cached   = await getDoc(cacheRef);
-        if (cached.exists()) {
-          setLesson(cached.data().lesson);
-        } else {
-          const res  = await generateTopicLesson(pathMeta.subject, topic.title, pathMeta.level, pathMeta.goal || '🎯 Master the Basics');
-          const data = res.data;
-          setLesson(data);
-          await setDoc(cacheRef, { lesson: data, cachedAt: serverTimestamp() });
+
+    // Guard: require valid data before touching the API
+    if (!topic.title || !pathMeta.subject || !pathMeta.level) {
+      setLessonError('Missing topic information. Please go back and select a topic again.');
+      setLessonLoading(false);
+      return;
+    }
+
+    setLessonLoading(true);
+    setLessonError(null);
+    setLesson(null);
+
+    try {
+      // Check Firestore cache first — zero token cost on cache hit
+      const cacheRef = doc(db, 'users', user.uid, 'savedPaths', pathId, 'topicContent', String(topicIndex));
+      const cached   = await getDoc(cacheRef);
+      if (cached.exists()) {
+        const cachedLesson = cached.data().lesson;
+        // Validate cache structure before trusting it
+        if (cachedLesson && Array.isArray(cachedLesson.sections) && cachedLesson.sections.length > 0) {
+          setLesson(cachedLesson);
+          setLessonLoading(false);
+          return; // zero token cost
         }
-      } catch { toast.error('Failed to load lesson content.'); }
-      finally  { setLessonLoading(false); }
-    })();
+        // Corrupt/incomplete cache — fall through to API
+      }
+
+      // Call API only if no valid cache exists
+      const res  = await generateTopicLesson(pathMeta.subject, topic.title, pathMeta.level, pathMeta.goal || '🎯 Master the Basics');
+      const data = res.data;
+
+      // Validate response structure before setting state
+      if (!data || !Array.isArray(data.sections) || data.sections.length === 0) {
+        throw new Error('Invalid lesson content received from server. The AI response may have been truncated.');
+      }
+
+      setLesson(data);
+
+      // Cache successful response so future visits cost zero tokens
+      await setDoc(cacheRef, { lesson: data, cachedAt: serverTimestamp() }).catch(() => {});
+    } catch (err) {
+      console.error('Lesson load error:', err);
+      // Do NOT retry automatically — this would burn more tokens
+      setLessonError(
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to load lesson content. Please try again.'
+      );
+    } finally {
+      setLessonLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLesson();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topic, pathMeta, pathId, topicIndex, user?.uid]);
 
   /* Load resources */
@@ -442,6 +500,31 @@ export default function TopicLearningPage() {
       finally  { setResourcesLoading(false); }
     })();
   }, [topic, pathMeta, pathId, topicIndex, user?.uid]);
+
+  /* Load Quiz History */
+  useEffect(() => {
+    if (activeTab === 'quiz' && topic && pathMeta && user?.uid) {
+      loadQuizHistory();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, topic, pathMeta, user?.uid]);
+
+  const loadQuizHistory = async () => {
+    try {
+      // Note: Using quizResults/results which is the actual collection saveQuizResultToFirestore writes to
+      const q = query(
+        collection(db, 'quizResults', user.uid, 'results'),
+        where('topic', '==', topic.title),
+        where('subject', '==', pathMeta.subject),
+        orderBy('timestamp', 'desc'),
+        limit(5)
+      );
+      const snaps = await getDocs(q);
+      setQuizHistory(snaps.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error('Failed to load quiz history:', err);
+    }
+  };
 
   /* Called only when quiz score >= 60% */
   const handleNextTopic = async (finalScore) => {
@@ -601,6 +684,34 @@ export default function TopicLearningPage() {
                 <div className="space-y-6">
                   <Skeleton lines={5} /><Skeleton lines={4} /><Skeleton lines={6} />
                 </div>
+              ) : lessonError ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass-card p-10 text-center border-red-500/20 bg-red-500/5 max-w-lg mx-auto"
+                >
+                  <AlertCircle size={40} className="text-red-400 mx-auto mb-4 opacity-90" />
+                  <h3 className="font-jakarta font-black text-xl text-txt mb-3">Failed to Load Lesson</h3>
+                  <p className="text-sm font-medium text-txt3 leading-relaxed mb-6">{lessonError}</p>
+                  <div className="flex flex-col gap-3 items-center">
+                    <button
+                      onClick={() => { audioSystem.playClick(); loadLesson(); }}
+                      className="btn-primary flex items-center justify-center gap-2 px-8 py-3 shadow-glow-primary"
+                    >
+                      <RefreshCw size={16} /> Try Again
+                    </button>
+                    <button
+                      onClick={() => { audioSystem.playClick(); navigate(-1); }}
+                      className="btn-outline flex items-center justify-center gap-2 px-6 py-2.5 text-sm bg-space-800"
+                    >
+                      <ArrowLeft size={15} /> Go Back
+                    </button>
+                  </div>
+                  <div className="mt-6 flex items-center justify-center gap-2 text-xs font-bold text-green-500/80 bg-green-500/5 border border-green-500/15 rounded-xl px-4 py-2.5">
+                    <CheckCircle size={12} />
+                    No tokens were used for this failed attempt.
+                  </div>
+                </motion.div>
               ) : lesson ? (
                 <div className="glass-card p-6 md:p-8">
                   <div className="max-w-4xl mx-auto">
@@ -651,6 +762,108 @@ export default function TopicLearningPage() {
                       </button>
                     </motion.div>
                   )}
+
+                  {/* Previous Attempts Section */}
+                  <div className="mt-12 pt-8 border-t border-white/10">
+                    <h3 className="font-jakarta font-black text-xl text-txt mb-6 flex items-center gap-2">
+                      <Clock size={20} className="text-primary" /> Previous Attempts
+                    </h3>
+                    
+                    {!quizHistory ? (
+                      <Skeleton lines={3} />
+                    ) : quizHistory.length === 0 ? (
+                      <div className="glass-card p-8 text-center border-white/5">
+                        <BookOpen size={32} className="text-txt3 mx-auto mb-3 opacity-50" />
+                        <p className="text-txt3 text-sm font-medium">No previous attempts for this topic.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {quizHistory.map((attempt) => {
+                          const date = attempt.timestamp?.toDate ? attempt.timestamp.toDate() : new Date(attempt.timestamp);
+                          const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+                          const scoreColor = attempt.score >= 80 ? 'text-green-500' : attempt.score >= 50 ? 'text-amber-500' : 'text-red-500';
+                          const scoreBg = attempt.score >= 80 ? 'bg-green-500/10 border-green-500/20' : attempt.score >= 50 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20';
+                          const isExpanded = expandedAttemptId === attempt.id;
+                          
+                          return (
+                            <div key={attempt.id} className="glass-card border border-white/5 overflow-hidden transition-all duration-300 hover:border-white/10">
+                              <div className="p-5 flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-txt">{formattedDate}</span>
+                                  <span className="text-xs text-txt3 font-medium flex items-center gap-1 mt-1">
+                                    <CheckCircle size={12} /> {attempt.correctAnswers} / {attempt.totalQuestions} correct
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className={`px-4 py-1.5 rounded-xl border font-black ${scoreBg} ${scoreColor}`}>
+                                    {attempt.score}%
+                                  </div>
+                                  {attempt.questions && attempt.questions.length > 0 && (
+                                    <button 
+                                      onClick={() => setExpandedAttemptId(isExpanded ? null : attempt.id)}
+                                      className="text-xs font-bold px-4 py-2 rounded-xl bg-space-800 text-txt3 hover:text-txt hover:bg-white/5 transition-colors border border-white/5 flex items-center gap-1.5"
+                                    >
+                                      {isExpanded ? 'Collapse' : 'Expand'}
+                                      <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <AnimatePresence>
+                                {isExpanded && attempt.questions && (
+                                  <motion.div 
+                                    initial={{ height: 0, opacity: 0 }} 
+                                    animate={{ height: 'auto', opacity: 1 }} 
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="p-5 pt-2 border-t border-white/5 bg-space-900/50 space-y-4">
+                                      {attempt.questions.map((q, idx) => {
+                                        const isCorrect = q.selectedOption === q.correctIndex;
+                                        return (
+                                          <div key={idx} className="p-4 rounded-xl bg-space-800/50 border border-white/5">
+                                            <p className="text-sm font-bold text-txt mb-3 leading-relaxed">
+                                              {idx + 1}. {q.question}
+                                            </p>
+                                            <div className="space-y-2">
+                                              {q.options.map((opt, optIdx) => {
+                                                const isSelected = q.selectedOption === optIdx;
+                                                const isRightAnswer = q.correctIndex === optIdx;
+                                                
+                                                let optStyle = "text-txt3 border-transparent bg-white/5";
+                                                let icon = null;
+                                                
+                                                if (isRightAnswer) {
+                                                  optStyle = "text-green-400 border-green-500/30 bg-green-500/10";
+                                                  icon = <CheckCircle size={14} className="text-green-400" />;
+                                                } else if (isSelected && !isRightAnswer) {
+                                                  optStyle = "text-red-400 border-red-500/30 bg-red-500/10";
+                                                  icon = <X size={14} className="text-red-400" />;
+                                                }
+                                                
+                                                return (
+                                                  <div key={optIdx} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${optStyle}`}>
+                                                    <span className="opacity-50 w-4">{String.fromCharCode(65 + optIdx)}.</span>
+                                                    <span className="flex-1">{opt}</span>
+                                                    {icon}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </motion.div>
