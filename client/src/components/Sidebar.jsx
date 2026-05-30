@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
   LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
-  Users, Target, Trophy, Flame, Bookmark
+  Users, Target, Trophy, Bookmark
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
 import { useTheme }    from '../context/ThemeContext';
 import BrainNexLogo    from './BrainNexLogo';
 import { audioSystem } from '../utils/audio';
+import FlameIcon       from './FlameIcon';
 
 const NAV = [
   { to:'/app/dashboard',      icon: LayoutDashboard, label:'Dashboard'      },
@@ -103,9 +104,20 @@ function SidebarInner({ onClose }) {
                 {profile?.grade ? profile.grade : `Level ${level}`}
               </span>
               {(profile?.streak > 0) && (
-                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
-                  <Flame size={12} fill="currentColor" /> {profile.streak} day streak
-                </span>
+                <motion.span
+                  className="flex items-center gap-0.5 text-[11px] font-bold"
+                  style={{
+                    color: '#F97316',
+                    textShadow: '0 0 8px rgba(249,115,22,0.6)',
+                  }}
+                  animate={{ textShadow: ['0 0 6px rgba(249,115,22,0.4)', '0 0 14px rgba(249,115,22,0.8)', '0 0 6px rgba(249,115,22,0.4)'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <span style={{ display: 'inline-block', marginTop: -1 }}>
+                    <FlameIcon size={18} showSidebar />
+                  </span>
+                  {profile.streak}d
+                </motion.span>
               )}
             </div>
           </div>

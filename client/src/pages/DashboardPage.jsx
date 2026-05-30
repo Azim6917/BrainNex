@@ -216,25 +216,35 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }}
           className="bg-gradient-to-r from-amber-500/15 to-transparent border border-amber-500/20 rounded-2xl p-4 flex items-center gap-4 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none" />
-          <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 z-10">
-            <Flame size={26} className="text-amber-500" />
-          </div>
-          <div className="flex-1 min-w-0 z-10">
-            <p className="font-jakarta font-black text-amber-500 text-lg sm:text-xl tracking-tight">{profile.streak} Day Streak!</p>
-            <p className="text-sm text-txt3 font-medium">Your personal best is {profile.longestStreak||0} days.</p>
-          </div>
-          <div className="hidden md:flex gap-1 flex-shrink-0 z-10">
-            {Array.from({length:Math.min(profile.streak,7)}).map((_,i)=>(
-              <motion.div key={i} initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.1 }}>
-                <Flame size={20} className="text-amber-500 opacity-70" />
-              </motion.div>
-            ))}
-          </div>
+
+          {/* Clickable main area → opens popup */}
+          <button
+            onClick={() => setShowStreakPopup(true)}
+            className="flex-1 flex items-center gap-4 z-10 text-left hover:opacity-90 transition-opacity"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+              <Flame size={26} className="text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-jakarta font-black text-amber-500 text-lg sm:text-xl tracking-tight">{profile.streak} Day Streak!</p>
+              <p className="text-sm text-txt3 font-medium">Your personal best is {profile.longestStreak||0} days.</p>
+            </div>
+            <div className="hidden md:flex gap-1 flex-shrink-0">
+              {Array.from({length:Math.min(profile.streak,7)}).map((_,i)=>(
+                <motion.div key={i} initial={{ scale:0 }} animate={{ scale:1 }} transition={{ delay:i*0.1 }}>
+                  <Flame size={20} className="text-amber-500 opacity-70" />
+                </motion.div>
+              ))}
+            </div>
+          </button>
+
+          {/* Dismiss only */}
           <button onClick={() => { setShowStreak(false); sessionStorage.setItem('streakBannerDismissed', 'true'); }} className="z-10 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center hover:bg-amber-500/10 transition-colors text-amber-500/60 hover:text-amber-500">
             <X size={16} />
           </button>
         </motion.div>
       )}
+
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
