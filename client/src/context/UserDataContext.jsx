@@ -4,6 +4,7 @@ import { db } from '../utils/firebase';
 import { useAuth } from './AuthContext';
 import { playBadge, playLevelUp } from '../utils/soundEffects';
 import { xpForLevel } from '../utils/firestoreUtils';
+import { fetchSubscriptionStatus } from '../utils/api';
 
 const UserDataContext = createContext(null);
 export const useUserData = () => useContext(UserDataContext);
@@ -69,6 +70,7 @@ async function runDailyStreak(uid) {
 export function UserDataProvider({ children }) {
   const { user }  = useAuth();
   const [profile,         setProfile]         = useState(null);
+  const [effectiveTier,   setEffectiveTier]   = useState('free');
   const [subjectProgress, setSubjectProgress] = useState([]);
   const [loadingProfile,  setLoadingProfile]  = useState(true);
   const prevXpRef    = React.useRef(0);
@@ -78,11 +80,18 @@ export function UserDataProvider({ children }) {
     if (!user) {
       setProfile(null);
       setSubjectProgress([]);
+      setEffectiveTier('free');
       setLoadingProfile(false);
       return;
     }
 
     setLoadingProfile(true);
+    
+    // Fetch effective tier from backend
+    fetchSubscriptionStatus().then(res => {
+      setEffectiveTier(res.data.effectiveTier);
+    }).catch(err => console.error('Error fetching subscription status:', err));
+
     const userRef = doc(db, 'users', user.uid);
 
     const init = async () => {
@@ -162,7 +171,7 @@ export function UserDataProvider({ children }) {
   }, [user]);
 
   return (
-    <UserDataContext.Provider value={{ profile, subjectProgress, loadingProfile, refreshProfile, updateProfileLocal }}>
+    <UserDataContext.Provider value={{ profile, effectiveTier, subjectProgress, loadingProfile, refreshProfile, updateProfileLocal }}>
       {children}
     </UserDataContext.Provider>
   );

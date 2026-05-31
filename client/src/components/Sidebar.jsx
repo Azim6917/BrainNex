@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
   LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
-  Users, Target, Trophy, Bookmark
+  Users, Target, Trophy, Bookmark, Star
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
@@ -50,9 +50,27 @@ function XPBar({ xp, level }) {
   );
 }
 
+function SubscriptionBadge({ subscription }) {
+  if (!subscription || subscription === 'free') return null;
+  const isPremium = subscription === 'premium' || subscription === 'max';
+  
+  return (
+    <div className="mt-3 flex items-center justify-between p-2 rounded-xl" style={{ background: isPremium ? 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(124,58,237,0.1))' : 'rgba(124,58,237,0.1)', border: `1px solid ${isPremium ? 'rgba(245,158,11,0.2)' : 'rgba(124,58,237,0.2)'}` }}>
+      <div className="flex items-center gap-2">
+        <div className="w-5 h-5 flex items-center justify-center rounded-md shadow-sm" style={{ background: isPremium ? 'linear-gradient(135deg, #F59E0B, #7C3AED)' : '#7C3AED' }}>
+          <Star size={10} className="text-white" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: isPremium ? '#F59E0B' : '#8B72FF' }}>
+          {subscription} Plan
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SidebarInner({ onClose }) {
   const { logout, user } = useAuth();
-  const { profile }      = useUserData();
+  const { profile, effectiveTier } = useUserData();
   const { kidMode } = useTheme();
   const navigate         = useNavigate();
 
@@ -130,6 +148,7 @@ function SidebarInner({ onClose }) {
           </div>
         </div>
         <XPBar xp={xp} level={level} />
+        <SubscriptionBadge subscription={effectiveTier} />
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">

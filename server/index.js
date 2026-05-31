@@ -35,6 +35,9 @@ const io = new Server(server, {
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/progress', require('./routes/progress'));
 
+const paymentsRouter = require('./routes/payments');
+app.use('/api/payments', paymentsRouter);
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'BrainNex server running',

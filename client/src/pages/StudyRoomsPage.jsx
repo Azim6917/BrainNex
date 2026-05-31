@@ -6,6 +6,8 @@ import {
   XCircle, Clock, Hand, Target, Palette, Eraser, Pen, Brush, Highlighter, Minus, Type, Info, Copy, Lock, Globe, Megaphone, Volume2, VolumeX, Settings, Timer, Smile
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useUserData } from '../context/UserDataContext';
+import LockedFeature from '../components/LockedFeature';
 import { generateQuiz } from '../utils/api';
 import { audioSystem } from '../utils/audio';
 import toast from 'react-hot-toast';
@@ -589,6 +591,7 @@ function Whiteboard({ socket, roomId }) {
 
 export default function StudyRoomsPage() {
   const { user } = useAuth();
+  const { profile, effectiveTier } = useUserData();
   const [phase,       setPhase]       = useState('browse');
   const [room,        setRoom]        = useState(null);
   const [messages,    setMessages]    = useState([]);
@@ -891,9 +894,11 @@ export default function StudyRoomsPage() {
           <button onClick={() => { audioSystem.playClick(); setJoinCodeOpen(true); }} className="btn-outline flex items-center justify-center gap-2 text-sm py-3 px-6 bg-space-800 border-white/10 shadow-sm">
             <Lock size={18} />Join via Code
           </button>
-          <button onClick={() => { audioSystem.playClick(); setCreateOpen(true); }} className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-6 shadow-glow-primary">
-            <Plus size={18} />Create Room
-          </button>
+          <LockedFeature userTier={effectiveTier} requiredTier="pro" featureName="Custom Study Rooms" minimal>
+            <button onClick={() => { audioSystem.playClick(); setCreateOpen(true); }} className="btn-primary flex items-center justify-center gap-2 text-sm py-3 px-6 shadow-glow-primary">
+              <Plus size={18} />Create Room
+            </button>
+          </LockedFeature>
         </div>
       </div>
 

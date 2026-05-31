@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const Anthropic = require('@anthropic-ai/sdk');
 const { verifyToken } = require('../middleware/auth');
+const usageLimiter = require('../middleware/usageLimiter');
 
 const client      = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL       = 'claude-haiku-4-5-20251001';
@@ -24,7 +25,7 @@ Your role:
 Keep responses concise but thorough. Use markdown formatting for better readability.`;
 }
 
-router.post('/chat', verifyToken, async (req, res) => {
+router.post('/chat', verifyToken, usageLimiter('chat'), async (req, res) => {
   const { messages, subject, studentLevel, grade } = req.body;
   try {
     const response = await client.messages.create({
@@ -41,7 +42,7 @@ router.post('/chat', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/generate-quiz', verifyToken, async (req, res) => {
+router.post('/generate-quiz', verifyToken, usageLimiter('quiz'), async (req, res) => {
   const { subject, topic, difficulty, numQuestions = 5, grade } = req.body;
   const safeNum = Math.min(+numQuestions, 5);
   const kid     = isJunior(grade);
@@ -110,7 +111,7 @@ Only topics below 65%. Priority: high<50%, medium 50-64%.`;
   } catch { res.status(500).json({ error:'Analysis failed.' }); }
 });
 
-router.post('/learning-path', verifyToken, async (req, res) => {
+router.post('/learning-path', verifyToken, usageLimiter('learningPath'), async (req, res) => {
   const { subject, currentLevel, completedTopics, goal } = req.body;
 
   // Compact prompt — one-sentence descriptions keep the JSON under 800 tokens
@@ -151,7 +152,7 @@ router.post('/adaptive-difficulty', verifyToken, async (req, res) => {
   res.json({ recommendedDifficulty:rec, reason, averageScore:Math.round(avg) });
 });
 
-router.post('/study-session', verifyToken, async (req, res) => {
+router.post('/study-session', verifyToken, usageLimiter('studySession'), async (req, res) => {
   const { subject, topic, level = 'intermediate', grade } = req.body;
   const kid = isJunior(grade);
 
@@ -195,7 +196,7 @@ Return ONLY valid JSON:
   } catch { res.status(500).json({ error:'Failed to generate study session.' }); }
 });
 
-router.post('/flashcards', verifyToken, async (req, res) => {
+router.post('/flashcards', verifyToken, usageLimiter('flashcards'), async (req, res) => {
   const { subject, topic, wrongQuestions, grade } = req.body;
   const kid = isJunior(grade);
   const prompt = `Create 5 ${kid?'fun, simple':'clear'} flashcards for "${topic}" in ${subject}.
@@ -210,7 +211,7 @@ Return ONLY JSON:
   } catch { res.status(500).json({ error:'Flashcard generation failed.' }); }
 });
 
-router.post('/explain-answer', verifyToken, async (req, res) => {
+router.post('/explain-answer', verifyToken, usageLimiter('explainAnswer'), async (req, res) => {
   const { question, correctAnswer, subject, grade } = req.body;
   const kid = isJunior(grade);
   const prompt = kid
@@ -225,7 +226,7 @@ Give a clear 3-4 sentence explanation: why correct, an analogy, and what to avoi
   } catch { res.status(500).json({ error:'Explanation failed.' }); }
 });
 
-router.post('/weekly-report', verifyToken, async (req, res) => {
+router.post('/weekly-report', verifyToken, usageLimiter('weeklyReport'), async (req, res) => {
   const { quizHistory, streak, totalXP, grade } = req.body;
   if (!quizHistory?.length) return res.json({ report:"Take some quizzes this week to get your AI report!" });
   const kid = isJunior(grade);
@@ -244,7 +245,7 @@ Quiz results: ${JSON.stringify(quizHistory.slice(0,10))}.
   } catch { res.status(500).json({ error:'Report failed.' }); }
 });
 
-router.post('/topic-lesson', verifyToken, async (req, res) => {
+router.post('/topic-lesson', verifyToken, usageLimiter('studySession'), async (req, res) => {
   const { subject, topic, level, goal } = req.body;
 
   if (!subject || !topic || !level) {
@@ -275,7 +276,7 @@ IMPORTANT: Each content field must be 2-3 sentences maximum. Output minified JSO
   }
 });
 
-router.post('/topic-quiz', verifyToken, async (req, res) => {
+router.post('/topic-quiz', verifyToken, usageLimiter('quiz'), async (req, res) => {
   const { subject, topic, level } = req.body;
   const prompt = `Generate a ${level} quiz on "${topic}" in ${subject}. 5 questions.
 Return ONLY valid JSON:

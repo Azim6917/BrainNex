@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import {
   User, Mail, Lock, Camera, Save, CheckCircle, AlertCircle,
   Palette, Shield, Eye, EyeOff, Phone, GraduationCap,
-  School, Bell, Layout, Clock
+  School, Bell, Layout, Clock, CreditCard
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   updateProfile, updateEmail, updatePassword,
   EmailAuthProvider, reauthenticateWithCredential,
@@ -23,6 +24,7 @@ const TABS = [
   { id:'student',  label:'Student Info', icon:GraduationCap},
   { id:'security', label:'Security',     icon:Shield       },
   { id:'prefs',    label:'Preferences',  icon:Palette      },
+  { id:'billing',  label:'Subscription', icon:CreditCard   },
 ];
 
 const GRADES = [
@@ -573,10 +575,48 @@ function PrefsTab() {
   );
 }
 
+function BillingTab({ profile, effectiveTier }) {
+  const isFree = !effectiveTier || effectiveTier === 'free';
+  const planName = effectiveTier ? effectiveTier.charAt(0).toUpperCase() + effectiveTier.slice(1) : 'Free';
+  
+  return (
+    <div className="space-y-6 max-w-xl">
+      <div className="glass-card p-6 md:p-8">
+        <h3 className="font-jakarta font-black text-lg mb-6 flex items-center gap-2.5 text-txt">
+          <div className="p-2 rounded-lg bg-primary/20 text-primary shadow-sm border border-primary/30">
+            <CreditCard size={18} />
+          </div>
+          Current Subscription
+        </h3>
+        <div className="p-5 rounded-2xl bg-space-800 border border-white/10 shadow-sm mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-txt3 uppercase tracking-widest mb-1">Your Plan</p>
+            <p className="font-jakarta font-black text-2xl text-primary">{planName}</p>
+          </div>
+          {isFree ? (
+            <Link to="/pricing" className="btn-primary py-2 px-5 text-sm font-bold shadow-glow-primary">Upgrade</Link>
+          ) : (
+            <div className="text-xs font-bold bg-green-500/20 text-green-500 px-3 py-1.5 rounded-lg border border-green-500/30 flex items-center gap-1.5"><CheckCircle size={14} /> Active</div>
+          )}
+        </div>
+        {!isFree ? (
+          <p className="text-sm font-medium text-txt3 leading-relaxed">
+            You are currently on the <strong className="text-txt">{planName}</strong> plan. Your account has been upgraded with increased AI limits and premium features. To manage your billing details, update payment methods, or cancel your subscription, please contact support.
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-txt3 leading-relaxed">
+            You are currently on the <strong className="text-txt">Free</strong> plan. Upgrade to a premium plan to unlock more AI limits, detailed analytics, group rooms, and priority features!
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const { user }                    = useAuth();
-  const { profile, refreshProfile } = useUserData();
-  const [tab, setTab]               = useState('profile');
+  const { user }                                     = useAuth();
+  const { profile, effectiveTier, refreshProfile }   = useUserData();
+  const [tab, setTab]                                = useState('profile');
 
   return (
     <div className="p-5 md:p-8 max-w-[1400px] mx-auto w-full">
@@ -603,6 +643,7 @@ export default function SettingsPage() {
         {tab === 'student'  && <StudentTab  user={user} profile={profile} onSaved={refreshProfile} />}
         {tab === 'security' && <SecurityTab user={user} />}
         {tab === 'prefs'    && <PrefsTab />}
+        {tab === 'billing'  && <BillingTab profile={profile} effectiveTier={effectiveTier} />}
       </motion.div>
     </div>
   );

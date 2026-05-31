@@ -18,6 +18,25 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Global response interceptor for 429 Limit Reached
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response && error.response.status === 429) {
+      const errorData = error.response.data;
+      window.dispatchEvent(new CustomEvent('limitReached', {
+        detail: {
+          feature: errorData.feature,
+          upgradeMessage: errorData.upgradeMessage,
+          userTier: errorData.userTier
+        }
+      }));
+      return Promise.reject(new Error(errorData.upgradeMessage));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const chatWithAI = (messages, subject, studentLevel, grade) =>
     api.post("/ai/chat", { messages, subject, studentLevel, grade });
 
@@ -48,6 +67,7 @@ export const saveQuizResult   = (data)      => api.post('/progress/quiz-result',
 export const fetchQuizHistory = (limit)     => api.get(`/progress/quiz-history?limit=${limit || 20}`);
 export const updateDifficulty = (difficulty) => api.post('/progress/update-difficulty', { difficulty });
 export const fetchSubjectProgress = ()      => api.get('/progress/subject-progress');
+export const fetchSubscriptionStatus = ()   => api.get('/payments/subscription-status');
 
 export default api;
 

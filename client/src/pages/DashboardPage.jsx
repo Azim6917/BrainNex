@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Zap, Flame, Target, BookOpen, ArrowRight, X,
@@ -17,6 +17,7 @@ import { ALL_BADGES } from './AchievementsPage';
 import StreakCalendar from '../components/StreakCalendar';
 import StreakPopup    from '../components/StreakPopup';
 import { audioSystem } from '../utils/audio';
+import LockedFeature from '../components/LockedFeature';
 
 function AnimNum({ target }) {
   const [val, setVal] = useState(0);
@@ -75,7 +76,7 @@ const SUBJECTS = [
 
 export default function DashboardPage() {
   const { user }                                     = useAuth();
-  const { profile, subjectProgress, refreshProfile } = useUserData();
+  const { profile, subjectProgress, effectiveTier, refreshProfile } = useUserData();
   const [quizHistory,   setQuizHistory]              = useState([]);
   const [weeklyReport,  setWeeklyReport]             = useState('');
   const [reportLoading, setReportLoading]            = useState(false);
@@ -83,6 +84,15 @@ export default function DashboardPage() {
   const [showStreak,    setShowStreak]               = useState(sessionStorage.getItem('streakBannerDismissed') !== 'true');
   const [showStreakPopup, setShowStreakPopup]         = useState(false);
   const [activeDays,    setActiveDays]               = useState(new Set());
+  const [searchParams,  setSearchParams]             = useSearchParams();
+  const [showCelebration, setShowCelebration]        = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('subscribed') === 'true') {
+      setShowCelebration(true);
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   const tip   = TIPS[new Date().getDay()   % TIPS.length];
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
@@ -161,6 +171,21 @@ export default function DashboardPage() {
 
   return (
     <div className="p-5 md:p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+      {showCelebration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[#1a1a2e] rounded-3xl p-12 text-center max-w-xl mx-auto shadow-2xl border-2 border-[#8B72FF] relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#6C4FE8] to-[#8B72FF]" />
+            <div className="w-20 h-20 bg-[#8B72FF]/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border border-[#8B72FF]/30">
+              <Trophy size={40} className="text-[#8B72FF]" />
+            </div>
+            <h2 className="text-3xl font-black text-white mb-2">Welcome to {effectiveTier.charAt(0).toUpperCase() + effectiveTier.slice(1)}!</h2>
+            <p className="text-gray-400 mb-8 font-medium">Your subscription is active. Enjoy your unlocked features and supercharged learning.</p>
+            <button onClick={() => setShowCelebration(false)} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#8B72FF] to-[#6C4FE8] text-white font-bold text-lg shadow-lg hover:scale-105 transition-transform">
+              Start Learning →
+            </button>
+          </motion.div>
+        </div>
+      )}
 
       {showStreakPopup && (
         <StreakPopup
@@ -190,11 +215,13 @@ export default function DashboardPage() {
             <Sparkles size={12} className="text-primary flex-shrink-0" />
             <span className="italic font-medium leading-snug">{quote}</span>
           </div>
-          <button onClick={loadReport} disabled={reportLoading}
-            className="flex items-center gap-2 text-sm font-semibold glass-card border-primary/20 text-primary rounded-full px-5 py-2 hover:bg-primary/5 hover:border-primary/40 transition-all shadow-sm">
-            {reportLoading ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Brain size={16} />}
-            AI Weekly Report
-          </button>
+          <LockedFeature userTier={effectiveTier} requiredTier="pro" featureName="Weekly AI Report" minimal>
+            <button onClick={loadReport} disabled={reportLoading}
+              className="flex items-center gap-2 text-sm font-semibold glass-card border-primary/20 text-primary rounded-full px-5 py-2 hover:bg-primary/5 hover:border-primary/40 transition-all shadow-sm">
+              {reportLoading ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Brain size={16} />}
+              AI Weekly Report
+            </button>
+          </LockedFeature>
         </div>
       </motion.div>
 

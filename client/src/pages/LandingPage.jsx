@@ -6,6 +6,7 @@ import BrainNexLogo from '../components/BrainNexLogo';
 import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import toast from 'react-hot-toast';
+import PricingSection from '../components/PricingSection';
 
 // Dummy universities for marquee
 const universities = ['Stanford', 'MIT', 'Harvard', 'Oxford', 'Cambridge', 'Yale', 'Columbia','UCLA', 'Amity University', 'Amity Institute of Technology'];
@@ -311,37 +312,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing-section" className="py-24 px-6 lg:px-8 bg-brand-bg relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <div className="max-w-4xl mx-auto relative z-10">
-          <div className="glass-card bg-brand-bg2 p-8 md:p-12 rounded-3xl border border-white/10 shadow-lg text-center">
-            <h2 className="font-sans font-extrabold text-3xl md:text-4xl tracking-tight mb-4 text-white">Pricing plans coming soon</h2>
-            <p className="text-lg text-txt-sec font-medium mb-8 max-w-2xl mx-auto">I'm working on transparent and student-friendly pricing. Stay tuned!</p>
-            <div className="max-w-md mx-auto">
-              <form
-                onSubmit={e => handleWaitlist(e, waitlistEmail, setWaitlistEmail, setWaitlistLoading, 'pricing-page')}
-                className="flex flex-col sm:flex-row gap-3"
-              >
-                <input
-                  type="email"
-                  value={waitlistEmail}
-                  onChange={e => setWaitlistEmail(e.target.value)}
-                  placeholder="Enter your email to get notified"
-                  className="input-field py-3 px-4 text-sm flex-1 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={waitlistLoading}
-                  className={`btn-primary py-3 px-6 text-sm rounded-xl font-bold whitespace-nowrap shadow-glow-primary ${waitlistLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {waitlistLoading ? 'Saving...' : 'Subscribe'}
-                </button>
-              </form>
-              <p className="text-xs text-white/30 mt-4">Free to start · Premium plans coming soon</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PricingSection />
 
       <footer className="border-t border-white/10 bg-brand-bg2 pt-16 pb-8 px-6 lg:px-8 text-sm">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
@@ -353,7 +324,7 @@ export default function LandingPage() {
             <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Product</h4>
             <ul className="space-y-3 text-txt2">
               <li><a href="/#features" className="hover:text-primary transition-colors">Features</a></li>
-              <li><button onClick={() => { document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-primary transition-colors text-left w-full">Pricing</button></li>
+              <li><button onClick={() => { document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-primary transition-colors text-left w-full">Pricing</button></li>
               <li><a href="/#testimonials" className="hover:text-primary transition-colors">Testimonials</a></li>
             </ul>
           </div>

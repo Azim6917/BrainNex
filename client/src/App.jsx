@@ -11,6 +11,7 @@ import { useTheme }          from './context/ThemeContext';
 import ProtectedRoute        from './components/ProtectedRoute';
 import Sidebar               from './components/Sidebar';
 import OnboardingFlow        from './components/OnboardingFlow';
+import UpgradePrompt         from './components/UpgradePrompt';
 
 const MascotOverlay = () => {
   const { kidMode } = useTheme();
@@ -41,6 +42,7 @@ import SavedPathsPage     from './pages/SavedPathsPage';
 import QuizHistoryPage   from './pages/QuizHistoryPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import PricingPage       from './pages/PricingPage';
 
 /* Apply theme classes to <html> on mount */
 function ThemeApplier() {
@@ -102,6 +104,14 @@ function AppPage({ children }) {
 }
 
 export default function App() {
+  const [upgradePrompt, setUpgradePrompt] = useState(null);
+
+  useEffect(() => {
+    const handler = (e) => setUpgradePrompt(e.detail);
+    window.addEventListener('limitReached', handler);
+    return () => window.removeEventListener('limitReached', handler);
+  }, []);
+
   return (
     <BrowserRouter>
       <ThemeProvider>
@@ -126,6 +136,7 @@ export default function App() {
               <Route path="/contact"  element={<ContactPage />} />
               <Route path="/login"    element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/pricing"  element={<PricingPage />} />
 
               <Route path="/app"                  element={<Navigate to="/app/dashboard" replace />} />
               <Route path="/app/dashboard"        element={<AppPage><DashboardPage /></AppPage>} />
@@ -144,6 +155,15 @@ export default function App() {
               <Route path="/app/quiz-history"       element={<AppPage><QuizHistoryPage /></AppPage>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            {upgradePrompt && (
+              <UpgradePrompt
+                isOpen={!!upgradePrompt}
+                onClose={() => setUpgradePrompt(null)}
+                featureName={upgradePrompt.feature}
+                upgradeMessage={upgradePrompt.upgradeMessage}
+                userTier={upgradePrompt.userTier}
+              />
+            )}
           </UserDataProvider>
         </AuthProvider>
       </ThemeProvider>

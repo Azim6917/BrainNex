@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // users collection
+    match /users/{uid} {
+      // Users can read their own document
+      allow read: if isOwner(uid);
+      
+      // Users can update their own document, BUT they cannot tamper with subscription fields.
+      allow write: if isOwner(uid) &&
+                   (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                     'subscription', 
+                     'subscriptionExpiry', 
+                     'subscriptionStarted', 
+                     'subscriptionStatus',
+                     'lastPaymentId',
+                     'lastOrderId',
+                     'subscriptionUpdatedAt'
+                   ]) || !exists(/databases/$(database)/documents/users/$(uid)));
+    }
+
+    // usageTracking collection
+    match /usageTracking/{uid} {
+      // Users can read their own usage tracking
+      allow read: if isOwner(uid);
+      // NO WRITES ALLOWED. Usage is strictly managed by the backend Admin SDK.
+      allow write: if false;
+    }
+
+    // payments collection
+    match /payments/{paymentId} {
+      // Users can read their own payment records
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // NO WRITES ALLOWED. Only the backend creates payment records.
+      allow write: if false;
+    }
+
+    // quizResults subcollection
+    match /quizResults/{uid}/results/{resultId} {
+      allow read, write: if isOwner(uid);
+    }
+    
+    // savedPaths subcollection
+    match /users/{uid}/savedPaths/{pathId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // learningPathCache collection (global)
+    match /learningPathCache/{cacheKey} {
+      // Any authenticated user can read or write to the global path cache
+      allow read, write: if isAuthenticated();
+    }
+
+    // studyRooms collection
+    match /studyRooms/{roomId} {
+      allow read: if isAuthenticated();
+      // Allow creation if authenticated
+      allow create: if isAuthenticated();
+      // Only host can update/delete
+      allow update, delete: if isAuthenticated() && resource.data.hostId == request.auth.uid;
+      
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+  }
+}
