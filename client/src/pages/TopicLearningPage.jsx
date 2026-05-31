@@ -7,7 +7,7 @@ import {
   Lock, Clock, Info, RefreshCw, AlertCircle, ChevronDown, X
 } from 'lucide-react';
 import {
-  doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, orderBy, limit, getDocs
+  doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, orderBy, limit, getDocs
 } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -124,7 +124,7 @@ function LessonSection({ section }) {
   );
 }
 
-function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user, onQuizPass }) {
+function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user, onQuizPass, alreadyPassed }) {
   const [started,   setStarted]   = useState(false);
   const [quiz,      setQuiz]      = useState(null);
   const [loading,   setLoading]   = useState(false);
@@ -180,7 +180,9 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   const handleNext = async () => {
     audioSystem.playClick();
     if (current + 1 >= quiz.questions.length) {
-      const correctCount = score + (selected === quiz.questions[current].correctIndex ? 1 : 0);
+      // Capture the final answer before computing — selected state is current at this point
+      const lastCorrect = selected === quiz.questions[current].correctIndex ? 1 : 0;
+      const correctCount = score + lastCorrect;
       const finalScore   = Math.round((correctCount / quiz.questions.length) * 100);
       const passed       = finalScore >= 60;
 
@@ -232,6 +234,18 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
   const passed     = done && finalScore >= 60;
 
   if (!started) {
+    if (alreadyPassed) {
+      return (
+        <div className="glass-card p-10 text-center shadow-lg border border-green-500/20 bg-green-500/5">
+          <div className="w-16 h-16 rounded-full bg-green-500/10 border-2 border-green-500/40 flex items-center justify-center mx-auto mb-5 text-3xl">🎉</div>
+          <h3 className="font-jakarta font-black text-2xl text-txt mb-2">Topic Completed!</h3>
+          <p className="text-txt3 text-sm mb-6 leading-relaxed">You've already passed this topic and earned your XP. Take the quiz again to practice.</p>
+          <button onClick={loadQuiz} className="btn-outline px-8 py-3 flex items-center justify-center gap-2 mx-auto">
+            Retake Quiz <ChevronRight size={18} />
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
 
@@ -512,18 +526,22 @@ export default function TopicLearningPage() {
 
   const loadQuizHistory = async () => {
     try {
-      // Note: Using quizResults/results which is the actual collection saveQuizResultToFirestore writes to
+      // Fetch all results for this user, filter client-side to avoid needing a composite index
       const q = query(
         collection(db, 'quizResults', user.uid, 'results'),
-        where('topic', '==', topic.title),
-        where('subject', '==', pathMeta.subject),
         orderBy('timestamp', 'desc'),
-        limit(5)
+        limit(50)
       );
       const snaps = await getDocs(q);
-      setQuizHistory(snaps.docs.map(d => ({ id: d.id, ...d.data() })));
+      const all = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Filter for this specific topic and subject client-side
+      const filtered = all.filter(
+        d => d.topic === topic.title && d.subject === pathMeta.subject
+      ).slice(0, 5);
+      setQuizHistory(filtered);
     } catch (err) {
       console.error('Failed to load quiz history:', err);
+      setQuizHistory([]); // show empty state instead of infinite skeleton
     }
   };
 
@@ -753,6 +771,7 @@ export default function TopicLearningPage() {
                     xpReward={topic.xpReward || 100}
                     user={user}
                     onQuizPass={handleNextTopic}
+                    alreadyPassed={topic.status === 'completed' || quizPassed}
                   />
 
                   {quizPassed && (
