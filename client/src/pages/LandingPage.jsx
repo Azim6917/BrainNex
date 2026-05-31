@@ -363,6 +363,7 @@ export default function LandingPage() {
           <div className="flex gap-6 mt-4 md:mt-0">
             <Link to="/privacy-policy"   className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link to="/refund-policy"    className="hover:text-white transition-colors">Refund & Cancellation Policy</Link>
           </div>
         </div>
       </footer>

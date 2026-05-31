@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import PaymentButton from './PaymentButton';
 
 const PLANS = [
@@ -181,6 +182,13 @@ export default function PricingSection() {
           })}
         </div>
 
+        <div className="text-center mb-20 max-w-2xl mx-auto text-sm text-gray-400">
+          By purchasing a subscription, you agree to our{' '}
+          <Link to="/terms-of-service" className="text-primary hover:underline">Terms of Service</Link>,{' '}
+          <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>, and{' '}
+          <Link to="/refund-policy" className="text-primary hover:underline">Refund & Cancellation Policy</Link>.
+        </div>
+
         <div className="max-w-4xl mx-auto mb-24">
           <h2 className="text-3xl font-bold text-center mb-10 text-white">Compare Features</h2>
           <div className="overflow-x-auto">
@@ -223,7 +231,7 @@ export default function PricingSection() {
             </div>
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <h4 className="text-lg font-bold mb-2 text-white">Will I get a refund if not satisfied?</h4>
-              <p className="text-gray-400 text-sm">Yes. Refund requests within 7 days of purchase are reviewed. Contact sarwadazim786@gmail.com.</p>
+              <p className="text-gray-400 text-sm">Yes. Refund requests within 7 days of purchase are reviewed. Please read our <Link to="/refund-policy" className="text-primary hover:underline">Refund Policy</Link> for details.</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <h4 className="text-lg font-bold mb-2 text-white">Is there a student discount?</h4>

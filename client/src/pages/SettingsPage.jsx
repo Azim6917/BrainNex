@@ -600,14 +600,29 @@ function BillingTab({ profile, effectiveTier }) {
           )}
         </div>
         {!isFree ? (
-          <p className="text-sm font-medium text-txt3 leading-relaxed">
+          <p className="text-sm font-medium text-txt3 leading-relaxed mb-8">
             You are currently on the <strong className="text-txt">{planName}</strong> plan. Your account has been upgraded with increased AI limits and premium features. To manage your billing details, update payment methods, or cancel your subscription, please contact support.
           </p>
         ) : (
-          <p className="text-sm font-medium text-txt3 leading-relaxed">
+          <p className="text-sm font-medium text-txt3 leading-relaxed mb-8">
             You are currently on the <strong className="text-txt">Free</strong> plan. Upgrade to a premium plan to unlock more AI limits, detailed analytics, group rooms, and priority features!
           </p>
         )}
+        
+        <div className="border-t border-white/10 pt-6">
+          <h4 className="text-xs font-bold text-txt uppercase tracking-wider mb-4">Legal</h4>
+          <div className="flex flex-col gap-3 text-sm">
+            <Link to="/privacy-policy" className="text-txt3 hover:text-primary transition-colors flex items-center gap-2">
+              Privacy Policy
+            </Link>
+            <Link to="/terms-of-service" className="text-txt3 hover:text-primary transition-colors flex items-center gap-2">
+              Terms of Service
+            </Link>
+            <Link to="/refund-policy" className="text-txt3 hover:text-primary transition-colors flex items-center gap-2">
+              Refund & Cancellation Policy
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

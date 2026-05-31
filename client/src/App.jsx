@@ -42,6 +42,7 @@ import SavedPathsPage     from './pages/SavedPathsPage';
 import QuizHistoryPage   from './pages/QuizHistoryPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import RefundPolicyPage  from './pages/RefundPolicyPage';
 import PricingPage       from './pages/PricingPage';
 
 /* Apply theme classes to <html> on mount */
@@ -150,6 +151,7 @@ export default function App() {
               <Route path="/app/settings"         element={<AppPage><SettingsPage /></AppPage>} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="/refund-policy" element={<RefundPolicyPage />} />
               <Route path="/app/learn/:pathId/:topicIndex" element={<AppPage><TopicLearningPage /></AppPage>} />
               <Route path="/app/my-paths"          element={<AppPage><SavedPathsPage /></AppPage>} />
               <Route path="/app/quiz-history"       element={<AppPage><QuizHistoryPage /></AppPage>} />
