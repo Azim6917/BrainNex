@@ -5,10 +5,10 @@
  */
 import {
   doc, collection, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
-  arrayUnion, serverTimestamp, query, orderBy, limit,
-  runTransaction,
+  arrayUnion, serverTimestamp, query, orderBy, limit, increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import toast from 'react-hot-toast';
 
 const ALL_BADGES = [
   { id: 'first-quiz',    name: 'First Quiz!',     icon: '📝', desc: 'Complete your first quiz' },
@@ -29,126 +29,128 @@ export const LEVEL_THRESHOLDS = [0, 500, 1000, 2000, 3500, 5000, 8000, 12000, 20
 
 export function xpForLevel(xp) {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (xp >= LEVEL_THRESHOLDS[i]) {
-      return i + 1;
-    }
+    if (xp >= LEVEL_THRESHOLDS[i]) return i + 1;
   }
   return 1;
 }
 
 /**
- * Save a quiz result directly to Firestore and update user profile.
- * Returns { xpEarned, newXp, newLevel, newBadges }
+ * Save a quiz result and update XP.
+ * Uses increment() for atomic XP updates — no transaction needed.
+ * Each step is independent: a badge failure won't block XP from saving.
  */
-export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions, isLearningPath, customXpReward }) {
-  if (!uid) return null;
+export async function saveQuizResultToFirestore(uid, {
+  subject, topic, score, totalQuestions, correctAnswers,
+  difficulty, questions, isLearningPath, customXpReward,
+}) {
+  if (!uid) {
+    console.error('saveQuizResult: no uid provided');
+    return null;
+  }
 
-  const xpEarned = customXpReward || (correctAnswers * 10 + (score === 100 ? 50 : score >= 80 ? 25 : 10));
-  const userRef  = doc(db, 'users', uid);
+  const safeCorrect = Number(correctAnswers) || 0;
+  const safeTotal   = Number(totalQuestions)  || 1;
+  const safeScore   = Number(score)           || 0;
+  const xpEarned    = Number(customXpReward)  || (safeCorrect * 10 + (safeScore === 100 ? 50 : safeScore >= 80 ? 25 : 10));
 
+  const userRef = doc(db, 'users', uid);
+
+  // ── STEP 1: Save quiz result record ─────────────────────────────────────────
   try {
     await addDoc(collection(db, 'quizResults', uid, 'results'), {
       subject,
       topic,
-      score,
-      totalQuestions,
-      correctAnswers,
+      score: safeScore,
+      totalQuestions: safeTotal,
+      correctAnswers: safeCorrect,
       difficulty,
       xpEarned,
+      isLearningPath: isLearningPath || false,
       timestamp: serverTimestamp(),
       ...(questions ? { questions } : {}),
     });
-
-    const preSnap    = await getDoc(userRef);
-    const preData    = preSnap.data() || {};
-    const preQuizzes = (preData.totalQuizzes  || 0) + 1;
-    const preCorrect = (preData.totalCorrect  || 0) + correctAnswers;
-    const preQns     = (preData.totalQuestions|| 0) + totalQuestions;
-    const preXp      = (preData.xp            || 0) + xpEarned;
-
-    const existingBadges = preData.badges || [];
-    const existingIds    = new Set(existingBadges.map(b => b.id));
-    const preSubjects    = preData.subjects || [];
-    const newSubjects    = preSubjects.includes(subject) ? preSubjects : [...preSubjects, subject];
-
-    const newBadges = [];
-    const addBadge = (id) => {
-      if (!existingIds.has(id)) {
-        const b = ALL_BADGES.find(x => x.id === id);
-        if (b) { newBadges.push({ ...b, earnedAt: new Date().toISOString() }); existingIds.add(id); }
-      }
-    };
-
-    if (preQuizzes === 1)  addBadge('first-quiz');
-    if (score === 100)     addBadge('perfect-score');
-    if (preQuizzes >= 10)  addBadge('10-quizzes');
-    if (preQuizzes >= 25)  addBadge('25-quizzes');
-    if (preXp >= 1000)     addBadge('1k-xp');
-    if (preXp >= 5000)     addBadge('5k-xp');
-    if (newSubjects.length >= 5) addBadge('multi-subject');
-
-    const avgScore = preQns > 0 ? Math.round((preCorrect / preQns) * 100) : 0;
-    if (avgScore >= 80 && preQuizzes >= 5) addBadge('high-scorer');
-
-    const hour = new Date().getHours();
-    if (hour >= 22) addBadge('night-owl');
-    if (hour < 7)   addBadge('early-bird');
-    if (isLearningPath && score === 100) addBadge('perfect-path');
-
-    const subjQ    = query(collection(db, 'quizResults', uid, 'results'), orderBy('timestamp', 'desc'), limit(20));
-    const subjSnap = await getDocs(subjQ);
-    const subjectDocs = subjSnap.docs.filter(d => d.data().subject === subject);
-    if (subjectDocs.length >= 5) {
-      let totalS = 0;
-      subjectDocs.slice(0, 5).forEach(d => { totalS += d.data().score; });
-      if (totalS / 5 > 90) addBadge('subject-master');
-    }
-
-    let finalXp, finalLevel;
-    await runTransaction(db, async (transaction) => {
-      const txSnap = await transaction.get(userRef);
-      if (!txSnap.exists()) return;
-
-      const txData     = txSnap.data();
-      finalXp          = (txData.xp            || 0) + xpEarned;
-      finalLevel       = xpForLevel(finalXp);
-      const txTotalQ   = (txData.totalQuizzes   || 0) + 1;
-      const txTotalC   = (txData.totalCorrect   || 0) + correctAnswers;
-      const txTotalQns = (txData.totalQuestions || 0) + totalQuestions;
-      const txSubs     = txData.subjects || [];
-      const txNewSubs  = txSubs.includes(subject) ? txSubs : [...txSubs, subject];
-
-      const txUpdates = {
-        xp:                finalXp,
-        level:             finalLevel,
-        totalQuizzes:      txTotalQ,
-        totalCorrect:      txTotalC,
-        totalQuestions:    txTotalQns,
-        subjects:          txNewSubs,
-        currentDifficulty: difficulty,
-        lastUpdated:       serverTimestamp(),
-      };
-      if (newBadges.length > 0) {
-        const txBadges      = txData.badges || [];
-        const txBadgeIds    = new Set(txBadges.map(b => b.id));
-        const dedupedBadges = newBadges.filter(b => !txBadgeIds.has(b.id));
-        if (dedupedBadges.length > 0) {
-          txUpdates.badges = [...txBadges, ...dedupedBadges];
-        }
-      }
-
-      transaction.update(userRef, txUpdates);
-    });
-
-    return { xpEarned, newXp: finalXp ?? preXp, newLevel: finalLevel ?? xpForLevel(preXp), newBadges };
   } catch (err) {
-    console.error('saveQuizResultToFirestore error:', err);
-    return { xpEarned, newXp: 0, newLevel: 1, newBadges: [] };
+    // Show real error to user so we can diagnose Firestore rules issues
+    const msg = err?.message || String(err);
+    console.error('saveQuizResult STEP 1 (addDoc) failed:', msg);
+    toast.error(`XP save failed (quiz record): ${msg}`, { duration: 6000 });
+    return null;
   }
+
+  // ── STEP 2: Atomically increment XP and counters ────────────────────────────
+  try {
+    await updateDoc(userRef, {
+      xp:             increment(xpEarned),
+      totalQuizzes:   increment(1),
+      totalCorrect:   increment(safeCorrect),
+      totalQuestions: increment(safeTotal),
+      subjects:       arrayUnion(subject),
+      currentDifficulty: difficulty || 'intermediate',
+      lastUpdated:    serverTimestamp(),
+    });
+  } catch (err) {
+    const msg = err?.message || String(err);
+    console.error('saveQuizResult STEP 2 (increment XP) failed:', msg);
+    toast.error(`XP increment failed: ${msg}`, { duration: 6000 });
+    return null;
+  }
+
+  // ── STEP 3: Read back final XP and update level ──────────────────────────────
+  let finalXp = 0;
+  let finalLevel = 1;
+  try {
+    const snap = await getDoc(userRef);
+    finalXp    = snap.data()?.xp || 0;
+    finalLevel = xpForLevel(finalXp);
+    await updateDoc(userRef, { level: finalLevel });
+  } catch (err) {
+    // Non-critical: XP was already saved. Level display may be stale.
+    console.error('saveQuizResult STEP 3 (level sync) failed:', err?.message);
+  }
+
+  // ── STEP 4: Badge checks (non-critical, fire-and-forget) ────────────────────
+  try {
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      const data           = snap.data();
+      const existingIds    = new Set((data.badges || []).map(b => b.id));
+      const newBadges      = [];
+      const totalQ         = data.totalQuizzes || 0;
+      const totalXP        = data.xp || 0;
+      const subjArr        = data.subjects || [];
+
+      const give = (id) => {
+        if (!existingIds.has(id)) {
+          const b = ALL_BADGES.find(x => x.id === id);
+          if (b) { newBadges.push({ ...b, earnedAt: new Date().toISOString() }); existingIds.add(id); }
+        }
+      };
+
+      if (totalQ === 1)        give('first-quiz');
+      if (safeScore === 100)   give('perfect-score');
+      if (totalQ >= 10)        give('10-quizzes');
+      if (totalQ >= 25)        give('25-quizzes');
+      if (totalXP >= 1000)     give('1k-xp');
+      if (totalXP >= 5000)     give('5k-xp');
+      if (subjArr.length >= 5) give('multi-subject');
+      if (new Date().getHours() >= 22) give('night-owl');
+      if (new Date().getHours() < 7)   give('early-bird');
+      if (isLearningPath && safeScore === 100) give('perfect-path');
+
+      if (newBadges.length > 0) {
+        await updateDoc(userRef, { badges: arrayUnion(...newBadges) });
+        return { xpEarned, newXp: finalXp, newLevel: finalLevel, newBadges };
+      }
+    }
+  } catch (err) {
+    console.error('saveQuizResult STEP 4 (badges) failed (non-critical):', err?.message);
+  }
+
+  return { xpEarned, newXp: finalXp, newLevel: finalLevel, newBadges: [] };
 }
 
 /**
- * Utility to award a specific badge manually from anywhere
+ * Award a specific badge manually.
  */
 export async function awardBadgeToFirestore(uid, badgeId) {
   if (!uid || !badgeId) return;
@@ -156,15 +158,14 @@ export async function awardBadgeToFirestore(uid, badgeId) {
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
-    const userData = snap.data();
-    const existingBadges = userData.badges || [];
+    const existingBadges = snap.data().badges || [];
     if (!existingBadges.find(b => b.id === badgeId)) {
       const newBadge = { id: badgeId, earnedAt: new Date().toISOString() };
       await updateDoc(userRef, { badges: arrayUnion(newBadge) });
       return newBadge;
     }
   } catch (err) {
-    console.error('awardBadgeToFirestore error:', err);
+    console.error('awardBadgeToFirestore error:', err?.message);
   }
 }
 
@@ -193,17 +194,11 @@ export async function getQuizHistoryFromFirestore(uid, limitN = 30) {
       limit(limitN)
     );
     const snap = await getDocs(q);
-    const docs = snap.docs.map(d => ({
+    return snap.docs.map(d => ({
       id: d.id,
       ...d.data(),
       timestamp: d.data().timestamp?.toDate?.()?.toISOString() || null,
     }));
-
-    if (docs.length >= 10) {
-      await awardBadgeToFirestore(uid, 'quiz-history-10');
-    }
-    
-    return docs;
   } catch (err) {
     console.error('getQuizHistory error:', err);
     return [];
@@ -226,9 +221,9 @@ export async function getSubjectStatsFromFirestore(uid) {
     });
     return Object.entries(map).map(([subject, { scores, topics }]) => ({
       subject,
-      totalQuizzes:     scores.length,
-      averageScore:     Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
-      topicsAttempted:  topics.size,
+      totalQuizzes:    scores.length,
+      averageScore:    Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+      topicsAttempted: topics.size,
     }));
   } catch (err) {
     console.error('getSubjectStats error:', err);
@@ -246,7 +241,7 @@ export async function updateStreakInFirestore(uid) {
     const snap     = await getDoc(userRef);
     const userData = snap.data() || {};
     const today    = new Date().toDateString();
-    if (userData.lastActiveDate === today) return userData; // already done
+    if (userData.lastActiveDate === today) return userData;
 
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     let streak      = userData.streak || 0;
