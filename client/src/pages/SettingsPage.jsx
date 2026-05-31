@@ -619,7 +619,10 @@ function BillingTab({ profile, effectiveTier }) {
               Terms of Service
             </Link>
             <Link to="/refund-policy" className="text-txt3 hover:text-primary transition-colors flex items-center gap-2">
-              Refund & Cancellation Policy
+              Refund Policy
+            </Link>
+            <Link to="/cancellation-policy" className="text-txt3 hover:text-primary transition-colors flex items-center gap-2">
+              Cancellation Policy
             </Link>
           </div>
         </div>

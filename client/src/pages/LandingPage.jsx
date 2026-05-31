@@ -360,10 +360,11 @@ export default function LandingPage() {
         </div>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between text-txt3 text-xs pt-8 border-t border-white/5">
           <p>© 2026 BrainNex. All rights reserved.</p>
-          <div className="flex gap-6 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-4 md:gap-6 mt-4 md:mt-0 justify-center">
             <Link to="/privacy-policy"   className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
-            <Link to="/refund-policy"    className="hover:text-white transition-colors">Refund & Cancellation Policy</Link>
+            <Link to="/refund-policy"    className="hover:text-white transition-colors">Refund Policy</Link>
+            <Link to="/cancellation-policy" className="hover:text-white transition-colors">Cancellation Policy</Link>
           </div>
         </div>
       </footer>
