@@ -5,8 +5,8 @@
  */
 import {
   doc, collection, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
-  arrayUnion, serverTimestamp, query, orderBy, limit, where,
-  increment, runTransaction,
+  arrayUnion, serverTimestamp, query, orderBy, limit,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -95,12 +95,13 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
     if (hour < 7)   addBadge('early-bird');
     if (isLearningPath && score === 100) addBadge('perfect-path');
 
-    const subjQ    = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
+    const subjQ    = query(collection(db, 'quizResults', uid, 'results'), orderBy('timestamp', 'desc'), limit(20));
     const subjSnap = await getDocs(subjQ);
-    if (subjSnap.size >= 5) {
+    const subjectDocs = subjSnap.docs.filter(d => d.data().subject === subject);
+    if (subjectDocs.length >= 5) {
       let totalS = 0;
-      subjSnap.docs.forEach(d => { totalS += d.data().score; });
-      if (totalS / subjSnap.size > 90) addBadge('subject-master');
+      subjectDocs.slice(0, 5).forEach(d => { totalS += d.data().score; });
+      if (totalS / 5 > 90) addBadge('subject-master');
     }
 
     let finalXp, finalLevel;
