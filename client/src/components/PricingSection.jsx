@@ -155,11 +155,11 @@ export default function PricingSection() {
                 </div>
 
                 {plan.price === 0 ? (
-                  <a href="/register" className="block text-center py-3 rounded-xl font-bold text-sm bg-gray-700/50 hover:bg-gray-700 text-white transition-colors mb-8 border border-gray-600">
+                  <a href="/register" className="block text-center py-3 rounded-xl font-bold text-base bg-gray-700/50 hover:bg-gray-600 text-white transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:-translate-y-1 mb-8 border border-gray-500">
                     Get Started Free →
                   </a>
                 ) : (
-                  <PaymentButton plan={plan.tier} className="w-full py-3 rounded-xl font-bold text-sm text-white transition-transform hover:scale-[1.02] active:scale-95 mb-8 shadow-lg"
+                  <PaymentButton plan={plan.tier} className={`w-full py-3 rounded-xl font-extrabold text-base text-white transition-all duration-300 hover:-translate-y-1 active:scale-95 mb-8 shadow-lg ${isPremium ? 'hover:shadow-[0_0_25px_rgba(245,158,11,0.5)]' : 'hover:shadow-[0_0_25px_rgba(139,114,255,0.5)]'}`}
                     style={{ background: isPremium ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 'linear-gradient(135deg, #8B72FF, #6C4FE8)' }}>
                     Start {plan.title} Plan →
                   </PaymentButton>
