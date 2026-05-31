@@ -9,7 +9,6 @@ const MAX_TOKENS  = 600;
 const QUIZ_TOKENS = 1500;
 
 const isJunior = g => ['Class 1','Class 2','Class 3','Class 4','Class 5'].includes(g);
-const isMiddle = g => ['Class 6','Class 7','Class 8'].includes(g);
 
 function buildChatSystem(subject, level, grade) {
   return `You are Nex, an expert AI tutor on BrainNex helping a ${grade || 'student'} study ${subject || 'various topics'}.
@@ -123,7 +122,7 @@ Rules: exactly 10 nodes, one sentence per description, minified JSON, first node
   try {
     const r = await client.messages.create({
       model: MODEL,
-      max_tokens: 800, // Hard cap — sufficient for 10 nodes with one-sentence descriptions
+      max_tokens: 800,
       messages: [{ role: 'user', content: prompt }],
     });
     const m = r.content[0].text.match(/\{[\s\S]*\}/);
@@ -247,29 +246,29 @@ Quiz results: ${JSON.stringify(quizHistory.slice(0,10))}.
 
 router.post('/topic-lesson', verifyToken, async (req, res) => {
   const { subject, topic, level, goal } = req.body;
-  const prompt = `Create a highly detailed, comprehensive lesson for topic "${topic}" in ${subject} at ${level} level. Goal: ${goal || 'Master the Basics'}.
-Make the content rich, in-depth, and highly relevant to the specific topic.
-Return ONLY valid JSON:
-{
-  "title": "${topic}",
-  "subject": "${subject}",
-  "level": "${level}",
-  "sections": [
-    { "id": 1, "heading": "Introduction", "content": "Detailed 2-3 paragraph introduction covering the fundamentals.", "type": "text" },
-    { "id": 2, "heading": "In-Depth Core Concept", "content": "Comprehensive explanation diving deep into the mechanics.", "type": "text" },
-    { "id": 3, "heading": "Key Principles & Rules", "content": "Crucial rules, formulas, or standards to memorize.", "type": "highlight" },
-    { "id": 4, "heading": "Real World Application", "content": "Detailed practical application and use cases.", "type": "example" },
-    { "id": 5, "heading": "Common Pitfalls", "content": "What to avoid, why, and best practices.", "type": "warning" }
-  ],
-  "keyTakeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3", "Takeaway 4"],
-  "estimatedMinutes": 25
-}`;
+
+  if (!subject || !topic || !level) {
+    return res.status(400).json({ error: 'Missing required fields: subject, topic, level' });
+  }
+
+  const prompt = `Write a lesson on "${topic}" in ${subject} at ${level} level.
+Return ONLY minified JSON (no whitespace, no newlines between keys) matching this structure exactly:
+{"title":"${topic}","subject":"${subject}","level":"${level}","sections":[{"id":1,"heading":"Introduction","content":"2-3 sentences introducing the topic.","type":"text"},{"id":2,"heading":"Core Concept","content":"2-3 sentences explaining the main idea.","type":"text"},{"id":3,"heading":"Key Rules","content":"2-3 sentences on important rules or formulas.","type":"highlight"},{"id":4,"heading":"Example","content":"2-3 sentences with a real-world example.","type":"example"},{"id":5,"heading":"Watch Out","content":"2-3 sentences on common mistakes.","type":"warning"}],"keyTakeaways":["Takeaway 1","Takeaway 2","Takeaway 3"],"estimatedMinutes":15}
+IMPORTANT: Each content field must be 2-3 sentences maximum. Output minified JSON only.`;
 
   try {
-    const r = await client.messages.create({ model: MODEL, max_tokens: 2500, messages: [{ role: 'user', content: prompt }] });
-    const m = r.content[0].text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Invalid JSON');
-    res.json(JSON.parse(m[0]));
+    const r = await client.messages.create({ model: MODEL, max_tokens: 1800, messages: [{ role: 'user', content: prompt }] });
+    const text = r.content[0].text.trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) {
+      console.error('Topic lesson: no JSON found in response. Raw text:', text.slice(0, 200));
+      throw new Error('AI did not return valid JSON');
+    }
+    const parsed = JSON.parse(match[0]);
+    if (!parsed.sections || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
+      throw new Error('AI response missing sections array');
+    }
+    res.json(parsed);
   } catch (err) {
     console.error('Topic lesson error:', err?.message || err);
     res.status(500).json({ error: 'Failed to generate lesson.' });

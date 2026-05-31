@@ -203,6 +203,7 @@ function QuizSection({ pathId, topicIndex, topic, subject, level, xpReward, user
           difficulty: level,
           isLearningPath: true,
           questions: finalQuestions,
+          customXpReward: xpReward,
         });
         if (result?.xpEarned) setXpEarned(result.xpEarned);
         onQuizPass(finalScore);

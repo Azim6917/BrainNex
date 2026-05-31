@@ -25,22 +25,28 @@ const ALL_BADGES = [
   { id: 'high-scorer',   name: 'High Scorer',      icon: '🎯', desc: 'Average quiz score above 80%' },
 ];
 
-function xpForLevel(xp) {
-  return Math.floor(xp / 500) + 1;
+export const LEVEL_THRESHOLDS = [0, 500, 1000, 2000, 3500, 5000, 8000, 12000, 20000, 50000];
+
+export function xpForLevel(xp) {
+  for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= LEVEL_THRESHOLDS[i]) {
+      return i + 1;
+    }
+  }
+  return 1;
 }
 
 /**
  * Save a quiz result directly to Firestore and update user profile.
  * Returns { xpEarned, newXp, newLevel, newBadges }
  */
-export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions, isLearningPath }) {
+export async function saveQuizResultToFirestore(uid, { subject, topic, score, totalQuestions, correctAnswers, difficulty, questions, isLearningPath, customXpReward }) {
   if (!uid) return null;
 
-  const xpEarned = correctAnswers * 10 + (score === 100 ? 50 : score >= 80 ? 25 : 10);
+  const xpEarned = customXpReward || (correctAnswers * 10 + (score === 100 ? 50 : score >= 80 ? 25 : 10));
   const userRef  = doc(db, 'users', uid);
 
   try {
-    // 1. Save quiz result to subcollection (fire-and-forget, safe to run outside transaction)
     await addDoc(collection(db, 'quizResults', uid, 'results'), {
       subject,
       topic,
@@ -53,22 +59,18 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       ...(questions ? { questions } : {}),
     });
 
-    // 2. Determine badge eligibility from a pre-read snapshot (used for badge checks only,
-    //    not for computing the final XP — that happens inside the transaction below).
     const preSnap    = await getDoc(userRef);
     const preData    = preSnap.data() || {};
     const preQuizzes = (preData.totalQuizzes  || 0) + 1;
     const preCorrect = (preData.totalCorrect  || 0) + correctAnswers;
     const preQns     = (preData.totalQuestions|| 0) + totalQuestions;
-    const preXp      = (preData.xp            || 0) + xpEarned;  // optimistic, for badge checks
+    const preXp      = (preData.xp            || 0) + xpEarned;
 
     const existingBadges = preData.badges || [];
     const existingIds    = new Set(existingBadges.map(b => b.id));
     const preSubjects    = preData.subjects || [];
     const newSubjects    = preSubjects.includes(subject) ? preSubjects : [...preSubjects, subject];
 
-    // 3. Badge detection (based on pre-read data — badges are idempotent so a small
-    //    lag here is fine; the transaction will apply the final badge list atomically)
     const newBadges = [];
     const addBadge = (id) => {
       if (!existingIds.has(id)) {
@@ -93,7 +95,6 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
     if (hour < 7)   addBadge('early-bird');
     if (isLearningPath && score === 100) addBadge('perfect-path');
 
-    // subject-master: check last 5 quizzes for this subject
     const subjQ    = query(collection(db, 'quizResults', uid, 'results'), where('subject', '==', subject), orderBy('timestamp', 'desc'), limit(5));
     const subjSnap = await getDocs(subjQ);
     if (subjSnap.size >= 5) {
@@ -102,9 +103,6 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
       if (totalS / subjSnap.size > 90) addBadge('subject-master');
     }
 
-    // 4. Atomically update XP and all counters using a Firestore transaction.
-    //    This prevents the race condition where two concurrent quiz saves read the
-    //    same stale XP and one increment is silently dropped.
     let finalXp, finalLevel;
     await runTransaction(db, async (transaction) => {
       const txSnap = await transaction.get(userRef);
@@ -129,7 +127,6 @@ export async function saveQuizResultToFirestore(uid, { subject, topic, score, to
         currentDifficulty: difficulty,
         lastUpdated:       serverTimestamp(),
       };
-      // Merge new badges with deduplication at transaction time
       if (newBadges.length > 0) {
         const txBadges      = txData.badges || [];
         const txBadgeIds    = new Set(txBadges.map(b => b.id));
@@ -161,9 +158,6 @@ export async function awardBadgeToFirestore(uid, badgeId) {
     const userData = snap.data();
     const existingBadges = userData.badges || [];
     if (!existingBadges.find(b => b.id === badgeId)) {
-      // Find badge info
-      // Actually we don't need all the static info, just the id and earnedAt is fine, 
-      // but to match existing schema we'll just store id and earnedAt. The UI merges it.
       const newBadge = { id: badgeId, earnedAt: new Date().toISOString() };
       await updateDoc(userRef, { badges: arrayUnion(newBadge) });
       return newBadge;
@@ -203,8 +197,7 @@ export async function getQuizHistoryFromFirestore(uid, limitN = 30) {
       ...d.data(),
       timestamp: d.data().timestamp?.toDate?.()?.toISOString() || null,
     }));
-    
-    // Check if they have 10 and award quiz-history-10
+
     if (docs.length >= 10) {
       await awardBadgeToFirestore(uid, 'quiz-history-10');
     }

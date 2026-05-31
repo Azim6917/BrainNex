@@ -12,6 +12,7 @@ import { useTheme }    from '../context/ThemeContext';
 import BrainNexLogo    from './BrainNexLogo';
 import { audioSystem } from '../utils/audio';
 import FlameIcon       from './FlameIcon';
+import { LEVEL_THRESHOLDS } from '../utils/firestoreUtils';
 
 const NAV = [
   { to:'/app/dashboard',      icon: LayoutDashboard, label:'Dashboard'      },
@@ -26,13 +27,20 @@ const NAV = [
 ];
 
 function XPBar({ xp, level }) {
-  const xpInLevel = xp % 500;
-  const pct       = Math.round((xpInLevel / 500) * 100);
+  const maxLevelIdx = LEVEL_THRESHOLDS.length - 1;
+  const currentIdx = Math.min(level - 1, maxLevelIdx);
+  const nextIdx = Math.min(level, maxLevelIdx);
+  const currentLevelMin = LEVEL_THRESHOLDS[currentIdx];
+  const nextLevelMin = LEVEL_THRESHOLDS[nextIdx] || currentLevelMin + 50000;
+  const xpInLevel = Math.max(0, xp - currentLevelMin);
+  const xpNeeded = nextLevelMin - currentLevelMin;
+  const pct = xpNeeded > 0 ? Math.min(100, Math.round((xpInLevel / xpNeeded) * 100)) : 100;
+
   return (
     <div className="mt-3">
       <div className="flex justify-between mb-1.5 text-xs font-medium" style={{ color:'var(--txt3)' }}>
-        <span>{xpInLevel} XP</span>
-        <span>Lv.{level + 1}</span>
+        <span>{xpInLevel} / {xpNeeded > 0 ? xpNeeded : 'MAX'} XP</span>
+        <span>Lv.{level}</span>
       </div>
       <div className="w-full" style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px', height: '6px', overflow: 'hidden' }}>
         <motion.div style={{ background: 'linear-gradient(90deg, #6C4FE8, #8B72FF)', borderRadius: '9999px', height: '100%' }}

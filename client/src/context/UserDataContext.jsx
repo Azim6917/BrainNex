@@ -3,12 +3,11 @@ import { doc, onSnapshot, setDoc, updateDoc, getDoc, serverTimestamp, collection
 import { db } from '../utils/firebase';
 import { useAuth } from './AuthContext';
 import { playBadge, playLevelUp } from '../utils/soundEffects';
+import { xpForLevel } from '../utils/firestoreUtils';
 
 const UserDataContext = createContext(null);
 export const useUserData = () => useContext(UserDataContext);
 
-/** Compute level from XP */
-function xpToLevel(xp) { return Math.floor((xp || 0) / 500) + 1; }
 
 /** Compute subject stats directly from quizResults subcollection */
 async function computeSubjectStats(uid) {
@@ -90,7 +89,6 @@ export function UserDataProvider({ children }) {
       try {
         const snap = await getDoc(userRef);
         if (!snap.exists()) {
-          // New user — create doc
           await setDoc(userRef, {
             uid:              user.uid,
             displayName:      user.displayName || 'Student',
@@ -111,9 +109,7 @@ export function UserDataProvider({ children }) {
             createdAt:        serverTimestamp(),
           });
         } else {
-          // Existing user — update streak
           await runDailyStreak(user.uid);
-          // Sync local photo if saved
           const localPhoto = localStorage.getItem(`brainnex-photo-${user.uid}`);
           if (localPhoto && !snap.data().photoURL) {
             await updateDoc(userRef, { photoURL: localPhoto });
@@ -124,13 +120,11 @@ export function UserDataProvider({ children }) {
 
     init();
 
-    // Real-time snapshot
     const unsub = onSnapshot(userRef,
       snap => {
         if (snap.exists()) {
           const data = snap.data();
-          // Check level up
-          const newLevel = xpToLevel(data.xp);
+          const newLevel = xpForLevel(data.xp);
           if (prevLevelRef.current > 1 && newLevel > prevLevelRef.current) {
             playLevelUp();
           }
@@ -158,7 +152,6 @@ export function UserDataProvider({ children }) {
 
   const refreshProfile = useCallback(async () => {
     await loadSubjectProgress();
-    // Profile itself updates via onSnapshot
   }, [loadSubjectProgress]);
 
   const updateProfileLocal = useCallback((updates) => {
