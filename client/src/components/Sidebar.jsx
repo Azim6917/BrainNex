@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Settings, Menu, X, Moon, Sun, ChevronLeft,
   LayoutDashboard, Bot, BookOpen, FileQuestion, Map,
-  Users, Target, Trophy, Bookmark, Star
+  Users, Target, Trophy, Bookmark, Star, Crown, Zap, Sparkles
 } from 'lucide-react';
 import { useAuth }     from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
@@ -52,21 +52,78 @@ function XPBar({ xp, level }) {
 
 function SubscriptionBadge({ subscription }) {
   if (!subscription || subscription === 'free') return null;
-  const isPremium = subscription === 'premium' || subscription === 'max';
-  
-  return (
-    <div className="mt-3 flex items-center justify-between p-2 rounded-xl" style={{ background: isPremium ? 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(124,58,237,0.1))' : 'rgba(124,58,237,0.1)', border: `1px solid ${isPremium ? 'rgba(245,158,11,0.2)' : 'rgba(124,58,237,0.2)'}` }}>
-      <div className="flex items-center gap-2">
-        <div className="w-5 h-5 flex items-center justify-center rounded-md shadow-sm" style={{ background: isPremium ? 'linear-gradient(135deg, #F59E0B, #7C3AED)' : '#7C3AED' }}>
-          <Star size={10} className="text-white" />
+
+  if (subscription === 'max') {
+    return (
+      <motion.div
+        className="mt-3 rounded-xl overflow-hidden relative"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(217,119,6,0.18) 0%, rgba(124,58,237,0.18) 100%)',
+          border: '1px solid rgba(245,158,11,0.35)',
+          boxShadow: '0 0 14px rgba(245,158,11,0.12), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
+      >
+        {/* Shimmer sweep */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)' }}
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear', repeatDelay: 2 }}
+        />
+        <div className="relative flex items-center gap-2.5 px-3 py-2">
+          <motion.div
+            className="w-6 h-6 flex items-center justify-center rounded-lg flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', boxShadow: '0 0 8px rgba(245,158,11,0.5)' }}
+            animate={{ boxShadow: ['0 0 6px rgba(245,158,11,0.4)', '0 0 14px rgba(245,158,11,0.7)', '0 0 6px rgba(245,158,11,0.4)'] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Crown size={12} className="text-white" />
+          </motion.div>
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-widest leading-none" style={{ color: '#F59E0B', letterSpacing: '0.1em' }}>
+              MAX PLAN
+            </p>
+            <p className="text-[9px] font-bold mt-0.5" style={{ color: 'rgba(245,158,11,0.6)' }}>All features unlocked</p>
+          </div>
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: isPremium ? '#F59E0B' : '#8B72FF' }}>
-          {subscription} Plan
+      </motion.div>
+    );
+  }
+
+  if (subscription === 'premium') {
+    return (
+      <div className="mt-3 flex items-center gap-2 p-2 rounded-xl"
+        style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(14,165,233,0.1))', border: '1px solid rgba(124,58,237,0.3)' }}>
+        <div className="w-5 h-5 flex items-center justify-center rounded-md flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #0EA5E9)' }}>
+          <Sparkles size={10} className="text-white" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#8B72FF' }}>
+          Premium Plan
         </span>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (subscription === 'pro') {
+    return (
+      <div className="mt-3 flex items-center gap-2 p-2 rounded-xl"
+        style={{ background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)' }}>
+        <div className="w-5 h-5 flex items-center justify-center rounded-md flex-shrink-0" style={{ background: '#7C3AED' }}>
+          <Zap size={10} className="text-white" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#8B72FF' }}>
+          Pro Plan
+        </span>
+      </div>
+    );
+  }
+
+  return null;
 }
+
 
 function SidebarInner({ onClose }) {
   const { logout, user } = useAuth();

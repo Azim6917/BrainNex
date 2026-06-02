@@ -17,6 +17,11 @@ function isEnabled() {
   catch { return true; }
 }
 
+function isNotificationEnabled() {
+  try { return JSON.parse(localStorage.getItem('brainnex-prefs') || '{}').notificationSounds !== false; }
+  catch { return true; }
+}
+
 function tone({ freq=440, type='sine', dur=0.15, gain=0.15, delay=0, endFreq=null, endGain=0.001 } = {}) {
   if (!isEnabled()) return;
   try {
@@ -50,22 +55,21 @@ export function playWrong() {
 }
 
 export function playXP() {
+  if (!isNotificationEnabled()) return;
   tone({ freq:880,  dur:0.08, gain:0.12, delay:0    });
   tone({ freq:1047, dur:0.08, gain:0.12, delay:0.06 });
   tone({ freq:1319, dur:0.12, gain:0.15, delay:0.12 });
 }
 
 export function playPerfect() {
+  if (!isNotificationEnabled()) return;
   [523, 659, 784, 1047, 1319].forEach((f, i) =>
     tone({ freq:f, dur:0.2, gain:0.15, delay:i*0.09 })
   );
 }
 
-// export function playQuizComplete() {
-//   tone({ freq:659, dur:0.15, gain:0.14, delay:0    });
-//   tone({ freq:784, dur:0.2,  gain:0.16, delay:0.12 });
-// }
 export function playQuizComplete() {
+  if (!isNotificationEnabled()) return;
   tone({ freq:659, dur:0.15, gain:0.14, delay:0    });
   tone({ freq:784, dur:0.2,  gain:0.16, delay:0.12 });
 }
@@ -75,6 +79,7 @@ export function playComplete() {
 }
 
 export function playBadge() {
+  if (!isNotificationEnabled()) return;
   const notes = [784, 988, 1175, 1319, 1568];
   notes.forEach((f, i) => tone({ freq:f, type:'sine', dur:0.15, gain:0.14, delay:i*0.06 }));
   // Extra shimmer
@@ -82,12 +87,14 @@ export function playBadge() {
 }
 
 export function playLevelUp() {
+  if (!isNotificationEnabled()) return;
   [392, 494, 587, 740, 988].forEach((f,i) =>
     tone({ freq:f, type:'sine', dur:0.18, gain:0.16, delay:i*0.1 })
   );
 }
 
 export function playSessionComplete() {
+  if (!isNotificationEnabled()) return;
   [523, 659, 784, 1047].forEach(f =>
     tone({ freq:f, type:'sine', dur:0.7, gain:0.09 })
   );
@@ -98,17 +105,20 @@ export function playCardFlip() {
 }
 
 export function playCheckpointPass() {
+  if (!isNotificationEnabled()) return;
   tone({ freq:659, dur:0.08, gain:0.12, delay:0    });
   tone({ freq:784, dur:0.1,  gain:0.14, delay:0.07 });
 }
 
 export function playStreak() {
+  if (!isNotificationEnabled()) return;
   [300, 350, 280, 400, 320].forEach((f, i) =>
     tone({ freq:f, type:'square', dur:0.05, gain:0.05, delay:i*0.04 })
   );
 }
 
 export function playGoalComplete() {
+  if (!isNotificationEnabled()) return;
   tone({ freq:659, dur:0.15, gain:0.14, delay:0    });
   tone({ freq:988, dur:0.25, gain:0.18, delay:0.15 });
 }
